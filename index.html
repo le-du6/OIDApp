@@ -1,0 +1,21 @@
+<!doctype html>
+<html lang="fr">
+  <head>
+    <meta charset="UTF-8" />
+    <link rel="icon" type="image/svg+xml" href="./favicon.svg" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta
+      name="description"
+      content="OIDApp — apprendre OAuth 2.0, OIDC, OID4VCI et OID4VP en profondeur, sécurité et cryptographie en fil rouge."
+    />
+    <title>OIDApp · OAuth2 / OIDC / OID4VCI / OID4VP</title>
+    <script>
+      // Appliqué avant le premier rendu pour éviter le flash de thème.
+      document.documentElement.dataset.theme = localStorage.getItem('oidapp-theme') ?? 'dark'
+    </script>
+  </head>
+  <body>
+    <div id="root"></div>
+    <script type="module" src="/src/main.tsx"></script>
+  </body>
+</html>

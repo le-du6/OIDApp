@@ -1,0 +1,100 @@
+@import 'tailwindcss';
+
+/*
+ * Thème OIDApp — bleu nuit, accents orange (action / sécurité) et teal
+ * (succès / validé). Dark par défaut, bascule light via data-theme.
+ * Le code couleur des ACTEURS est constant dans toute l'app (diagrammes,
+ * texte, glossaire) et identique dans les deux thèmes.
+ */
+
+:root,
+[data-theme='dark'] {
+  --bg: #0b1220;
+  --surface: #111a2c;
+  --surface-2: #17233a;
+  --line: #24324d;
+  --ink: #e5ecf8;
+  --muted: #8fa1bd;
+  --accent: #f97316;
+  --accent-soft: #f9731626;
+  --ok: #2dd4bf;
+  --ok-soft: #2dd4bf26;
+  --danger: #ef4444;
+  --danger-soft: #ef444426;
+  --warning: #fbbf24;
+  --warning-soft: #fbbf2426;
+}
+
+[data-theme='light'] {
+  --bg: #f4f6fb;
+  --surface: #ffffff;
+  --surface-2: #e9edf5;
+  --line: #d4dceb;
+  --ink: #14213a;
+  --muted: #5b6b87;
+  --accent: #ea580c;
+  --accent-soft: #ea580c1f;
+  --ok: #0d9488;
+  --ok-soft: #0d94881f;
+  --danger: #dc2626;
+  --danger-soft: #dc26261f;
+  --warning: #b45309;
+  --warning-soft: #b453091f;
+}
+
+:root {
+  /* Acteurs — identiques dans les deux thèmes. */
+  --actor-user: #38bdf8;
+  --actor-browser: #7dd3fc;
+  --actor-client: #a78bfa;
+  --actor-authorization-server: #f59e0b;
+  --actor-resource-server: #34d399;
+  --actor-wallet: #2dd4bf;
+  --actor-issuer: #818cf8;
+  --actor-verifier: #f472b6;
+  --actor-attacker: #ef4444;
+}
+
+@theme inline {
+  --color-bg: var(--bg);
+  --color-surface: var(--surface);
+  --color-surface-2: var(--surface-2);
+  --color-line: var(--line);
+  --color-ink: var(--ink);
+  --color-muted: var(--muted);
+  --color-accent: var(--accent);
+  --color-accent-soft: var(--accent-soft);
+  --color-ok: var(--ok);
+  --color-ok-soft: var(--ok-soft);
+  --color-danger: var(--danger);
+  --color-danger-soft: var(--danger-soft);
+  --color-warning: var(--warning);
+  --color-warning-soft: var(--warning-soft);
+  --font-sans: 'Inter', 'Segoe UI', system-ui, sans-serif;
+  --font-mono: 'JetBrains Mono', ui-monospace, 'SF Mono', 'Cascadia Code', monospace;
+}
+
+html,
+body {
+  height: 100%;
+}
+
+body {
+  background-color: var(--bg);
+  color: var(--ink);
+  font-family: var(--font-sans);
+  -webkit-font-smoothing: antialiased;
+}
+
+::selection {
+  background: var(--accent-soft);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    transition-duration: 0.01ms !important;
+  }
+}
