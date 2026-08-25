@@ -1,0 +1,340 @@
+{
+  "id": "oauth2/authorization-code",
+  "title": "Authorization Code Flow (nu)",
+  "description": "Le flow canonique d'OAuth 2.0, dans sa version minimale (sans state ni PKCE — leurs attaques et contre-mesures arrivent au chapitre 5). L'application « PhotoPrint » veut accéder aux photos de l'utilisateur hébergées derrière l'API photos, sans jamais connaître son mot de passe.",
+  "specRefs": ["RFC 6749 §4.1", "RFC 6750", "RFC 9068"],
+  "actors": [
+    {
+      "id": "user",
+      "name": "Resource Owner",
+      "role": "user",
+      "alias": "= vous"
+    },
+    {
+      "id": "browser",
+      "name": "User-Agent",
+      "role": "browser",
+      "alias": "= le navigateur (front channel)"
+    },
+    {
+      "id": "client",
+      "name": "Client",
+      "role": "client",
+      "alias": "= l'app PhotoPrint (un serveur !)"
+    },
+    {
+      "id": "as",
+      "name": "Authorization Server",
+      "role": "authorization-server",
+      "alias": "= « login avec… » + émission des tokens"
+    },
+    {
+      "id": "rs",
+      "name": "Resource Server",
+      "role": "resource-server",
+      "alias": "= l'API photos"
+    }
+  ],
+  "steps": [
+    {
+      "id": "click-login",
+      "from": "user",
+      "to": "browser",
+      "kind": "user-action",
+      "label": "Clique « Importer mes photos »",
+      "summary": "Tout part d'une intention de délégation : l'utilisateur veut autoriser PhotoPrint à lire ses photos. Il ne va JAMAIS donner son mot de passe à PhotoPrint — c'est tout l'objet du protocole.",
+      "security": {
+        "level": "info",
+        "note": "Avant OAuth2, la « solution » était de saisir son mot de passe directement dans l'app tierce, qui obtenait alors un pouvoir total et irrévocable."
+      }
+    },
+    {
+      "id": "start-flow",
+      "from": "browser",
+      "to": "client",
+      "kind": "http",
+      "label": "GET /connect/photos",
+      "summary": "Le navigateur demande au Client de démarrer le flow. Le Client construit alors l'authorization request et va rediriger le navigateur vers l'Authorization Server.",
+      "request": {
+        "channel": "front",
+        "request": {
+          "method": "GET",
+          "url": "https://photoprint.example/connect/photos",
+          "headers": { "Host": "photoprint.example" }
+        },
+        "response": {
+          "status": 302,
+          "statusText": "Found",
+          "headers": {
+            "Location": "https://as.example/authorize?response_type=code&client_id=web-app&redirect_uri=https%3A%2F%2Fphotoprint.example%2Fcallback&scope=photos.read"
+          }
+        }
+      }
+    },
+    {
+      "id": "authorization-request",
+      "from": "browser",
+      "to": "as",
+      "kind": "redirect",
+      "label": "GET /authorize?response_type=code&client_id=…",
+      "summary": "L'authorization request : le navigateur, redirigé, porte la demande du Client jusqu'à l'Authorization Server. Chaque paramètre est observable (et falsifiable) puisqu'on est en front channel — dans l'URL du navigateur.",
+      "request": {
+        "channel": "front",
+        "request": {
+          "method": "GET",
+          "url": "https://as.example/authorize",
+          "params": [
+            {
+              "name": "response_type",
+              "value": "code",
+              "description": "Le type de réponse attendu : ici un authorization code (le flow « code »).",
+              "specRef": "RFC 6749 §4.1.1"
+            },
+            {
+              "name": "client_id",
+              "value": "web-app",
+              "description": "Identifiant public du Client, attribué à l'enregistrement auprès de l'AS.",
+              "specRef": "RFC 6749 §2.2"
+            },
+            {
+              "name": "redirect_uri",
+              "value": "https://photoprint.example/callback",
+              "description": "Où renvoyer le navigateur (et le code) après consentement. Doit correspondre EXACTEMENT à une URI pré-enregistrée.",
+              "specRef": "RFC 6749 §3.1.2"
+            },
+            {
+              "name": "scope",
+              "value": "photos.read",
+              "description": "Le périmètre d'accès demandé — le contrat affiché à l'utilisateur.",
+              "specRef": "RFC 6749 §3.3"
+            }
+          ]
+        }
+      },
+      "security": {
+        "level": "warning",
+        "note": "Aucun paramètre state ici : la réponse ne pourra pas être liée à cette requête. C'est la porte ouverte au CSRF sur le callback — attaque jouée au chapitre 5.",
+        "specRef": "RFC 6749 §10.12"
+      }
+    },
+    {
+      "id": "login-page",
+      "from": "as",
+      "to": "browser",
+      "kind": "http",
+      "label": "200 — page de login + consentement",
+      "summary": "L'AS authentifie l'utilisateur (mot de passe, passkey, MFA… : OAuth2 ne dit RIEN sur le comment) puis affiche l'écran de consentement décrivant le scope demandé.",
+      "request": {
+        "channel": "front",
+        "request": {
+          "method": "GET",
+          "url": "https://as.example/authorize (suite)"
+        },
+        "response": {
+          "status": 200,
+          "statusText": "OK",
+          "body": {
+            "type": "html",
+            "content": "<form action=\"/authorize/consent\" method=\"post\">\n  PhotoPrint demande : lecture de vos photos (photos.read)\n  <button>Autoriser</button> <button>Refuser</button>\n</form>"
+          }
+        }
+      },
+      "security": {
+        "level": "info",
+        "note": "Le mot de passe n'est saisi QUE sur le domaine de l'AS. Le Client ne le voit jamais passer — c'est le cœur de la promesse OAuth2."
+      }
+    },
+    {
+      "id": "consent",
+      "from": "user",
+      "to": "as",
+      "kind": "user-action",
+      "label": "S'authentifie et consent (photos.read)",
+      "summary": "L'utilisateur prouve son identité à l'AS et dit « oui » au scope demandé. Ce « oui » est l'authorization grant au sens de la spec : la preuve que le Resource Owner a consenti.",
+      "security": {
+        "level": "info",
+        "note": "« Authorization Grant » : nom abstrait pour une idée simple — la preuve que l'utilisateur a dit oui. Ici, elle sera matérialisée par l'authorization code.",
+        "specRef": "RFC 6749 §1.3"
+      }
+    },
+    {
+      "id": "code-redirect",
+      "from": "as",
+      "to": "browser",
+      "kind": "redirect",
+      "label": "302 → callback?code=SplxlOBeZQQYbYS6WxSbIA",
+      "summary": "L'AS renvoie le navigateur vers la redirect_uri du Client avec un authorization code : un jeton intermédiaire, courte durée (recommandé ≤ 60 s), à usage unique.",
+      "request": {
+        "channel": "front",
+        "request": {
+          "method": "POST",
+          "url": "https://as.example/authorize/consent"
+        },
+        "response": {
+          "status": 302,
+          "statusText": "Found",
+          "headers": {
+            "Location": "https://photoprint.example/callback?code=SplxlOBeZQQYbYS6WxSbIA"
+          }
+        }
+      },
+      "tokens": [
+        {
+          "id": "auth-code",
+          "label": "Authorization code",
+          "format": "opaque",
+          "value": "SplxlOBeZQQYbYS6WxSbIA",
+          "note": "Opaque, éphémère, à usage unique. Il ne donne accès à rien directement : il faut l'échanger au token endpoint (back channel)."
+        }
+      ],
+      "security": {
+        "level": "warning",
+        "note": "Pourquoi un code intermédiaire plutôt qu'un access token direct ? Parce que tout ce qui passe ici (URL, historique, logs, referer) est exposé au front channel. Le code limite les dégâts : seul, il est inutilisable… en théorie. Sans PKCE, un code intercepté reste exploitable — chapitre 5.",
+        "specRef": "RFC 6749 §10.5"
+      }
+    },
+    {
+      "id": "callback",
+      "from": "browser",
+      "to": "client",
+      "kind": "redirect",
+      "label": "GET /callback?code=…",
+      "summary": "Le navigateur livre le code au Client. Fin du trajet front channel : le code a transité par l'utilisateur, il est donc considéré comme potentiellement observé.",
+      "request": {
+        "channel": "front",
+        "request": {
+          "method": "GET",
+          "url": "https://photoprint.example/callback",
+          "params": [
+            {
+              "name": "code",
+              "value": "SplxlOBeZQQYbYS6WxSbIA",
+              "description": "L'authorization code émis par l'AS.",
+              "specRef": "RFC 6749 §4.1.2"
+            }
+          ]
+        }
+      }
+    },
+    {
+      "id": "token-request",
+      "from": "client",
+      "to": "as",
+      "kind": "http",
+      "label": "POST /token (back channel, authentifié)",
+      "summary": "Bascule décisive vers le back channel : le Client (serveur) parle directement à l'AS en TLS, SANS passer par le navigateur, et s'authentifie avec son client_secret. Il échange le code contre les tokens.",
+      "request": {
+        "channel": "back",
+        "request": {
+          "method": "POST",
+          "url": "https://as.example/token",
+          "headers": {
+            "Authorization": "Basic d2ViLWFwcDpzM2NyM3Q=",
+            "Content-Type": "application/x-www-form-urlencoded"
+          },
+          "body": {
+            "type": "form",
+            "content": "grant_type=authorization_code&code=SplxlOBeZQQYbYS6WxSbIA&redirect_uri=https%3A%2F%2Fphotoprint.example%2Fcallback",
+            "params": [
+              {
+                "name": "grant_type",
+                "value": "authorization_code",
+                "description": "Le type de grant échangé : un authorization code.",
+                "specRef": "RFC 6749 §4.1.3"
+              },
+              {
+                "name": "code",
+                "value": "SplxlOBeZQQYbYS6WxSbIA",
+                "description": "Le code reçu au callback. L'AS vérifie qu'il n'a jamais servi.",
+                "specRef": "RFC 6749 §4.1.3"
+              },
+              {
+                "name": "redirect_uri",
+                "value": "https://photoprint.example/callback",
+                "description": "Doit être identique à celle de l'authorization request — l'AS compare.",
+                "specRef": "RFC 6749 §4.1.3"
+              }
+            ]
+          }
+        },
+        "response": {
+          "status": 200,
+          "statusText": "OK",
+          "headers": {
+            "Content-Type": "application/json",
+            "Cache-Control": "no-store"
+          },
+          "body": {
+            "type": "json",
+            "content": "{\n  \"access_token\": \"eyJhbGciOiJFUzI1NiIsInR5cCI6ImF0K2p3dCIsImtpZCI6ImFzLTIwMjYtMDEifQ.eyJzY29wZSI6InBob3Rvcy5yZWFkIiwiY2xpZW50X2lkIjoid2ViLWFwcCIsImlzcyI6Imh0dHBzOi8vYXMuZXhhbXBsZSIsInN1YiI6InVzZXItOGIyYzkxIiwiYXVkIjoiaHR0cHM6Ly9hcGkuZXhhbXBsZSIsImlhdCI6MTc2NzIyNTYwMCwiZXhwIjoxNzY3MjI5MjAwLCJqdGkiOiI5ZjNhN2QyZS00YjFjLTRjOGEtOWU3NS0xZDJmNmI4YzBhMTEifQ.NMEldLsjPFYimHAjQZe9YwsMD-oouUEX3dThGkW15f5jCdMn_B5c7clmMOfeaoP0QagYLtQv1TpAgIokWqwYAw\",\n  \"token_type\": \"Bearer\",\n  \"expires_in\": 3600,\n  \"refresh_token\": \"8xLOxBtZp8\",\n  \"scope\": \"photos.read\"\n}"
+          }
+        }
+      },
+      "tokens": [
+        {
+          "id": "access-token",
+          "label": "Access token (JWT, profil RFC 9068)",
+          "format": "jwt",
+          "value": "eyJhbGciOiJFUzI1NiIsInR5cCI6ImF0K2p3dCIsImtpZCI6ImFzLTIwMjYtMDEifQ.eyJzY29wZSI6InBob3Rvcy5yZWFkIiwiY2xpZW50X2lkIjoid2ViLWFwcCIsImlzcyI6Imh0dHBzOi8vYXMuZXhhbXBsZSIsInN1YiI6InVzZXItOGIyYzkxIiwiYXVkIjoiaHR0cHM6Ly9hcGkuZXhhbXBsZSIsImlhdCI6MTc2NzIyNTYwMCwiZXhwIjoxNzY3MjI5MjAwLCJqdGkiOiI5ZjNhN2QyZS00YjFjLTRjOGEtOWU3NS0xZDJmNmI4YzBhMTEifQ.NMEldLsjPFYimHAjQZe9YwsMD-oouUEX3dThGkW15f5jCdMn_B5c7clmMOfeaoP0QagYLtQv1TpAgIokWqwYAw",
+          "note": "Décodez-le : tout se lit sans clé. Un access token peut aussi être opaque — comparaison au chapitre 4."
+        },
+        {
+          "id": "refresh-token",
+          "label": "Refresh token",
+          "format": "opaque",
+          "value": "8xLOxBtZp8",
+          "note": "Permet d'obtenir de nouveaux access tokens sans re-solliciter l'utilisateur. Ne transite JAMAIS par le front channel."
+        }
+      ],
+      "security": {
+        "level": "info",
+        "note": "Le back channel cumule trois protections : TLS, authentification du Client (client_secret), et aucun passage par le navigateur. C'est pour aboutir ICI que le détour par le code existe.",
+        "specRef": "RFC 6749 §3.2"
+      }
+    },
+    {
+      "id": "api-call",
+      "from": "client",
+      "to": "rs",
+      "kind": "http",
+      "label": "GET /photos — Authorization: Bearer …",
+      "summary": "Le Client consomme l'API en présentant l'access token dans le header Authorization. Le Resource Server valide le token (signature, exp, aud, scope) puis répond.",
+      "request": {
+        "channel": "back",
+        "request": {
+          "method": "GET",
+          "url": "https://api.example/photos",
+          "headers": {
+            "Authorization": "Bearer eyJhbGciOiJFUzI1NiIsInR5cCI6ImF0K2p3dCIsImtpZCI6ImFzLTIwMjYtMDEifQ.…"
+          }
+        },
+        "response": {
+          "status": 200,
+          "statusText": "OK",
+          "headers": { "Content-Type": "application/json" },
+          "body": {
+            "type": "json",
+            "content": "{\n  \"photos\": [\n    { \"id\": \"p_301\", \"title\": \"Vacances Île de Ré\" },\n    { \"id\": \"p_302\", \"title\": \"Sprint review\" }\n  ]\n}"
+          }
+        }
+      },
+      "security": {
+        "level": "danger",
+        "note": "« Bearer » dit tout : QUICONQUE détient ce token peut l'utiliser — le RS ne vérifie pas QUI le présente. Vol de bearer token et contre-mesures (DPoP, mTLS) au chapitre 5.",
+        "specRef": "RFC 6750 §5.2"
+      }
+    },
+    {
+      "id": "done",
+      "from": "client",
+      "to": "browser",
+      "kind": "http",
+      "label": "200 — « Vos photos sont importées »",
+      "summary": "Fin du flow : PhotoPrint a accédé aux photos avec un pouvoir limité (photos.read), temporaire (1 h) et révocable — sans avoir jamais vu le mot de passe.",
+      "security": {
+        "level": "info",
+        "note": "Comparez avec le partage de mot de passe du chapitre 1 : périmètre limité par le scope, expiration, révocation possible (RFC 7009), et le secret n'a jamais quitté l'AS."
+      }
+    }
+  ]
+}
