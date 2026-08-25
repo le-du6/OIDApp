@@ -25,3 +25,4 @@ dist-ssr
 
 # Généré par @tanstack/router-plugin
 src/routeTree.gen.ts
+.tanstack/
