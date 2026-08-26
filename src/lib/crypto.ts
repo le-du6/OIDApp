@@ -81,3 +81,36 @@ export async function verifyES256(
 export async function exportPublicJwk(key: CryptoKey): Promise<JsonWebKey> {
   return crypto.subtle.exportKey('jwk', key)
 }
+
+/* ------------------------------------------------- OIDC : at_hash & JWS */
+
+/**
+ * at_hash / c_hash (OIDC Core §3.1.3.6, §3.3.2.11) : base64url de la moitié
+ * GAUCHE du hachage (SHA-256 pour ES256/RS256) de la représentation ASCII
+ * de la valeur (access token ou code).
+ */
+export async function computeAtHash(value: string): Promise<string> {
+  const digest = await sha256(value)
+  return bytesToBase64Url(digest.slice(0, digest.length / 2))
+}
+
+/** Importe une clé publique EC P-256 depuis un JWK (RFC 7517) pour vérifier. */
+export async function importEs256PublicJwk(jwk: JsonWebKey): Promise<CryptoKey> {
+  return crypto.subtle.importKey('jwk', jwk, { name: 'ECDSA', namedCurve: 'P-256' }, false, [
+    'verify',
+  ])
+}
+
+/**
+ * Vérifie la signature d'un JWS compact ES256 (donc d'un JWT signé).
+ * Point pédagogique : la signature JWS ES256 est le concaténé brut r||s
+ * (64 octets, RFC 7518 §3.4) — exactement le format attendu par WebCrypto.
+ * On vérifie sur les octets ASCII de « header.payload », tels quels.
+ */
+export async function verifyCompactJwsES256(jws: string, jwk: JsonWebKey): Promise<boolean> {
+  const parts = jws.split('.')
+  if (parts.length !== 3) return false
+  const [header, payload, signature] = parts as [string, string, string]
+  const key = await importEs256PublicJwk(jwk)
+  return verifyES256(key, base64UrlToBytes(signature), `${header}.${payload}`)
+}

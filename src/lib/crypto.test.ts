@@ -56,3 +56,42 @@ describe('bytesToHex', () => {
     expect(bytesToHex(new Uint8Array([0, 15, 255]))).toBe('000fff')
   })
 })
+
+/* ------------------------------------------------- OIDC : at_hash & JWS */
+
+import { computeAtHash, verifyCompactJwsES256 } from './crypto'
+import { OIDC_ACCESS_TOKEN, OIDC_AT_HASH, OIDC_ID_TOKEN, OIDC_JWKS } from '../data/fixtures/oidc'
+
+describe('computeAtHash (OIDC Core §3.1.3.6)', () => {
+  it('reproduit exactement le at_hash de la fixture (moitié gauche SHA-256, base64url)', async () => {
+    expect(await computeAtHash(OIDC_ACCESS_TOKEN)).toBe(OIDC_AT_HASH)
+  })
+
+  it('produit 22 caractères base64url pour SHA-256 (16 octets)', async () => {
+    const h = await computeAtHash('anything')
+    expect(h).toMatch(/^[A-Za-z0-9_-]{22}$/)
+  })
+})
+
+describe('verifyCompactJwsES256', () => {
+  const jwk = OIDC_JWKS.keys[0] as JsonWebKey
+
+  it('vérifie l’ID Token fixture avec la clé du JWKS', async () => {
+    expect(await verifyCompactJwsES256(OIDC_ID_TOKEN, jwk)).toBe(true)
+  })
+
+  it('rejette un payload altéré (un seul claim modifié)', async () => {
+    const [h, p, s] = OIDC_ID_TOKEN.split('.') as [string, string, string]
+    const claims = JSON.parse(Buffer.from(p, 'base64url').toString())
+    claims.sub = 'attacker'
+    const tampered = Buffer.from(JSON.stringify(claims)).toString('base64url')
+    expect(await verifyCompactJwsES256(`${h}.${tampered}.${s}`, jwk)).toBe(false)
+  })
+
+  it('rejette une autre clé (kid inconnu)', async () => {
+    const wrongJwk = { ...jwk, x: jwk.y, y: jwk.x } // clé invalide/différente
+    await expect(verifyCompactJwsES256(OIDC_ID_TOKEN, wrongJwk).catch(() => false)).resolves.toBe(
+      false,
+    )
+  })
+})
