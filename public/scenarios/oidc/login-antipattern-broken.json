@@ -1,0 +1,128 @@
+{
+  "id": "oidc/login-antipattern-broken",
+  "title": "Anti-pattern « login avec un access token » (cassé)",
+  "description": "Un Relying Party naïf implémente « se connecter » ainsi : le client lui envoie un access token, le RP appelle UserInfo, récupère un sub, et ouvre une session pour cet utilisateur. Le piège : un access token ne dit pas POUR QUI ni POUR QUEL client il a été émis. C'est la substitution de token (OIDC Core §16.11).",
+  "specRefs": ["OIDC Core §16.11", "OIDC Core §2", "RFC 6750 §1.2"],
+  "actors": [
+    {
+      "id": "attacker",
+      "name": "Attacker",
+      "role": "attacker",
+      "alias": "= application malveillante"
+    },
+    { "id": "victim", "name": "Victime", "role": "user", "alias": "= l'utilisateur ciblé" },
+    { "id": "rp", "name": "Relying Party", "role": "client", "alias": "= l'app « login » naïve" },
+    {
+      "id": "op",
+      "name": "OpenID Provider",
+      "role": "authorization-server",
+      "alias": "= émet des access tokens"
+    }
+  ],
+  "steps": [
+    {
+      "id": "victim-uses-evil",
+      "from": "victim",
+      "to": "attacker",
+      "kind": "user-action",
+      "label": "La victime utilise l'app de l'attaquant",
+      "summary": "Contexte plausible : la victime se connecte via le même OP sur une app tierce (un jeu, une app malveillante). Cette app obtient légitimement un access token pour SES propres besoins — au nom de la victime.",
+      "security": {
+        "level": "info",
+        "note": "Rien d'anormal ici : obtenir un access token pour son app est le fonctionnement normal d'OAuth2. Le problème naîtra de l'USAGE qu'en fera l'attaquant ailleurs."
+      }
+    },
+    {
+      "id": "attacker-gets-token",
+      "from": "op",
+      "to": "attacker",
+      "kind": "http",
+      "label": "access_token émis pour l'app de l'attaquant",
+      "summary": "L'OP émet un access token valide, au nom de la victime, à destination de l'app de l'attaquant. Ce token est un bearer token : quiconque le détient peut l'utiliser.",
+      "request": {
+        "channel": "back",
+        "request": { "method": "POST", "url": "https://op.example/token" },
+        "response": {
+          "status": 200,
+          "statusText": "OK",
+          "body": {
+            "type": "json",
+            "content": "{ \"access_token\": \"AT-victime-xyz\", \"token_type\": \"Bearer\", \"expires_in\": 3600 }"
+          }
+        }
+      },
+      "tokens": [
+        {
+          "id": "stolen-at",
+          "label": "Access token (victime → app attaquant)",
+          "format": "opaque",
+          "value": "AT-victime-xyz",
+          "note": "Aucune information sur QUI doit consommer ce token : pas d'audience côté RP victime, pas de nonce. Un bearer token nu."
+        }
+      ]
+    },
+    {
+      "id": "replay",
+      "from": "attacker",
+      "to": "rp",
+      "kind": "attack",
+      "label": "POST /login { access_token: AT-victime-xyz }",
+      "summary": "L'attaquant rejoue l'access token de la victime sur l'endpoint « login » du RP victime. Le RP naïf considère « présenter un access token valide » comme une preuve d'identité — ce qu'un access token n'est PAS.",
+      "request": {
+        "channel": "back",
+        "request": {
+          "method": "POST",
+          "url": "https://photoprint.example/login",
+          "body": { "type": "json", "content": "{ \"access_token\": \"AT-victime-xyz\" }" }
+        }
+      },
+      "security": {
+        "level": "danger",
+        "note": "Erreur fondamentale du RP : traiter la POSSESSION d'un access token comme une AUTHENTIFICATION. Le token n'a pas été émis pour ce RP, ne lui est pas destiné, et ne prouve la présence de personne devant lui.",
+        "specRef": "OIDC Core §16.11"
+      }
+    },
+    {
+      "id": "userinfo",
+      "from": "rp",
+      "to": "op",
+      "kind": "http",
+      "label": "GET /userinfo (Bearer AT-victime-xyz)",
+      "summary": "Le RP appelle UserInfo avec le token reçu. Comme le token est un bearer token valide au nom de la victime, l'OP répond avec les claims… de la victime.",
+      "request": {
+        "channel": "back",
+        "request": {
+          "method": "GET",
+          "url": "https://op.example/userinfo",
+          "headers": { "Authorization": "Bearer AT-victime-xyz" }
+        },
+        "response": {
+          "status": 200,
+          "statusText": "OK",
+          "body": {
+            "type": "json",
+            "content": "{ \"sub\": \"user-8b2c91\", \"email\": \"victime@mail.example\" }"
+          }
+        }
+      },
+      "security": {
+        "level": "danger",
+        "note": "UserInfo répond honnêtement : ce token appartient bien à la victime. L'OP n'a rien fait de mal — il n'a jamais prétendu que ce token authentifiait quoi que ce soit AUPRÈS DU RP.",
+        "specRef": "OIDC Core §5.3"
+      }
+    },
+    {
+      "id": "session-hijack",
+      "from": "rp",
+      "to": "attacker",
+      "kind": "attack",
+      "label": "200 — session ouverte pour sub=user-8b2c91",
+      "summary": "Le RP ouvre une session au nom de la victime… pour l'attaquant. Prise de contrôle de compte complète, sans jamais casser la moindre primitive cryptographique.",
+      "security": {
+        "level": "danger",
+        "note": "La faille n'est pas dans la crypto : le token est authentique. Elle est dans le RAISONNEMENT : « token valide = utilisateur présent ». Un access token prouve un droit d'accès, jamais une identité devant un tiers.",
+        "specRef": "OIDC Core §16.11"
+      }
+    }
+  ]
+}

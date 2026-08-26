@@ -1,0 +1,97 @@
+{
+  "id": "oidc/discovery",
+  "title": "Discovery : configurer un RP sans rien coder en dur",
+  "description": "Avant même de connecter qui que ce soit, le Relying Party doit connaître les endpoints de l'OP (authorize, token, userinfo, jwks_uri) et ses capacités. La Discovery les publie à une URL standard, dérivée de l'issuer — plus rien n'est codé en dur.",
+  "specRefs": ["OIDC Discovery 1.0 §4", "OIDC Discovery 1.0 §3", "OIDC Discovery 1.0 §4.3"],
+  "actors": [
+    { "id": "rp", "name": "Relying Party", "role": "client", "alias": "= l'app à configurer" },
+    {
+      "id": "op",
+      "name": "OpenID Provider",
+      "role": "authorization-server",
+      "alias": "= publie sa configuration"
+    }
+  ],
+  "steps": [
+    {
+      "id": "known-issuer",
+      "from": "rp",
+      "to": "rp",
+      "kind": "internal",
+      "label": "Point de départ : l'issuer https://op.example",
+      "summary": "La seule chose que le RP connaît d'avance : l'identifiant de l'issuer (souvent une simple URL de configuration donnée par l'admin). Tout le reste se découvre.",
+      "security": {
+        "level": "info",
+        "note": "L'issuer est l'ancre de confiance : c'est lui qui devra correspondre au claim iss des ID Tokens. Il doit être obtenu de façon fiable (config, pas saisie utilisateur).",
+        "specRef": "OIDC Discovery §2"
+      }
+    },
+    {
+      "id": "fetch-config",
+      "from": "rp",
+      "to": "op",
+      "kind": "http",
+      "label": "GET /.well-known/openid-configuration",
+      "summary": "Le RP concatène « /.well-known/openid-configuration » à l'issuer et récupère le document de configuration : un JSON qui liste endpoints et capacités de l'OP.",
+      "request": {
+        "channel": "back",
+        "request": {
+          "method": "GET",
+          "url": "https://op.example/.well-known/openid-configuration"
+        },
+        "response": {
+          "status": 200,
+          "statusText": "OK",
+          "headers": { "Content-Type": "application/json" },
+          "body": {
+            "type": "json",
+            "content": "{\n  \"issuer\": \"https://op.example\",\n  \"authorization_endpoint\": \"https://op.example/authorize\",\n  \"token_endpoint\": \"https://op.example/token\",\n  \"userinfo_endpoint\": \"https://op.example/userinfo\",\n  \"jwks_uri\": \"https://op.example/.well-known/jwks.json\",\n  \"response_types_supported\": [\"code\"],\n  \"subject_types_supported\": [\"public\"],\n  \"id_token_signing_alg_values_supported\": [\"ES256\", \"RS256\"],\n  \"scopes_supported\": [\"openid\", \"email\", \"profile\"],\n  \"claims_supported\": [\"sub\", \"iss\", \"aud\", \"exp\", \"iat\", \"email\", \"email_verified\"]\n}"
+          }
+        }
+      },
+      "security": {
+        "level": "info",
+        "note": "issuer et authorization_endpoint, token_endpoint (sauf implicit pur), jwks_uri, response_types_supported, subject_types_supported, id_token_signing_alg_values_supported sont REQUIRED. userinfo_endpoint, scopes_supported, claims_supported sont RECOMMENDED.",
+        "specRef": "OIDC Discovery §3"
+      }
+    },
+    {
+      "id": "validate-issuer",
+      "from": "rp",
+      "to": "rp",
+      "kind": "internal",
+      "label": "Vérifie : config.issuer == issuer attendu",
+      "summary": "Contrôle indispensable : l'issuer renvoyé DOIT être identique à celui utilisé comme préfixe pour construire l'URL de découverte. Sinon un document de configuration détourné pourrait pointer vers des endpoints pirates.",
+      "security": {
+        "level": "danger",
+        "note": "Sans ce contrôle, un attaquant sur le chemin pourrait servir une configuration dont les endpoints sont les siens. La correspondance issuer ancre toute la confiance ; iss des ID Tokens devra aussi valoir cette même valeur.",
+        "specRef": "OIDC Discovery §4.3"
+      }
+    },
+    {
+      "id": "fetch-jwks",
+      "from": "rp",
+      "to": "op",
+      "kind": "http",
+      "label": "GET jwks_uri → clés publiques",
+      "summary": "Muni du jwks_uri découvert, le RP récupère et met en cache les clés publiques de l'OP. Il est désormais prêt à lancer des flows ET à valider les ID Tokens qui en reviendront.",
+      "request": {
+        "channel": "back",
+        "request": { "method": "GET", "url": "https://op.example/.well-known/jwks.json" },
+        "response": {
+          "status": 200,
+          "statusText": "OK",
+          "body": {
+            "type": "json",
+            "content": "{ \"keys\": [ { \"kty\": \"EC\", \"crv\": \"P-256\", \"kid\": \"op-2026-01\", \"use\": \"sig\", \"alg\": \"ES256\", \"x\": \"…\", \"y\": \"…\" } ] }"
+          }
+        }
+      },
+      "security": {
+        "level": "info",
+        "note": "Discovery + JWKS = un RP entièrement configuré sans clé ni endpoint codés en dur, et qui suit automatiquement les rotations de clés de l'OP.",
+        "specRef": "OIDC Discovery §3"
+      }
+    }
+  ]
+}

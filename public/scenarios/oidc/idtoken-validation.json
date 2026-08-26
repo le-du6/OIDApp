@@ -1,0 +1,116 @@
+{
+  "id": "oidc/idtoken-validation",
+  "title": "Valider un ID Token : JWKS → kid → clé → verify",
+  "description": "Zoom sur l'étape « validate » du flow complet. Comment le Relying Party passe d'un JWT reçu du réseau — donc a priori sans valeur — à une identité de confiance. La signature n'est qu'un des contrôles ; on les déroule dans l'ordre de la spec (§3.1.3.7).",
+  "specRefs": ["OIDC Core §3.1.3.7", "OIDC Core §3.1.3.6", "RFC 7517", "RFC 7515"],
+  "actors": [
+    { "id": "rp", "name": "Relying Party", "role": "client", "alias": "= l'app qui valide" },
+    {
+      "id": "op",
+      "name": "OpenID Provider",
+      "role": "authorization-server",
+      "alias": "= publie ses clés (JWKS)"
+    }
+  ],
+  "steps": [
+    {
+      "id": "read-header",
+      "from": "rp",
+      "to": "rp",
+      "kind": "internal",
+      "label": "Lit le header JWS : alg=ES256, kid=op-2026-01",
+      "summary": "Le RP décode le header (sans aucune clé — un JWT se lit toujours). Il y trouve l'algorithme annoncé et le kid : l'identifiant de la clé qui aurait servi à signer.",
+      "tokens": [
+        {
+          "id": "id-token",
+          "label": "ID Token à valider",
+          "format": "jwt",
+          "value": "eyJhbGciOiJFUzI1NiIsInR5cCI6IkpXVCIsImtpZCI6Im9wLTIwMjYtMDEifQ.eyJhdXRoX3RpbWUiOjE3NjcyMjU1ODAsIm5vbmNlIjoibi0wUzZfV3pBMk1qIiwiYXRfaGFzaCI6InJYSDdRV1ZUWm5YWUNvdV82VmRwZmciLCJlbWFpbCI6InVzZXJAbWFpbC5leGFtcGxlIiwiZW1haWxfdmVyaWZpZWQiOnRydWUsImlzcyI6Imh0dHBzOi8vb3AuZXhhbXBsZSIsInN1YiI6InVzZXItOGIyYzkxIiwiYXVkIjoid2ViLWFwcCIsImlhdCI6MTc2NzIyNTYwMCwiZXhwIjoxNzY3MjI5MjAwfQ.QTmRvNUgt0gRk1sSIDyr-Q_-5D8XKhzHWpiQOhTvaOeVGMlwiHIk201bUo_MoMdihh-SwaAS9GXQSVrDTS_EVg",
+          "note": "Décodez le header : { alg: ES256, typ: JWT, kid: op-2026-01 }. Le kid ne donne aucune confiance — il indique juste QUELLE clé publique aller chercher."
+        }
+      ],
+      "security": {
+        "level": "warning",
+        "note": "Ne JAMAIS faire confiance aveuglément à alg : un RP doit imposer les algorithmes attendus (ES256 ici) et refuser alg=none et les substitutions d'algorithme. Le header est fourni par… l'émetteur du jeton.",
+        "specRef": "OIDC Core §3.1.3.7 (7)"
+      }
+    },
+    {
+      "id": "fetch-jwks",
+      "from": "rp",
+      "to": "op",
+      "kind": "http",
+      "label": "GET /.well-known/jwks.json",
+      "summary": "Le RP récupère le JWKS de l'OP (l'URL vient de la discovery, champ jwks_uri). C'est l'ensemble des clés PUBLIQUES de l'OP — souvent mises en cache, avec rotation.",
+      "request": {
+        "channel": "back",
+        "request": { "method": "GET", "url": "https://op.example/.well-known/jwks.json" },
+        "response": {
+          "status": 200,
+          "statusText": "OK",
+          "headers": { "Content-Type": "application/json", "Cache-Control": "max-age=86400" },
+          "body": {
+            "type": "json",
+            "content": "{\n  \"keys\": [\n    {\n      \"kty\": \"EC\", \"crv\": \"P-256\", \"use\": \"sig\", \"alg\": \"ES256\",\n      \"kid\": \"op-2026-01\",\n      \"x\": \"xW33eUhIVQiXYUl_6EwHAivO6J9nwibFa56ILrP1F94\",\n      \"y\": \"ZxwsTfzF2ECeH4gkmGeFW__urmi1rJhMestuaeVtzIY\"\n    }\n  ]\n}"
+          }
+        }
+      },
+      "security": {
+        "level": "info",
+        "note": "Seules des clés PUBLIQUES transitent : elles ne servent qu'à vérifier, jamais à signer. Le RP peut les cacher, mais doit gérer la rotation (un kid inconnu → re-fetch).",
+        "specRef": "RFC 7517"
+      }
+    },
+    {
+      "id": "select-key",
+      "from": "rp",
+      "to": "rp",
+      "kind": "internal",
+      "label": "Sélectionne la clé par kid = op-2026-01",
+      "summary": "Le RP choisit dans le JWKS la clé dont le kid correspond à celui du header. Un seul candidat ici ; en pratique le JWKS peut contenir l'ancienne et la nouvelle clé pendant une rotation.",
+      "security": {
+        "level": "info",
+        "note": "Faire correspondre le kid évite d'essayer toutes les clés à l'aveugle et rend la rotation gérable. Si le kid est absent du JWKS : rafraîchir le cache, puis rejeter si toujours absent."
+      }
+    },
+    {
+      "id": "verify-sig",
+      "from": "rp",
+      "to": "rp",
+      "kind": "internal",
+      "label": "Vérifie ES256 sur « header.payload »",
+      "summary": "Cœur cryptographique : WebCrypto vérifie la signature (r‖s, 64 octets) sur les octets ASCII de « header.payload » avec la clé publique. Manipulable pour de vrai dans le Crypto Lab — y compris l'échec si on altère un claim.",
+      "security": {
+        "level": "info",
+        "note": "Signature OK = le jeton vient bien de l'OP et n'a pas été modifié. Mais on n'a TOUJOURS pas fini : signature ≠ destinataire, ≠ fraîcheur.",
+        "specRef": "OIDC Core §3.1.3.7 (6)"
+      }
+    },
+    {
+      "id": "verify-claims",
+      "from": "rp",
+      "to": "rp",
+      "kind": "internal",
+      "label": "iss exact · aud∋client_id · exp · nonce · at_hash",
+      "summary": "Contrôles des claims : iss identique à l'OP attendu ; aud contient client_id ; exp non dépassé (et iat pas trop ancien) ; nonce == celui envoyé ; at_hash cohérent avec l'access token reçu. Tous doivent passer.",
+      "security": {
+        "level": "danger",
+        "note": "at_hash lie l'ID Token à l'access token de la MÊME réponse : il empêche d'associer un ID Token à un access token d'une autre provenance. Contrôle souvent oublié.",
+        "specRef": "OIDC Core §3.1.3.6"
+      }
+    },
+    {
+      "id": "trusted",
+      "from": "rp",
+      "to": "rp",
+      "kind": "internal",
+      "label": "Identité de confiance : (iss, sub) = (op.example, user-8b2c91)",
+      "summary": "Seulement maintenant l'ID Token devient une identité exploitable. Le RP ouvre une session clé sur (iss, sub). Sans TOUTE cette séquence, un JWT reçu du réseau ne vaut rien.",
+      "security": {
+        "level": "info",
+        "note": "Ordre des contrôles = défense en profondeur : chacun ferme une classe d'attaque (forge, substitution inter-clients, rejeu, jeton expiré, mismatch access token). En sauter un rouvre sa brèche.",
+        "specRef": "OIDC Core §3.1.3.7"
+      }
+    }
+  ]
+}

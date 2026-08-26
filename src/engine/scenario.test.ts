@@ -46,13 +46,20 @@ describe('parseScenario', () => {
   })
 
   it('valide TOUS les scénarios livrés (public/scenarios/**)', () => {
-    const dir = join(__dirname, '../../public/scenarios/oauth2')
-    const files = readdirSync(dir).filter((f) => f.endsWith('.json'))
-    expect(files.length).toBeGreaterThanOrEqual(6) // Definition of done Phase 1
-    for (const file of files) {
-      const scenario = parseScenario(JSON.parse(readFileSync(join(dir, file), 'utf-8')))
-      expect(scenario.id, file).toBe(`oauth2/${file.replace(/\.json$/, '')}`)
+    const root = join(__dirname, '../../public/scenarios')
+    const modules = readdirSync(root, { withFileTypes: true })
+      .filter((d) => d.isDirectory())
+      .map((d) => d.name)
+    let count = 0
+    for (const mod of modules) {
+      const dir = join(root, mod)
+      for (const file of readdirSync(dir).filter((f) => f.endsWith('.json'))) {
+        const scenario = parseScenario(JSON.parse(readFileSync(join(dir, file), 'utf-8')))
+        expect(scenario.id, file).toBe(`${mod}/${file.replace(/\.json$/, '')}`)
+        count++
+      }
     }
+    expect(count).toBeGreaterThanOrEqual(6)
   })
 
   it('valide le scénario livré : oauth2/authorization-code', () => {

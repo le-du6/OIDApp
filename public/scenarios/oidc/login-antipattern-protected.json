@@ -1,0 +1,108 @@
+{
+  "id": "oidc/login-antipattern-protected",
+  "title": "Login correct avec ID Token (protégé)",
+  "description": "La contre-mesure n'est pas un correctif : c'est OIDC lui-même. On n'authentifie plus avec un access token, mais avec un ID Token, dont l'audience (aud) et le nonce empêchent structurellement la substitution.",
+  "specRefs": ["OIDC Core §2", "OIDC Core §3.1.3.7"],
+  "actors": [
+    {
+      "id": "attacker",
+      "name": "Attacker",
+      "role": "attacker",
+      "alias": "= application malveillante"
+    },
+    {
+      "id": "rp",
+      "name": "Relying Party",
+      "role": "client",
+      "alias": "= l'app « login » corrigée"
+    },
+    {
+      "id": "op",
+      "name": "OpenID Provider",
+      "role": "authorization-server",
+      "alias": "= émet l'ID Token"
+    }
+  ],
+  "steps": [
+    {
+      "id": "attacker-idtoken",
+      "from": "attacker",
+      "to": "rp",
+      "kind": "attack",
+      "label": "POST /login { id_token: <émis pour l'app attaquant> }",
+      "summary": "L'attaquant rejoue cette fois un ID Token obtenu au nom de la victime… mais pour SON app. Il tente la même substitution qu'au flow cassé, avec un jeton d'identité au lieu d'un access token.",
+      "request": {
+        "channel": "back",
+        "request": {
+          "method": "POST",
+          "url": "https://photoprint.example/login",
+          "body": {
+            "type": "json",
+            "content": "{ \"id_token\": \"eyJ… aud: attacker-app, nonce: (aucun pour ce RP) …\" }"
+          }
+        }
+      },
+      "security": {
+        "level": "info",
+        "note": "L'ID Token est authentique et bien signé par l'OP. Mais contrairement à l'access token, il porte deux marques qui vont le trahir : son audience et son nonce."
+      }
+    },
+    {
+      "id": "check-signature",
+      "from": "rp",
+      "to": "rp",
+      "kind": "internal",
+      "label": "Vérifie la signature (JWKS de l'OP)",
+      "summary": "Premier contrôle : la signature est valide, la clé est bien celle de l'OP attendu. Le jeton n'est pas forgé. On continue les contrôles.",
+      "security": {
+        "level": "info",
+        "note": "La signature seule ne suffit JAMAIS : elle prouve que l'OP a émis le jeton, pas qu'il a été émis pour NOUS. C'est l'erreur classique de qui « vérifie juste la signature ».",
+        "specRef": "OIDC Core §3.1.3.7"
+      }
+    },
+    {
+      "id": "check-aud",
+      "from": "rp",
+      "to": "rp",
+      "kind": "internal",
+      "label": "aud == client_id ? → NON",
+      "summary": "Contrôle décisif : l'ID Token a été émis pour aud=attacker-app, pas pour ce RP (client_id=web-app). Le jeton n'était pas destiné à ce RP. Rejet immédiat.",
+      "security": {
+        "level": "info",
+        "note": "aud est ce qui manquait à l'access token : l'ID Token dit explicitement POUR QUI il a été fabriqué. Un jeton d'un autre client ne passe pas — la substitution est structurellement impossible.",
+        "specRef": "OIDC Core §3.1.3.7 (3)"
+      }
+    },
+    {
+      "id": "check-nonce",
+      "from": "rp",
+      "to": "rp",
+      "kind": "internal",
+      "label": "nonce == nonce de session ? → NON",
+      "summary": "Même si l'audience avait matché, le nonce ne correspondrait à aucune requête initiée par CE RP pour CETTE session. Deuxième barrière indépendante contre le rejeu.",
+      "security": {
+        "level": "info",
+        "note": "aud protège contre l'usage inter-clients ; nonce protège contre le rejeu d'un jeton légitime. Deux propriétés distinctes, deux menaces distinctes.",
+        "specRef": "OIDC Core §3.1.3.7 (11)"
+      }
+    },
+    {
+      "id": "reject",
+      "from": "rp",
+      "to": "attacker",
+      "kind": "http",
+      "label": "401 — ID Token refusé (mauvaise audience)",
+      "summary": "Le RP rejette. La substitution qui réussissait avec un access token nu échoue avec un ID Token correctement validé : ce n'est pas un patch, c'est la raison d'être d'OIDC.",
+      "request": {
+        "channel": "back",
+        "request": { "method": "POST", "url": "https://photoprint.example/login" },
+        "response": { "status": 401, "statusText": "Unauthorized" }
+      },
+      "security": {
+        "level": "info",
+        "note": "Leçon du module : pour authentifier, n'utilisez JAMAIS un access token. Utilisez un ID Token, et validez-le entièrement (§3.1.3.7) — signature ET aud ET exp ET nonce.",
+        "specRef": "OIDC Core §2"
+      }
+    }
+  ]
+}

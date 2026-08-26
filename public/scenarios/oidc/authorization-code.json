@@ -1,0 +1,272 @@
+{
+  "id": "oidc/authorization-code",
+  "title": "OIDC — Authorization Code Flow complet",
+  "description": "Le même Authorization Code Flow qu'en OAuth 2.0, mais avec scope=openid : l'OpenID Provider émet en plus un ID Token — un JWT signé qui prouve QUI s'est authentifié, et quand. L'app « PhotoPrint » (Relying Party) veut connecter l'utilisateur, pas seulement accéder à une API.",
+  "specRefs": ["OIDC Core 1.0 §3.1", "OIDC Core §2", "OIDC Core §5.3"],
+  "actors": [
+    { "id": "user", "name": "End-User", "role": "user", "alias": "= vous (Resource Owner)" },
+    {
+      "id": "browser",
+      "name": "User-Agent",
+      "role": "browser",
+      "alias": "= le navigateur (front channel)"
+    },
+    {
+      "id": "rp",
+      "name": "Relying Party",
+      "role": "client",
+      "alias": "= l'app (le « Client » OAuth2)"
+    },
+    {
+      "id": "op",
+      "name": "OpenID Provider",
+      "role": "authorization-server",
+      "alias": "= Google, Entra ID… (authentifie + émet l'ID Token)"
+    }
+  ],
+  "steps": [
+    {
+      "id": "click-login",
+      "from": "user",
+      "to": "browser",
+      "kind": "user-action",
+      "label": "Clique « Se connecter avec ExampleID »",
+      "summary": "L'intention change par rapport à OAuth2 pur : ici l'utilisateur veut PROUVER son identité à PhotoPrint, pas déléguer l'accès à une API. C'est précisément ce qu'OAuth2 seul ne sait pas faire — et ce qu'OIDC ajoute.",
+      "security": {
+        "level": "info",
+        "note": "Rappel du chapitre 0 : un access token répond « le porteur a le droit d'accéder à X », jamais « le porteur EST Untel ». Il faut un jeton d'identité dédié — l'ID Token.",
+        "specRef": "OIDC Core §2"
+      }
+    },
+    {
+      "id": "authorization-request",
+      "from": "browser",
+      "to": "op",
+      "kind": "redirect",
+      "label": "GET /authorize?scope=openid…&nonce=…",
+      "summary": "L'authentication request : identique à l'authorization request d'OAuth2, à deux ajouts près — scope contient openid (c'est CE qui transforme la requête en requête OIDC), et un nonce lie la future réponse à cette session.",
+      "request": {
+        "channel": "front",
+        "request": {
+          "method": "GET",
+          "url": "https://op.example/authorize",
+          "params": [
+            {
+              "name": "scope",
+              "value": "openid email",
+              "description": "DOIT contenir « openid » : c'est la présence de ce scope qui déclenche OIDC et l'émission d'un ID Token. « email » demande en plus le claim email.",
+              "specRef": "OIDC Core §3.1.2.1"
+            },
+            {
+              "name": "response_type",
+              "value": "code",
+              "description": "Code flow : on récupère un code, échangé côté back channel. REQUIRED.",
+              "specRef": "OIDC Core §3.1.2.1"
+            },
+            {
+              "name": "client_id",
+              "value": "web-app",
+              "description": "Identifiant du Relying Party enregistré auprès de l'OP. REQUIRED.",
+              "specRef": "OIDC Core §3.1.2.1"
+            },
+            {
+              "name": "redirect_uri",
+              "value": "https://photoprint.example/callback",
+              "description": "URI de retour, exact-match avec l'enregistrement. REQUIRED.",
+              "specRef": "OIDC Core §3.1.2.1"
+            },
+            {
+              "name": "state",
+              "value": "af0ifjsldkj",
+              "description": "Anti-CSRF applicatif, RECOMMENDED (cf. chapitre 5 OAuth2).",
+              "specRef": "OIDC Core §3.1.2.1"
+            },
+            {
+              "name": "nonce",
+              "value": "n-0S6_WzA2Mj",
+              "description": "Valeur imprévisible liée à la session du RP. L'OP la RECOPIE dans l'ID Token ; le RP vérifiera qu'elle correspond. Anti-rejeu propre à OIDC. OPTIONAL en code flow, REQUIRED en implicit.",
+              "specRef": "OIDC Core §3.1.2.1"
+            }
+          ]
+        }
+      },
+      "security": {
+        "level": "info",
+        "note": "state et nonce répondent à deux menaces distinctes : state protège le CALLBACK (le RP lie la réponse à sa requête) ; nonce protège l'ID TOKEN (le RP lie le jeton d'identité à sa requête). On y revient au chapitre nonce vs state.",
+        "specRef": "OIDC Core §3.1.2.1"
+      }
+    },
+    {
+      "id": "authenticate",
+      "from": "user",
+      "to": "op",
+      "kind": "user-action",
+      "label": "S'authentifie auprès de l'OP (+ consentement)",
+      "summary": "L'OP authentifie l'utilisateur — mot de passe, passkey, MFA : OIDC ne l'impose pas — puis recueille le consentement sur les scopes. C'est le SEUL endroit où des identifiants sont saisis, sur le domaine de l'OP.",
+      "security": {
+        "level": "info",
+        "note": "auth_time (l'instant de cette authentification) pourra être exposé dans l'ID Token : utile pour un RP qui exige une authentification récente (max_age).",
+        "specRef": "OIDC Core §2"
+      }
+    },
+    {
+      "id": "code-redirect",
+      "from": "op",
+      "to": "browser",
+      "kind": "redirect",
+      "label": "302 → callback?code=…&state=af0ifjsldkj",
+      "summary": "Retour du code d'autorisation via le navigateur, avec le state renvoyé tel quel. Strictement identique à OAuth2 : le code est opaque, éphémère, à usage unique.",
+      "request": {
+        "channel": "front",
+        "request": {
+          "method": "POST",
+          "url": "https://op.example/authorize (consentement)"
+        },
+        "response": {
+          "status": 302,
+          "statusText": "Found",
+          "headers": {
+            "Location": "https://photoprint.example/callback?code=SplxlOBeZQQYbYS6WxSbIA&state=af0ifjsldkj"
+          }
+        }
+      },
+      "tokens": [
+        {
+          "id": "code",
+          "label": "Authorization code",
+          "format": "opaque",
+          "value": "SplxlOBeZQQYbYS6WxSbIA",
+          "note": "Aucun ID Token ici : en code flow, rien de sensible ne transite par le front channel. L'ID Token s'obtient au token endpoint."
+        }
+      ],
+      "security": {
+        "level": "warning",
+        "note": "Le RP vérifie state == valeur de session AVANT d'échanger le code (anti-CSRF, chapitre 5). Sans cette vérification, tout le flow reste vulnérable, ID Token ou pas.",
+        "specRef": "OIDC Core §3.1.2.7"
+      }
+    },
+    {
+      "id": "token-request",
+      "from": "rp",
+      "to": "op",
+      "kind": "http",
+      "label": "POST /token (back channel, authentifié)",
+      "summary": "Échange du code contre les tokens, en back channel : le RP s'authentifie (client_secret) et reçoit un access token ET un id_token. C'est l'ajout d'OIDC dans la réponse du token endpoint.",
+      "request": {
+        "channel": "back",
+        "request": {
+          "method": "POST",
+          "url": "https://op.example/token",
+          "headers": {
+            "Authorization": "Basic d2ViLWFwcDpzM2NyM3Q=",
+            "Content-Type": "application/x-www-form-urlencoded"
+          },
+          "body": {
+            "type": "form",
+            "content": "grant_type=authorization_code&code=SplxlOBeZQQYbYS6WxSbIA&redirect_uri=https%3A%2F%2Fphotoprint.example%2Fcallback",
+            "params": [
+              {
+                "name": "grant_type",
+                "value": "authorization_code",
+                "description": "Échange d'un code d'autorisation.",
+                "specRef": "RFC 6749 §4.1.3"
+              },
+              {
+                "name": "code",
+                "value": "SplxlOBeZQQYbYS6WxSbIA",
+                "description": "Le code du callback, à usage unique.",
+                "specRef": "RFC 6749 §4.1.3"
+              }
+            ]
+          }
+        },
+        "response": {
+          "status": 200,
+          "statusText": "OK",
+          "headers": { "Content-Type": "application/json", "Cache-Control": "no-store" },
+          "body": {
+            "type": "json",
+            "content": "{\n  \"access_token\": \"SlAV32hkKG\",\n  \"token_type\": \"Bearer\",\n  \"expires_in\": 3600,\n  \"id_token\": \"eyJhbGciOiJFUzI1NiIsInR5cCI6IkpXVCIsImtpZCI6Im9wLTIwMjYtMDEifQ.eyJhdXRoX3RpbWUiOjE3NjcyMjU1ODAsIm5vbmNlIjoibi0wUzZfV3pBMk1qIiwiYXRfaGFzaCI6InJYSDdRV1ZUWm5YWUNvdV82VmRwZmciLCJlbWFpbCI6InVzZXJAbWFpbC5leGFtcGxlIiwiZW1haWxfdmVyaWZpZWQiOnRydWUsImlzcyI6Imh0dHBzOi8vb3AuZXhhbXBsZSIsInN1YiI6InVzZXItOGIyYzkxIiwiYXVkIjoid2ViLWFwcCIsImlhdCI6MTc2NzIyNTYwMCwiZXhwIjoxNzY3MjI5MjAwfQ.QTmRvNUgt0gRk1sSIDyr-Q_-5D8XKhzHWpiQOhTvaOeVGMlwiHIk201bUo_MoMdihh-SwaAS9GXQSVrDTS_EVg\"\n}"
+          }
+        }
+      },
+      "tokens": [
+        {
+          "id": "id-token",
+          "label": "ID Token (JWT signé ES256)",
+          "format": "jwt",
+          "value": "eyJhbGciOiJFUzI1NiIsInR5cCI6IkpXVCIsImtpZCI6Im9wLTIwMjYtMDEifQ.eyJhdXRoX3RpbWUiOjE3NjcyMjU1ODAsIm5vbmNlIjoibi0wUzZfV3pBMk1qIiwiYXRfaGFzaCI6InJYSDdRV1ZUWm5YWUNvdV82VmRwZmciLCJlbWFpbCI6InVzZXJAbWFpbC5leGFtcGxlIiwiZW1haWxfdmVyaWZpZWQiOnRydWUsImlzcyI6Imh0dHBzOi8vb3AuZXhhbXBsZSIsInN1YiI6InVzZXItOGIyYzkxIiwiYXVkIjoid2ViLWFwcCIsImlhdCI6MTc2NzIyNTYwMCwiZXhwIjoxNzY3MjI5MjAwfQ.QTmRvNUgt0gRk1sSIDyr-Q_-5D8XKhzHWpiQOhTvaOeVGMlwiHIk201bUo_MoMdihh-SwaAS9GXQSVrDTS_EVg",
+          "note": "Décodez-le : iss (l'OP), sub (l'identifiant stable de l'utilisateur), aud (= client_id du RP), exp/iat, nonce (recopié), at_hash (lie l'ID Token à l'access token). C'est LE jeton d'identité — celui qu'OAuth2 n'a pas."
+        },
+        {
+          "id": "access-token",
+          "label": "Access token",
+          "format": "opaque",
+          "value": "SlAV32hkKG",
+          "note": "Sépare bien les rôles : l'access token sert à appeler des API (dont UserInfo), l'ID Token sert à connaître l'utilisateur. Ne jamais confondre les deux."
+        }
+      ],
+      "security": {
+        "level": "info",
+        "note": "L'ID Token n'est PAS un laissez-passer pour l'API : son audience est le RP (aud=client_id), pas un Resource Server. L'utiliser pour appeler une API est une faute — chapitre « anti-pattern ».",
+        "specRef": "OIDC Core §2"
+      }
+    },
+    {
+      "id": "validate",
+      "from": "rp",
+      "to": "rp",
+      "kind": "internal",
+      "label": "Valide l'ID Token (13 contrôles, §3.1.3.7)",
+      "summary": "Étape invisible mais CENTRALE : le RP ne fait confiance à l'ID Token qu'après l'avoir validé — signature (via JWKS), iss exact, aud contient client_id, exp non dépassé, nonce == celui envoyé, at_hash cohérent avec l'access token. Détail jouable dans la leçon « validation ».",
+      "security": {
+        "level": "danger",
+        "note": "Un ID Token non validé n'a AUCUNE valeur : n'importe qui peut fabriquer un JWT. La sécurité d'OIDC tient entièrement à ces contrôles — les sauter, c'est croire sur parole un jeton reçu du réseau.",
+        "specRef": "OIDC Core §3.1.3.7"
+      }
+    },
+    {
+      "id": "userinfo",
+      "from": "rp",
+      "to": "op",
+      "kind": "http",
+      "label": "GET /userinfo — Authorization: Bearer …",
+      "summary": "Optionnel : pour des claims frais ou volumineux, le RP appelle l'endpoint UserInfo avec l'ACCESS token (pas l'ID Token). La réponse contient un sub, que le RP DOIT comparer à celui de l'ID Token.",
+      "request": {
+        "channel": "back",
+        "request": {
+          "method": "GET",
+          "url": "https://op.example/userinfo",
+          "headers": { "Authorization": "Bearer SlAV32hkKG" }
+        },
+        "response": {
+          "status": 200,
+          "statusText": "OK",
+          "headers": { "Content-Type": "application/json" },
+          "body": {
+            "type": "json",
+            "content": "{\n  \"sub\": \"user-8b2c91\",\n  \"email\": \"user@mail.example\",\n  \"email_verified\": true\n}"
+          }
+        }
+      },
+      "security": {
+        "level": "warning",
+        "note": "Le RP DOIT vérifier que le sub de UserInfo est identique à celui de l'ID Token ; sinon la réponse DOIT être rejetée. Sans ce contrôle, un access token substitué ferait passer les claims de quelqu'un d'autre.",
+        "specRef": "OIDC Core §5.3.4"
+      }
+    },
+    {
+      "id": "session",
+      "from": "rp",
+      "to": "browser",
+      "kind": "http",
+      "label": "200 — session ouverte pour sub=user-8b2c91",
+      "summary": "Le RP ouvre sa propre session applicative, clé sur le couple (iss, sub) — l'identifiant réellement stable et unique de l'utilisateur chez cet OP. L'utilisateur est connecté, sans que PhotoPrint ait jamais vu son mot de passe.",
+      "security": {
+        "level": "info",
+        "note": "La clé d'identité, c'est (iss, sub) — pas l'email (qui change) ni sub seul (unique seulement au sein d'un OP donné). sub ne dépasse jamais 255 caractères ASCII et n'est jamais réattribué.",
+        "specRef": "OIDC Core §2"
+      }
+    }
+  ]
+}
