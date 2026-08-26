@@ -179,3 +179,63 @@ describe('fixture jwt proof (OID4VCI 1.0 App. F.1)', () => {
     expect(await verifyCompactJwsES256(`${h}.${forged}.${s}`, header.jwk as JsonWebKey)).toBe(false)
   })
 })
+
+/* ------------------------------------------------- OID4VP : présentation & KB-JWT */
+
+import {
+  VP_DISCLOSURES,
+  VP_KB_JWT,
+  VP_NONCE,
+  VP_PRESENTATION,
+  VP_PRESENTATION_PART,
+  VP_SD_HASH,
+  VP_SD_JWT,
+  VP_VERIFIER_CLIENT_ID,
+  VP_WALLET_JWK,
+} from '../data/fixtures/oid4vp'
+
+describe('fixtures OID4VP — présentation partielle', () => {
+  it('la présentation ne contient QUE les disclosures révélées (family_name retenu)', () => {
+    const parts = VP_PRESENTATION_PART.split('~')
+    const included = parts.slice(1, -1)
+    const revealed = VP_DISCLOSURES.filter((d) => d.revealed).map((d) => d.b64)
+    const withheld = VP_DISCLOSURES.filter((d) => !d.revealed)
+    expect(included).toEqual(revealed)
+    expect(withheld).toHaveLength(1)
+    expect(withheld[0]!.name).toBe('family_name')
+    expect(VP_PRESENTATION_PART).not.toContain(withheld[0]!.b64)
+  })
+
+  it('les digests des disclosures retenues restent dans _sd (la signature ne bouge pas)', () => {
+    const payload = decodeJwt(VP_SD_JWT).payload as { _sd: string[] }
+    for (const d of VP_DISCLOSURES) expect(payload._sd).toContain(d.digest)
+  })
+
+  it('sd_hash = SHA-256 de la partie présentation, tilde final inclus', async () => {
+    expect(VP_PRESENTATION_PART.endsWith('~')).toBe(true)
+    expect(await computeDisclosureDigest(VP_PRESENTATION_PART)).toBe(VP_SD_HASH)
+  })
+})
+
+describe('fixtures OID4VP — Key Binding JWT', () => {
+  it('typ kb+jwt, aud = client_id préfixé du Verifier, nonce, sd_hash', () => {
+    const { header, payload } = decodeJwt(VP_KB_JWT)
+    expect(header.typ).toBe('kb+jwt')
+    expect(payload.aud).toBe(VP_VERIFIER_CLIENT_ID)
+    expect(payload.nonce).toBe(VP_NONCE)
+    expect(payload.sd_hash).toBe(VP_SD_HASH)
+  })
+
+  it('signé par la clé du cnf du credential (celle du wallet)', async () => {
+    const cnf = (decodeJwt(VP_SD_JWT).payload as { cnf: { jwk: JsonWebKey } }).cnf
+    expect((cnf.jwk as { x?: string }).x).toBe(VP_WALLET_JWK.x)
+    expect(await verifyCompactJwsES256(VP_KB_JWT, cnf.jwk)).toBe(true)
+  })
+
+  it('présentation complète = partie + kb-jwt ; un sd_hash sur présentation modifiée ne matche plus', async () => {
+    expect(VP_PRESENTATION).toBe(VP_PRESENTATION_PART + VP_KB_JWT)
+    // retirer une disclosure change le sd_hash → le KB-JWT ne couvre plus la présentation
+    const tampered = [VP_SD_JWT, ''].join('~')
+    expect(await computeDisclosureDigest(tampered)).not.toBe(VP_SD_HASH)
+  })
+})
