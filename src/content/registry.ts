@@ -44,4 +44,21 @@ export const lessonComponents: Record<string, LazyExoticComponent<ComponentType>
   [lessonKey('oidc', 'discovery', 'well-known')]: lazy(() => import('./oidc/ch4-discovery')),
   [lessonKey('oidc', 'nonce-at-hash', 'liaisons')]: lazy(() => import('./oidc/ch5-nonce-at-hash')),
   [lessonKey('oidc', 'oidc-vs-saml', 'comparaison')]: lazy(() => import('./oidc/ch6-oidc-vs-saml')),
+
+  // — OID4VCI (Phase 3) —
+  [lessonKey('oid4vci', 'paradigme', 'phone-home')]: lazy(() => import('./oid4vci/ch0-paradigme')),
+  [lessonKey('oid4vci', 'credential-offer', 'pre-authorized')]: lazy(
+    () => import('./oid4vci/ch1-credential-offer'),
+  ),
+  [lessonKey('oid4vci', 'authorization-code', 'wallet-initiated')]: lazy(
+    () => import('./oid4vci/ch2-authorization-code'),
+  ),
+  [lessonKey('oid4vci', 'proof-of-possession', 'c-nonce-jwt-proof')]: lazy(
+    () => import('./oid4vci/ch3-proof-of-possession'),
+  ),
+  [lessonKey('oid4vci', 'formats', 'sd-jwt-vc-mdoc')]: lazy(() => import('./oid4vci/ch4-formats')),
+  [lessonKey('oid4vci', 'key-attestation', 'attester-la-cle')]: lazy(
+    () => import('./oid4vci/ch5-key-attestation'),
+  ),
+  [lessonKey('oid4vci', 'eidas', 'contexte-eudi')]: lazy(() => import('./oid4vci/ch6-eidas')),
 }

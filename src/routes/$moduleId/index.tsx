@@ -22,6 +22,11 @@ function ModulePage() {
       <div>
         <h1 className="text-2xl font-bold">{module.title}</h1>
         <p className="mt-1 text-sm text-muted">{module.description}</p>
+        {module.specVersions && (
+          <p className="mt-2 font-mono text-xs text-muted">
+            📜 Version de référence : {module.specVersions.join(' · ')}
+          </p>
+        )}
       </div>
       <ol className="space-y-4">
         {module.chapters.map((chapter) => (

@@ -476,6 +476,141 @@ export const glossary: GlossaryEntry[] = [
       'Standard de fédération d’identité antérieur (2005), fondé sur des assertions XML signées et le navigateur comme relais (POST binding). Toujours répandu en entreprise. OIDC vise le même objectif avec du JSON/JWT, pensé pour les API, le mobile et les SPA.',
     specRef: 'OASIS SAML 2.0',
   },
+
+  {
+    id: 'holder',
+    term: 'Holder',
+    definition:
+      'La personne (ou l’entité) qui détient des credentials dans son wallet et décide quand et à qui les présenter. Troisième sommet du triangle, absent du modèle fédéré : c’est lui qui reprend le contrôle du flux.',
+    specRef: 'OID4VCI 1.0 §3',
+    actorRole: 'user',
+  },
+  {
+    id: 'wallet',
+    term: 'Wallet',
+    definition:
+      'L’application qui stocke les credentials du Holder, gère ses clés (idéalement en matériel sécurisé) et parle les protocoles OID4VCI (émission) et OID4VP (présentation). Dans eIDAS 2.0 : l’EUDI Wallet.',
+    specRef: 'OID4VCI 1.0 §3',
+    actorRole: 'wallet',
+  },
+  {
+    id: 'credential-issuer',
+    term: 'Credential Issuer',
+    definition:
+      'L’entité qui émet des credentials signés : État, université, employeur, banque… Techniquement, un serveur OAuth2 augmenté d’un Credential Endpoint (et d’un Nonce Endpoint). Il n’est PAS contacté lors des présentations.',
+    specRef: 'OID4VCI 1.0 §3',
+    actorRole: 'issuer',
+  },
+  {
+    id: 'verifiable-credential',
+    term: 'Verifiable Credential',
+    definition:
+      'Un ensemble de claims sur le Holder, signé par l’Issuer, vérifiable cryptographiquement par quiconque possède les clés publiques de l’émetteur — sans le contacter. Formats principaux ici : SD-JWT VC et mdoc.',
+    specRef: 'OID4VCI 1.0 §3',
+  },
+  {
+    id: 'credential-offer',
+    term: 'Credential Offer',
+    definition:
+      'Le point d’entrée de l’émission : un objet JSON (souvent porté par un QR code) indiquant credential_issuer, credential_configuration_ids et les grants disponibles — dont le pre-authorized code.',
+    specRef: 'OID4VCI 1.0 §4.1',
+  },
+  {
+    id: 'pre-authorized-code',
+    term: 'Pre-Authorized Code',
+    definition:
+      'Grant OAuth2 dédié (urn:ietf:params:oauth:grant-type:pre-authorized_code) : l’Issuer, ayant DÉJÀ identifié l’utilisateur, remet un code que le wallet échange directement contre un access token — sans étape d’authentification pilotée par le wallet.',
+    specRef: 'OID4VCI 1.0 §4.1.1',
+  },
+  {
+    id: 'tx-code',
+    term: 'tx_code',
+    expansion: 'Transaction Code',
+    definition:
+      'Code court (souvent numérique) transmis au Holder par un canal SÉPARÉ (SMS, e-mail) et exigé au token endpoint avec le pre-authorized code. Défense contre l’interception de l’offer : photographier le QR ne suffit pas.',
+    specRef: 'OID4VCI 1.0 §4.1.1',
+  },
+  {
+    id: 'c-nonce',
+    term: 'c_nonce',
+    definition:
+      'Nonce fourni par le Nonce Endpoint dédié de l’Issuer (nouveauté de la 1.0 finale), que le wallet inclut dans son proof. Lie la preuve de possession de clé à UN flow d’émission précis — anti-rejeu.',
+    specRef: 'OID4VCI 1.0 §7',
+  },
+  {
+    id: 'jwt-proof',
+    term: 'jwt proof',
+    definition:
+      'Preuve de possession de clé : un JWT au typ openid4vci-proof+jwt, signé par la clé privée du wallet, portant aud (l’Issuer), iat et nonce (le c_nonce), la clé publique voyageant dans le header jwk. L’Issuer liera le credential à cette clé.',
+    specRef: 'OID4VCI 1.0 App. F.1',
+  },
+  {
+    id: 'cnf',
+    term: 'cnf',
+    expansion: 'confirmation',
+    definition:
+      'Claim du credential (hérité de RFC 7800) contenant la clé publique du wallet prouvée à l’émission. C’est l’ancrage du key binding : présenter le credential exigera de signer avec la clé privée correspondante.',
+    specRef: 'RFC 7800 · draft-ietf-oauth-sd-jwt-vc',
+  },
+  {
+    id: 'sd-jwt',
+    term: 'SD-JWT',
+    expansion: 'Selective Disclosure JWT',
+    definition:
+      'Extension du JWT pour la divulgation sélective : les claims cachables sont remplacés dans le jeton signé par des hachages salés (_sd, _sd_alg), et transmis à côté sous forme de disclosures que le Holder choisit de révéler… ou pas.',
+    specRef: 'draft-ietf-oauth-selective-disclosure-jwt',
+  },
+  {
+    id: 'disclosure',
+    term: 'Disclosure',
+    definition:
+      'Le triplet [salt, nom, valeur] encodé en base64url, transmis hors du JWT signé. Son digest SHA-256 figure dans _sd : révéler la disclosure permet de vérifier le claim ; la retenir le garde secret sans casser la signature.',
+    specRef: 'draft-ietf-oauth-selective-disclosure-jwt',
+  },
+  {
+    id: 'sd-jwt-vc',
+    term: 'SD-JWT VC',
+    definition:
+      'Profil de credential fondé sur SD-JWT : typ dc+sd-jwt (renommé depuis vc+sd-jwt en nov. 2024), claim vct obligatoire (le type du credential), cnf pour le key binding. Format retenu pour le PID de l’EUDI Wallet.',
+    specRef: 'draft-ietf-oauth-sd-jwt-vc',
+  },
+  {
+    id: 'vct',
+    term: 'vct',
+    expansion: 'verifiable credential type',
+    definition:
+      'Claim REQUIRED du SD-JWT VC : identifiant (résistant aux collisions, souvent une URL) du TYPE de credential — « attestation d’identité », « diplôme »… L’équivalent du doctype côté mdoc.',
+    specRef: 'draft-ietf-oauth-sd-jwt-vc',
+  },
+  {
+    id: 'mdoc',
+    term: 'mdoc / mDL',
+    definition:
+      'Format de credential de l’ISO/IEC 18013-5 (permis de conduire mobile), encodé en CBOR/COSE, organisé par doctype (ex. org.iso.18013.5.1.mDL) et namespaces. Dans OID4VCI, son Format Identifier est mso_mdoc. Second format du monde EUDI.',
+    specRef: 'ISO/IEC 18013-5 · OID4VCI 1.0 App. A.2',
+  },
+  {
+    id: 'key-attestation',
+    term: 'Key attestation',
+    definition:
+      'Preuve, signée par une autorité de confiance (fabricant, wallet provider), que la clé du wallet réside dans un environnement sécurisé donné (Secure Enclave, WSCD…). OID4VCI 1.0 la porte via un proof type dédié « attestation ». Au-delà de « je contrôle la clé » : « ma clé est bien gardée ».',
+    specRef: 'OID4VCI 1.0 App. D & F.3',
+  },
+  {
+    id: 'eudi-wallet',
+    term: 'EUDI Wallet',
+    expansion: 'European Digital Identity Wallet',
+    definition:
+      'Le portefeuille d’identité numérique que chaque État membre de l’UE doit proposer sous eIDAS 2.0 (règlement (UE) 2024/1183). Il transporte le PID et des attestations (QEAA/EAA) aux formats SD-JWT VC et mdoc, via OID4VCI/OID4VP — les protocoles de ce cours.',
+    specRef: 'Règlement (UE) 2024/1183 · ARF',
+  },
+  {
+    id: 'phone-home',
+    term: '« Phone home »',
+    definition:
+      'Le défaut structurel du modèle fédéré : chaque connexion repasse par l’IdP, qui apprend où et quand vous vous connectez. Le triangle Issuer/Holder/Verifier le supprime par construction : l’émetteur n’est pas contacté lors des présentations.',
+    specRef: '(propriété d’architecture — motivation d’eIDAS 2.0)',
+  },
 ]
 
 export const glossaryById = new Map(glossary.map((e) => [e.id, e]))

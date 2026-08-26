@@ -27,6 +27,11 @@ export type ModuleMeta = {
   description: string
   /** Module ouvert (Phase 1) ou à venir. */
   available: boolean
+  /**
+   * Versions de référence des specs du module (garde-fou : les specs
+   * OID4VCI/OID4VP évoluent — on fixe et on AFFICHE la version utilisée).
+   */
+  specVersions?: string[]
   phase: number
   chapters: ChapterMeta[]
 }
@@ -38,6 +43,7 @@ export const curriculum: ModuleMeta[] = [
     shortTitle: 'OAuth 2.0',
     description:
       'Le socle de tout le reste : rôles, canaux, Authorization Code Flow, tokens, attaques et contre-mesures.',
+    specVersions: ['RFC 6749 · RFC 6750 · RFC 7636 · RFC 9700 (Security BCP)'],
     available: true,
     phase: 1,
     chapters: [
@@ -131,6 +137,7 @@ export const curriculum: ModuleMeta[] = [
     shortTitle: 'OIDC',
     description:
       'La couche d’identité au-dessus d’OAuth2 : ID Token, validation de signature, Discovery, JWKS, nonce — et pourquoi « login avec un access token » est une faille.',
+    specVersions: ['OIDC Core 1.0 (errata set 2) · OIDC Discovery 1.0'],
     available: true,
     phase: 2,
     chapters: [
@@ -210,10 +217,90 @@ export const curriculum: ModuleMeta[] = [
     id: 'oid4vci',
     title: 'OID4VCI — l’émission de credentials',
     shortTitle: 'OID4VCI',
-    description: 'Le triangle Issuer / Wallet / Verifier, SD-JWT VC, mdoc.',
-    available: false,
+    description:
+      'Changement de paradigme : le triangle Issuer / Wallet / Verifier remplace la fédération. Credential Offer, pre-authorized code, preuve de possession de clé, SD-JWT VC et mdoc.',
+    specVersions: [
+      'OID4VCI 1.0 (Final)',
+      'draft-ietf-oauth-sd-jwt-vc-13 (nov. 2025)',
+      'draft-ietf-oauth-selective-disclosure-jwt',
+      'ISO/IEC 18013-5:2021 (mdoc/mDL)',
+    ],
+    available: true,
     phase: 3,
-    chapters: [],
+    chapters: [
+      {
+        id: 'paradigme',
+        number: 0,
+        title: 'Le changement de paradigme',
+        lessons: [
+          {
+            id: 'phone-home',
+            title: 'Fédération « phone home » vs triangle',
+            scenarioId: 'oid4vci/federation-phone-home',
+            ready: true,
+          },
+        ],
+      },
+      {
+        id: 'credential-offer',
+        number: 1,
+        title: 'Credential Offer & pre-authorized code',
+        lessons: [
+          {
+            id: 'pre-authorized',
+            title: 'Du QR au credential, pas à pas',
+            scenarioId: 'oid4vci/pre-authorized-code',
+            ready: true,
+          },
+        ],
+      },
+      {
+        id: 'authorization-code',
+        number: 2,
+        title: 'Authorization Code Flow (émission)',
+        lessons: [
+          {
+            id: 'wallet-initiated',
+            title: 'Quand le wallet initie : authorization_details',
+            scenarioId: 'oid4vci/authorization-code',
+            ready: true,
+          },
+        ],
+      },
+      {
+        id: 'proof-of-possession',
+        number: 3,
+        title: 'Proof of possession de la clé',
+        lessons: [
+          {
+            id: 'c-nonce-jwt-proof',
+            title: 'c_nonce + jwt proof',
+            scenarioId: 'oid4vci/jwt-proof',
+            ready: true,
+          },
+        ],
+      },
+      {
+        id: 'formats',
+        number: 4,
+        title: 'Formats : SD-JWT VC & mdoc/mDL',
+        lessons: [
+          { id: 'sd-jwt-vc-mdoc', title: 'Anatomie d’un SD-JWT VC (et du mdoc)', ready: true },
+        ],
+      },
+      {
+        id: 'key-attestation',
+        number: 5,
+        title: 'Key attestation',
+        lessons: [{ id: 'attester-la-cle', title: 'Prouver OÙ vit la clé', ready: true }],
+      },
+      {
+        id: 'eidas',
+        number: 6,
+        title: 'eIDAS 2.0 & EUDI Wallet',
+        lessons: [{ id: 'contexte-eudi', title: 'Le cadre réglementaire européen', ready: true }],
+      },
+    ],
   },
   {
     id: 'oid4vp',
