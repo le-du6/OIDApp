@@ -122,18 +122,26 @@ src/
     http/       HttpRequestView (échange HTTP annoté, badge front/back channel)
     jwt/        JwtInspector (3 zones colorées, claims annotés)
     layout/     Sidebar, ProgressRing (SVG maison), ThemeToggle
-  routes/       TanStack Router file-based : / (dashboard), /$moduleId, /$moduleId/$chapitre/$lecon
-  data/         curriculum.ts : modules → chapitres → leçons (source de la navigation)
+  components/
+    content/    briques de leçon : Term (popover glossaire), Callout, CodeBlock (Shiki),
+                Quiz, CompareTable, DecisionTree
+  content/      oauth2/ : les 11 leçons rédigées (TSX), chargées en lazy via registry.ts
+  routes/       TanStack Router file-based : / (dashboard), /$moduleId,
+                /$moduleId/$chapitre/$lecon, /glossaire, /labo-crypto
+  data/         curriculum.ts (navigation), glossary.ts (40 entrées)
   db/           Dexie + hooks TanStack Query, export/import JSON de la progression
-  lib/          jwt.ts (décodage base64url à la main — pédagogique), actors.ts (code couleur)
+  lib/          jwt.ts (décodage base64url à la main), crypto.ts (WebCrypto : PKCE, ES256…),
+                actors.ts (code couleur)
 public/
-  scenarios/    les scénarios JSON (l'API de contribution ci-dessus)
+  scenarios/    les 8 scénarios JSON (l'API de contribution ci-dessus)
 ```
 
 ## État d'avancement
 
 - [x] Squelette : layout dashboard/menu, thème bleu nuit (dark/light), Dexie, CI
-- [x] Moteur `SequenceDiagram` validé sur le scénario Authorization Code Flow (nu), tests Vitest
-- [ ] Phase 1 — contenus OAuth2 : chapitres 0–7, 6 scénarios, glossaire ≥ 30 entrées, Crypto Lab,
-      quiz, badges
+- [x] Moteur `SequenceDiagram` (SVG animé, self-messages, adaptatif), tests Vitest
+- [x] **Phase 1 — OAuth2 complète** : 8 chapitres (0–7) rédigés, 8 scénarios `SequenceDiagram`
+      (dont attaques jouables attaqué/protégé), glossaire de 40 entrées, Crypto Lab (SHA-256,
+      PKCE, ES256, JWT), quiz + badges par chapitre, export de progression. 34 tests, build
+      statique, smoke tests Playwright.
 - [ ] Phase 2 — OIDC · Phase 3 — OID4VCI · Phase 4 — OID4VP
