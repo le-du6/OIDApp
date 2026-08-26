@@ -1,0 +1,87 @@
+{
+  "id": "oid4vp/replay-attack",
+  "title": "Rejeu d'une présentation volée (monde naïf, sans Key Binding)",
+  "description": "Imaginons un écosystème naïf où présenter un credential = envoyer le fichier « credential + disclosures », sans preuve de possession. Un attaquant qui a capté une présentation (fuite chez un Verifier, interception, malware) peut alors se faire passer pour la victime, partout, indéfiniment.",
+  "specRefs": ["draft-ietf-oauth-selective-disclosure-jwt (Key Binding — la contre-mesure)"],
+  "actors": [
+    {
+      "id": "attacker",
+      "name": "Attacker",
+      "role": "attacker",
+      "alias": "= détient une présentation volée"
+    },
+    {
+      "id": "victim",
+      "name": "Holder (victime)",
+      "role": "user",
+      "alias": "= a présenté un jour son credential"
+    },
+    {
+      "id": "verifier",
+      "name": "Verifier naïf",
+      "role": "verifier",
+      "alias": "= vérifie la signature… et c'est tout"
+    }
+  ],
+  "steps": [
+    {
+      "id": "leak",
+      "from": "victim",
+      "to": "attacker",
+      "kind": "attack",
+      "label": "Une présentation de la victime fuite",
+      "summary": "Origine plausible au choix : base de données d'un Verifier compromise, journal trop bavard, malware sur un terminal. L'attaquant détient maintenant « credential signé + disclosures » de la victime — un fichier.",
+      "security": {
+        "level": "warning",
+        "note": "Hypothèse réaliste : les présentations TRANSITENT et sont STOCKÉES chez les Verifiers. Supposer qu'elles ne fuiteront jamais serait contraire à toute la démarche de ce cours."
+      }
+    },
+    {
+      "id": "replay",
+      "from": "attacker",
+      "to": "verifier",
+      "kind": "attack",
+      "label": "Rejoue la présentation telle quelle",
+      "summary": "L'attaquant répond à une demande de présentation en renvoyant le fichier volé, à l'identique. Il n'a ni le wallet, ni la clé privée de la victime — mais dans ce monde naïf, personne ne les lui demande.",
+      "request": {
+        "channel": "back",
+        "request": {
+          "method": "POST",
+          "url": "https://verifier.example/response",
+          "body": {
+            "type": "form",
+            "content": "vp_token={ \"identite\": [\"<jwt-signé-issuer>~<d_given_name>~<d_birthdate>~\"] }  ← aucun KB-JWT"
+          }
+        }
+      },
+      "security": {
+        "level": "danger",
+        "note": "Notez ce que la signature de l'Issuer NE protège PAS : elle prouve que le credential est authentique — pas que celui qui le présente est son détenteur. Authentique ≠ présenté par le bon porteur."
+      }
+    },
+    {
+      "id": "naive-check",
+      "from": "verifier",
+      "to": "verifier",
+      "kind": "internal",
+      "label": "Signature Issuer ✓ digests ✓ … et rien d'autre",
+      "summary": "Le Verifier naïf vérifie ce qu'il sait vérifier : la signature de l'émetteur est bonne, les digests des disclosures collent au _sd. Tout est « valide » — parce que tout est authentique. C'est le credential de la victime, précisément.",
+      "security": {
+        "level": "danger",
+        "note": "Le même piège qu'au chapitre validation d'OIDC : « signature valide » n'a jamais voulu dire « bon interlocuteur ». Ici il manque le lien présentation ↔ détenteur ↔ transaction."
+      }
+    },
+    {
+      "id": "impersonated",
+      "from": "verifier",
+      "to": "attacker",
+      "kind": "attack",
+      "label": "« Bonjour Camille » — usurpation réussie",
+      "summary": "L'attaquant est servi sous l'identité de la victime. Et la même présentation volée resservira ailleurs, autant de fois que voulu : sans liaison à une transaction, une preuve est éternelle et universelle — donc rejouable.",
+      "security": {
+        "level": "danger",
+        "note": "Trois absences fatales : rien ne lie la présentation au DÉTENTEUR (clé), rien ne la lie à CETTE transaction (nonce), rien ne la lie à CE destinataire (aud). Le Key Binding JWT apporte exactement ces trois liaisons — basculez sur le flow protégé."
+      }
+    }
+  ]
+}

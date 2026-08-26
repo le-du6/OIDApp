@@ -1,0 +1,214 @@
+{
+  "id": "oid4vp/presentation-flow",
+  "title": "OID4VP : présenter un credential, de bout en bout",
+  "description": "La seconde moitié du triangle : un Verifier (un site de location de voitures) veut une preuve d'identité. Flow cross-device : QR affiché, wallet qui récupère la requête, DCQL, consentement par claim, présentation avec Key Binding envoyée en direct_post — et l'Issuer n'apparaît nulle part. Version de référence : OID4VP 1.0 (Final, juillet 2025).",
+  "specRefs": [
+    "OID4VP 1.0 §5 (Authorization Request)",
+    "OID4VP 1.0 §6 (DCQL)",
+    "OID4VP 1.0 §8.2 (direct_post)"
+  ],
+  "actors": [
+    {
+      "id": "user",
+      "name": "Holder",
+      "role": "user",
+      "alias": "= vous, wallet en poche"
+    },
+    {
+      "id": "wallet",
+      "name": "Wallet",
+      "role": "wallet",
+      "alias": "= détient credential + clé"
+    },
+    {
+      "id": "verifier",
+      "name": "Verifier",
+      "role": "verifier",
+      "alias": "= location.example (veut une preuve)"
+    }
+  ],
+  "steps": [
+    {
+      "id": "qr",
+      "from": "verifier",
+      "to": "user",
+      "kind": "http",
+      "label": "Affiche un QR : la requête de présentation",
+      "summary": "Flow cross-device : le site affiche un QR contenant une Authorization Request compacte — le client_id du Verifier (préfixé : il annonce COMMENT il prouvera son identité) et une request_uri où le wallet ira chercher le détail.",
+      "request": {
+        "channel": "front",
+        "request": {
+          "method": "GET",
+          "url": "openid4vp:// (encodé dans le QR)",
+          "params": [
+            {
+              "name": "client_id",
+              "value": "x509_san_dns:verifier.example",
+              "description": "Le préfixe x509_san_dns annonce que le Verifier s'identifiera par un certificat X.509 dont le SAN DNS correspond à verifier.example.",
+              "specRef": "OID4VP 1.0 §5.9.3"
+            },
+            {
+              "name": "request_uri",
+              "value": "https://verifier.example/request/8djeu2",
+              "description": "Le wallet récupérera l'objet de requête signé (JAR — chapitre 7 d'OAuth2 !) à cette URL.",
+              "specRef": "OID4VP 1.0 §5.10"
+            }
+          ]
+        }
+      }
+    },
+    {
+      "id": "scan",
+      "from": "user",
+      "to": "wallet",
+      "kind": "user-action",
+      "label": "Scanne le QR",
+      "summary": "Le wallet lit la requête compacte et va chercher le détail — un JWT signé par le Verifier, pour que la demande elle-même soit authentifiée et intègre."
+    },
+    {
+      "id": "fetch-request",
+      "from": "wallet",
+      "to": "verifier",
+      "kind": "http",
+      "label": "GET request_uri → Request Object signé (+ DCQL)",
+      "summary": "Le Request Object contient le nonce (anti-rejeu), le response_mode (direct_post), la response_uri, et la requête DCQL : QUELS credentials, QUELS claims — au claim près.",
+      "request": {
+        "channel": "back",
+        "request": {
+          "method": "GET",
+          "url": "https://verifier.example/request/8djeu2"
+        },
+        "response": {
+          "status": 200,
+          "statusText": "OK",
+          "headers": {
+            "Content-Type": "application/oauth-authz-req+jwt"
+          },
+          "body": {
+            "type": "json",
+            "content": "// payload du Request Object (JWT signé par le Verifier)\n{\n  \"client_id\": \"x509_san_dns:verifier.example\",\n  \"response_type\": \"vp_token\",\n  \"response_mode\": \"direct_post\",\n  \"response_uri\": \"https://verifier.example/response\",\n  \"nonce\": \"vpn-4Kd82mQxaz\",\n  \"dcql_query\": {\n    \"credentials\": [{\n      \"id\": \"identite\",\n      \"format\": \"dc+sd-jwt\",\n      \"meta\": { \"vct_values\": [\"https://credentials.example/identity_credential\"] },\n      \"claims\": [\n        { \"path\": [\"given_name\"] },\n        { \"path\": [\"birthdate\"] }\n      ]\n    }]\n  }\n}"
+          }
+        }
+      },
+      "security": {
+        "level": "info",
+        "note": "Regardez la requête DCQL : le Verifier demande given_name et birthdate — PAS family_name. La minimisation commence dans la requête, pas seulement dans la réponse.",
+        "specRef": "OID4VP 1.0 §6"
+      }
+    },
+    {
+      "id": "verify-verifier",
+      "from": "wallet",
+      "to": "wallet",
+      "kind": "internal",
+      "label": "Vérifie QUI demande (certificat ↔ client_id)",
+      "summary": "Avant de montrer quoi que ce soit à l'utilisateur, le wallet authentifie le Verifier : signature du Request Object avec le certificat dont le SAN DNS doit valoir verifier.example. Zoom complet dans la leçon dédiée.",
+      "security": {
+        "level": "warning",
+        "note": "Étape critique pour l'utilisateur : le nom affiché dans le consentement (« location.example demande… ») doit reposer sur cette vérification, pas sur du déclaratif.",
+        "specRef": "OID4VP 1.0 §5.9.3"
+      }
+    },
+    {
+      "id": "consent",
+      "from": "user",
+      "to": "wallet",
+      "kind": "user-action",
+      "label": "Consent : révèle given_name + birthdate, PAS family_name",
+      "summary": "Le wallet affiche qui demande et quoi, claim par claim. L'utilisateur approuve la divulgation minimale. C'est le moment démocratique du protocole — tout le reste existe pour rendre ce choix possible et sûr.",
+      "security": {
+        "level": "info",
+        "note": "Divulgation sélective réelle : seules les disclosures des claims consentis partiront. family_name reste dans le wallet — son digest dans _sd ne révèle rien (salé)."
+      }
+    },
+    {
+      "id": "build-kb",
+      "from": "wallet",
+      "to": "wallet",
+      "kind": "internal",
+      "label": "Assemble la présentation + signe le KB-JWT",
+      "summary": "Le wallet concatène <credential>~<disclosures choisies>~, calcule sd_hash sur cette chaîne (tilde final inclus), et signe un Key Binding JWT (typ kb+jwt : aud = client_id du Verifier, nonce, sd_hash) avec la clé liée au credential (cnf).",
+      "tokens": [
+        {
+          "id": "kb",
+          "label": "Key Binding JWT (typ kb+jwt)",
+          "format": "jwt",
+          "value": "eyJhbGciOiJFUzI1NiIsInR5cCI6ImtiK2p3dCJ9.eyJub25jZSI6InZwbi00S2Q4Mm1ReGF6Iiwic2RfaGFzaCI6InR3T3dVTmtrSlVlTWFmRnVZa3QwelBzaVJaV1lIQXRLbFVkXy1VOUlXZEUiLCJhdWQiOiJ4NTA5X3Nhbl9kbnM6dmVyaWZpZXIuZXhhbXBsZSIsImlhdCI6MTc2NzIyOTIwMH0.4d_ejumT1FiWg4yIj2cOKz0Uwx5ySI75HxFjTKvS0Zsu41XljXYD1LCyKEqb5zRqRkLOnOsqdqyVSBk5Riv5rw",
+          "note": "Décodez : aud = le client_id préfixé du Verifier, nonce = celui de SA requête, sd_hash = l'empreinte de la présentation exacte. Trois liaisons, trois rejets possibles — anatomie au chapitre KB-JWT."
+        }
+      ],
+      "security": {
+        "level": "info",
+        "note": "La clé qui signe est celle du cnf gravé à l'émission (Phase 3). La boucle OID4VCI → OID4VP se referme ici : le key binding promis devient une signature vérifiable."
+      }
+    },
+    {
+      "id": "direct-post",
+      "from": "wallet",
+      "to": "verifier",
+      "kind": "http",
+      "label": "POST response_uri (vp_token) — direct_post",
+      "summary": "Le wallet POSTe directement la réponse à la response_uri (pas de redirection navigateur chargée d'artefacts : c'est le sens de direct_post). Le vp_token est un objet JSON dont les clés reprennent les ids de la requête DCQL.",
+      "request": {
+        "channel": "back",
+        "request": {
+          "method": "POST",
+          "url": "https://verifier.example/response",
+          "headers": {
+            "Content-Type": "application/x-www-form-urlencoded"
+          },
+          "body": {
+            "type": "form",
+            "content": "vp_token=%7B%22identite%22%3A%5B%22eyJ...~WyJzYWx0LWduLVZwODFLelRlIi...~WyJzYWx0LWJkLVhjMDlMbVB5Ii...~eyJ...kb%2Bjwt...%22%5D%7D&state=…",
+            "params": [
+              {
+                "name": "vp_token",
+                "value": "{ \"identite\": [\"<jwt>~<d_given_name>~<d_birthdate>~<kb-jwt>\"] }",
+                "description": "Objet JSON : clé = l'id de la Credential Query DCQL (« identite »), valeur = tableau de présentations. Ici une présentation SD-JWT+KB.",
+                "specRef": "OID4VP 1.0 §8.1"
+              }
+            ]
+          }
+        },
+        "response": {
+          "status": 200,
+          "statusText": "OK",
+          "body": {
+            "type": "json",
+            "content": "{ \"redirect_uri\": \"https://verifier.example/merci?code=…\" }"
+          }
+        }
+      },
+      "security": {
+        "level": "info",
+        "note": "Variante direct_post.jwt (§8.3) : la réponse entière devient un JWT signé et/ou CHIFFRÉ — utile quand les claims ne doivent pas transiter en clair jusqu'au endpoint du Verifier.",
+        "specRef": "OID4VP 1.0 §8.2-8.3"
+      }
+    },
+    {
+      "id": "verify-all",
+      "from": "verifier",
+      "to": "verifier",
+      "kind": "internal",
+      "label": "Vérifie tout : Issuer ✓ disclosures ✓ KB ✓ nonce ✓",
+      "summary": "Le Verifier vérifie la signature de l'Issuer (clés publiques déjà connues), recalcule les digests des disclosures reçues (∈ _sd ?), vérifie le KB-JWT avec la clé du cnf (signature, aud = lui, nonce = le sien, sd_hash = l'empreinte de ce qu'il vient de recevoir). Quatre familles de contrôles.",
+      "security": {
+        "level": "danger",
+        "note": "L'Issuer n'a PAS été contacté — et pourtant tout est vérifié cryptographiquement. C'est le tour de force du triangle : la confiance voyage dans les signatures, pas dans les appels réseau.",
+        "specRef": "OID4VP 1.0 App. B.3"
+      }
+    },
+    {
+      "id": "done",
+      "from": "verifier",
+      "to": "user",
+      "kind": "http",
+      "label": "« Bonjour Camille » — preuve acceptée",
+      "summary": "Le Verifier connaît given_name et birthdate — vérifiés, liés au détenteur présent. Il ne connaît PAS family_name, et l'Issuer ne sait rien de cette transaction. Comparez mentalement avec le flow fédéré du chapitre 0 d'OID4VCI.",
+      "security": {
+        "level": "info",
+        "note": "Bilan minimisation : demandé = 2 claims ; reçu = 2 claims ; su par l'émetteur = rien. Le protocole a tenu ses trois promesses."
+      }
+    }
+  ]
+}

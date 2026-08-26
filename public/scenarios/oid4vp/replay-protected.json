@@ -1,0 +1,82 @@
+{
+  "id": "oid4vp/replay-protected",
+  "title": "Le même rejeu, contre le Key Binding JWT (protégé)",
+  "description": "Rejouons la même attaque dans le monde réel d'OID4VP : la présentation exigée est <credential>~<disclosures>~<KB-JWT>, où le KB-JWT est signé par la clé privée du wallet (celle du cnf) sur le nonce FRAIS du Verifier. Le fichier volé de l'attaquant ne suffit plus.",
+  "specRefs": ["draft-ietf-oauth-selective-disclosure-jwt (KB-JWT)", "OID4VP 1.0 App. B.3"],
+  "actors": [
+    {
+      "id": "attacker",
+      "name": "Attacker",
+      "role": "attacker",
+      "alias": "= même présentation volée en main"
+    },
+    { "id": "verifier", "name": "Verifier", "role": "verifier", "alias": "= exige le Key Binding" }
+  ],
+  "steps": [
+    {
+      "id": "challenge",
+      "from": "verifier",
+      "to": "attacker",
+      "kind": "http",
+      "label": "Authorization Request : nonce = vpn-FRAIS-9k2m",
+      "summary": "Toute demande de présentation porte un nonce neuf, imprévisible. La présentation attendue devra contenir un KB-JWT signé SUR ce nonce — la preuve devra être fabriquée maintenant, pour cette transaction.",
+      "security": {
+        "level": "info",
+        "note": "Le défi-réponse, encore : celui qui vérifie choisit le défi (cf. c_nonce en Phase 3). Une preuve pré-fabriquée — comme celle du fichier volé — est structurellement périmée."
+      }
+    },
+    {
+      "id": "attempt-replay",
+      "from": "attacker",
+      "to": "verifier",
+      "kind": "attack",
+      "label": "Rejoue la présentation volée (vieux KB-JWT inclus)",
+      "summary": "L'attaquant envoie ce qu'il a : la présentation captée, y compris son KB-JWT d'époque — signé sur le nonce d'une AUTRE transaction, pour un autre (ou le même) Verifier, à une autre date.",
+      "request": {
+        "channel": "back",
+        "request": {
+          "method": "POST",
+          "url": "https://verifier.example/response",
+          "body": {
+            "type": "form",
+            "content": "vp_token={ \"identite\": [\"<jwt>~<disclosures>~<KB-JWT signé sur vpn-4Kd82mQxaz (VIEUX nonce)>\"] }"
+          }
+        }
+      }
+    },
+    {
+      "id": "check-kb",
+      "from": "verifier",
+      "to": "verifier",
+      "kind": "internal",
+      "label": "KB-JWT : signature ✓ (clé du cnf)… nonce ✘",
+      "summary": "Le Verifier vérifie le KB-JWT avec la clé publique du cnf du credential : signature valide — c'est bien un KB-JWT authentique du wallet de la victime. Mais son claim nonce vaut celui de l'ANCIENNE transaction, pas le défi frais. Et iat trahit son âge.",
+      "security": {
+        "level": "info",
+        "note": "Défense en profondeur dans le KB-JWT lui-même : nonce (autre transaction → rejet), aud (autre Verifier → rejet), sd_hash (présentation modifiée → rejet), iat (trop vieux → rejet). L'attaquant devrait signer un KB-JWT neuf — impossible sans la clé privée, qui n'a jamais quitté le wallet de la victime.",
+        "specRef": "draft-ietf-oauth-selective-disclosure-jwt"
+      }
+    },
+    {
+      "id": "reject",
+      "from": "verifier",
+      "to": "attacker",
+      "kind": "http",
+      "label": "400 — présentation rejetée (nonce mismatch)",
+      "summary": "Rejet. Le fichier volé est réduit à ce qu'il est : lisible (données personnelles — la fuite reste un incident !), mais inutilisable comme preuve d'identité. La possession de la clé, elle, ne se vole pas dans un fichier.",
+      "request": {
+        "channel": "back",
+        "request": { "method": "POST", "url": "https://verifier.example/response" },
+        "response": {
+          "status": 400,
+          "statusText": "Bad Request",
+          "body": { "type": "json", "content": "{ \"error\": \"invalid_request\" }" }
+        }
+      },
+      "security": {
+        "level": "info",
+        "note": "Honnêteté du bilan : le KB-JWT empêche l'USURPATION, pas la LECTURE — une présentation fuitée expose ses claims révélés. Minimiser ce qu'on révèle (divulgation sélective) reste la première défense. Les deux mécanismes travaillent ensemble."
+      }
+    }
+  ]
+}

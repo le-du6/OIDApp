@@ -1,0 +1,106 @@
+{
+  "id": "oid4vp/verifier-identification",
+  "title": "Qui me demande ça ? Identifier le Verifier",
+  "description": "Dans le monde wallet, la question de confiance s'inverse : ce n'est plus seulement le service qui vérifie l'utilisateur, c'est le WALLET qui doit vérifier le service. Un Verifier frauduleux qui collecte des attestations d'identité est LE scénario d'abus du modèle. Les Client Identifier Prefixes structurent la réponse.",
+  "specRefs": ["OID4VP 1.0 §5.9 (Client Identifier)", "OID4VP 1.0 §5.10 (request_uri)"],
+  "actors": [
+    {
+      "id": "wallet",
+      "name": "Wallet",
+      "role": "wallet",
+      "alias": "= doit décider s'il peut faire confiance"
+    },
+    {
+      "id": "verifier",
+      "name": "Verifier",
+      "role": "verifier",
+      "alias": "= prétend être location.example"
+    }
+  ],
+  "steps": [
+    {
+      "id": "receive",
+      "from": "verifier",
+      "to": "wallet",
+      "kind": "http",
+      "label": "client_id = x509_san_dns:verifier.example",
+      "summary": "Le client_id porte son mode de preuve en préfixe : « je m'identifierai par un certificat X.509 dont le SAN DNS vaut verifier.example ». La 1.0 a remplacé l'ancien paramètre client_id_scheme par ces préfixes intégrés — un client_id sans deux-points désigne un client pré-enregistré classique.",
+      "security": {
+        "level": "info",
+        "note": "Autres préfixes définis : redirect_uri (aucune authentification cryptographique !), openid_federation, decentralized_identifier, verifier_attestation, x509_hash — et origin, réservé à la DC API.",
+        "specRef": "OID4VP 1.0 §5.9.3"
+      }
+    },
+    {
+      "id": "fetch-jar",
+      "from": "wallet",
+      "to": "verifier",
+      "kind": "http",
+      "label": "GET request_uri → Request Object signé + chaîne x5c",
+      "summary": "Le Request Object (un JWT, mécanique JAR de la Phase 1) arrive signé, avec la chaîne de certificats du Verifier dans son header x5c. Tout ce qu'affirme la requête est désormais adossé à cette signature.",
+      "request": {
+        "channel": "back",
+        "request": { "method": "GET", "url": "https://verifier.example/request/8djeu2" },
+        "response": {
+          "status": 200,
+          "statusText": "OK",
+          "headers": { "Content-Type": "application/oauth-authz-req+jwt" },
+          "body": {
+            "type": "text",
+            "content": "eyJhbGciOiJFUzI1NiIsIng1YyI6WyJNSUlDLi4uKGNlcnQgZHUgdmVyaWZpZXIpIl19.eyJjbGllbnRfaWQiOiJ4NTA5X3Nhbl9kbnM6dmVyaWZpZXIuZXhhbXBsZSIsIm5vbmNlIjoi4oCmIn0.…"
+          }
+        }
+      }
+    },
+    {
+      "id": "check-chain",
+      "from": "wallet",
+      "to": "wallet",
+      "kind": "internal",
+      "label": "Chaîne X.509 valide ? Racine de confiance connue ?",
+      "summary": "Le wallet valide la chaîne de certificats jusqu'à une racine qu'il reconnaît. Dans le monde EUDI, les Verifiers légitimes sont enregistrés et leurs certificats émis dans un cadre contrôlé — c'est la matérialisation de « qui a le droit de demander quoi ».",
+      "security": {
+        "level": "warning",
+        "note": "La liste des racines acceptées par le wallet est une décision de GOUVERNANCE, pas de crypto. C'est elle qui sépare un écosystème contrôlé d'un far west où n'importe qui monte un Verifier collecteur de données."
+      }
+    },
+    {
+      "id": "check-san",
+      "from": "wallet",
+      "to": "wallet",
+      "kind": "internal",
+      "label": "SAN DNS du certificat == verifier.example ?",
+      "summary": "Le contrat du préfixe : le SAN DNS du certificat feuille DOIT correspondre à l'identifiant annoncé dans le client_id. Un certificat valide mais délivré à autre-site.example est rejeté — l'identité prouvée doit être l'identité ANNONCÉE.",
+      "security": {
+        "level": "info",
+        "note": "Alternative x509_hash : le client_id porte l'empreinte SHA-256 du certificat lui-même — utile quand l'identité ne passe pas par un nom DNS. Deux ancrages différents pour la même garantie.",
+        "specRef": "OID4VP 1.0 §5.9.3"
+      }
+    },
+    {
+      "id": "signature",
+      "from": "wallet",
+      "to": "wallet",
+      "kind": "internal",
+      "label": "Signature du Request Object ✓ avec cette clé",
+      "summary": "Dernier maillon : le Request Object est bien signé par la clé du certificat vérifié. La requête DCQL, le nonce, la response_uri — tout est désormais attribuable au Verifier authentifié.",
+      "security": {
+        "level": "info",
+        "note": "Enchaînement complet : racine de confiance → chaîne → SAN == client_id → signature de la requête. Chaque maillon dépend du précédent ; le consentement affiché à l'utilisateur repose sur ce tout."
+      }
+    },
+    {
+      "id": "display",
+      "from": "wallet",
+      "to": "wallet",
+      "kind": "internal",
+      "label": "Affiche : « location.example demande : prénom, date de naissance »",
+      "summary": "Le nom présenté à l'utilisateur vient de l'identité VÉRIFIÉE, jamais d'un champ déclaratif de la requête. Un Verifier non authentifié ou hors cadre → le wallet refuse d'aller plus loin, avant tout consentement.",
+      "security": {
+        "level": "danger",
+        "note": "Le scénario d'abus type : un site frauduleux qui demande « juste votre attestation d'identité » à des utilisateurs pressés. La défense est ce pipeline d'identification, PLUS la gouvernance (enregistrement des Verifiers et de leurs droits — registres eIDAS).",
+        "specRef": "eIDAS 2.0 — enregistrement des relying parties"
+      }
+    }
+  ]
+}
