@@ -52,6 +52,13 @@ export function downloadProgressExport(data: ProgressExport): void {
   URL.revokeObjectURL(url)
 }
 
+/** Efface toute la progression locale (leçons, quiz, badges). Irréversible. */
+export async function clearAllProgress(): Promise<void> {
+  await db.transaction('rw', db.lessonProgress, db.quizScores, db.badges, async () => {
+    await Promise.all([db.lessonProgress.clear(), db.quizScores.clear(), db.badges.clear()])
+  })
+}
+
 /** Importe un export : remplace la progression courante (après validation Zod). */
 export async function importProgress(json: unknown): Promise<void> {
   const data = exportSchema.parse(json)

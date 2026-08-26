@@ -1,6 +1,7 @@
 import { createRootRoute, Outlet } from '@tanstack/react-router'
 import { Sidebar } from '../components/layout/Sidebar'
 import { ThemeToggle } from '../components/layout/ThemeToggle'
+import { ProgressMenu } from '../components/layout/ProgressMenu'
 
 export const Route = createRootRoute({
   component: RootLayout,
@@ -24,7 +25,10 @@ function RootLayout() {
             Comprendre <span className="font-mono text-ink">OAuth2 · OIDC · OID4VCI · OID4VP</span>{' '}
             — sécurité et crypto en fil rouge
           </p>
-          <ThemeToggle />
+          <div className="flex items-center gap-2">
+            <ProgressMenu />
+            <ThemeToggle />
+          </div>
         </header>
         <main className="p-6">
           <Outlet />
