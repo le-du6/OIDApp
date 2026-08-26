@@ -125,21 +125,23 @@ src/
   components/
     content/    briques de leçon : Term (popover glossaire), Callout, CodeBlock (Shiki),
                 Quiz, CompareTable, DecisionTree
-  content/      oauth2/ (11) + oidc/ (7) + oid4vci/ (7 leçons), en lazy via registry.ts
+  content/      oauth2/ (11) + oidc/ (7) + oid4vci/ (7) + oid4vp/ (7 leçons), lazy via registry.ts
   routes/       TanStack Router file-based : / (dashboard), /$moduleId,
-                /$moduleId/$chapitre/$lecon, /glossaire, /labo-crypto
+                /$moduleId/$chapitre/$lecon, /glossaire, /labo-crypto,
+                /carte-des-specs (@xyflow/react), /comparateur
   data/         curriculum.ts (navigation + versions de référence des specs),
-                glossary.ts (77 entrées), fixtures/ (OIDC + OID4VCI — GÉNÉRÉES, cf. scripts/)
+                glossary.ts (88 entrées), spec-map.ts (graphe des specs),
+                fixtures/ (OIDC + OID4VCI + OID4VP — GÉNÉRÉES, cf. scripts/)
   db/           Dexie + hooks TanStack Query, export/import/reset de la progression
   lib/          jwt.ts (décodage base64url à la main), crypto.ts (WebCrypto : PKCE, ES256,
                 at_hash, vérif. JWS), actors.ts (code couleur)
-scripts/        gen-oidc-fixtures.mjs · gen-oid4vci-fixtures.mjs (jose, dev) → src/data/fixtures/
+scripts/        gen-{oidc,oid4vci,oid4vp}-fixtures.mjs (jose, dev) → src/data/fixtures/
 public/
-  scenarios/    oauth2/ (8) + oidc/ (5) + oid4vci/ (5) scénarios JSON (l'API de contribution)
+  scenarios/    oauth2/ (8) + oidc/ (5) + oid4vci/ (5) + oid4vp/ (4) scénarios JSON
 ```
 
 Régénérer les fixtures (clés jetables, timestamps/salts fixes) : `node scripts/gen-oidc-fixtures.mjs`,
-`node scripts/gen-oid4vci-fixtures.mjs`.
+`node scripts/gen-oid4vci-fixtures.mjs`, `node scripts/gen-oid4vp-fixtures.mjs`.
 
 ## État d'avancement
 
@@ -160,7 +162,17 @@ Régénérer les fixtures (clés jetables, timestamps/salts fixes) : `node scrip
       VRAIS hachages salés (testés contre _sd), Crypto Lab « Proof of possession » (défi-réponse
       jouable, rejeu détecté), glossaire +18. Versions de référence AFFICHÉES par module
       (OID4VCI 1.0 Final · draft sd-jwt-vc-13 · ISO 18013-5).
-- [ ] Phase 4 — OID4VP
+- [x] **Phase 4 — OID4VP complète** : 7 chapitres (0–6) — flow de présentation cross-device
+      (direct_post), identification du Verifier (Client Identifier Prefixes), DCQL, divulgation
+      sélective en pratique, Key Binding JWT (rejeu jouable attaqué/protégé), unlinkability +
+      comparateur final fédération vs wallet, ouverture DC API/HAIP. 4 scénarios, fixture de
+      présentation partielle + KB-JWT (sd_hash exact testé), Crypto Lab « Divulgation sélective »
+      (sélection de claims live). Vérifié sur OID4VP 1.0 (Final, 9 juil. 2025).
+- [x] **Transversal** : Carte des specs (/carte-des-specs — graphe @xyflow/react : étend /
+      profile / remplace / s'appuie sur, panneau de détail navigable) ; Comparateur
+      (/comparateur — les 3 duels sur 4 axes constants, animés). Le module « Fondations
+      crypto » du cahier des charges initial a été absorbé par le Crypto Lab (6 sections
+      alimentées au fil des phases) et retiré du curriculum pour éviter le doublon.
 
 Chaque affirmation normative cite sa section (OIDC Core / Discovery) ; les fixtures signées rendent
 `at_hash` et la vérification de signature reproductibles et testés (41 tests au total).

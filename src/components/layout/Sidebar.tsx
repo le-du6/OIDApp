@@ -103,8 +103,24 @@ export function Sidebar() {
               🧪 Crypto Lab
             </Link>
           </li>
-          <li className="text-muted/70">Carte des specs (bientôt)</li>
-          <li className="text-muted/70">Comparateur (bientôt)</li>
+          <li>
+            <Link
+              to="/carte-des-specs"
+              className="text-ink/85 transition-colors hover:text-accent"
+              activeProps={{ className: 'text-accent' }}
+            >
+              🗺️ Carte des specs
+            </Link>
+          </li>
+          <li>
+            <Link
+              to="/comparateur"
+              className="text-ink/85 transition-colors hover:text-accent"
+              activeProps={{ className: 'text-accent' }}
+            >
+              ⚖️ Comparateur
+            </Link>
+          </li>
         </ul>
       </div>
     </nav>
