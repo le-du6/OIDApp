@@ -1,0 +1,200 @@
+{
+  "id": "oauth2/device-flow",
+  "title": "Device Authorization Grant (RFC 8628)",
+  "description": "Le flow « à deux appareils » : une TV, une CLI ou un objet connecté n'a ni clavier confortable ni navigateur. L'appareil affiche un code court, l'utilisateur autorise depuis son téléphone, l'appareil interroge le token endpoint en attendant. Valeurs d'exemple de la RFC 8628.",
+  "specRefs": ["RFC 8628"],
+  "actors": [
+    { "id": "device", "name": "Client (Device)", "role": "client", "alias": "= la TV, la CLI…" },
+    {
+      "id": "as",
+      "name": "Authorization Server",
+      "role": "authorization-server",
+      "alias": "= Keycloak, Auth0…"
+    },
+    { "id": "user", "name": "Resource Owner", "role": "user", "alias": "= vous" },
+    {
+      "id": "phone",
+      "name": "User-Agent",
+      "role": "browser",
+      "alias": "= le navigateur du téléphone"
+    }
+  ],
+  "steps": [
+    {
+      "id": "device-authz-request",
+      "from": "device",
+      "to": "as",
+      "kind": "http",
+      "label": "POST /device_authorization",
+      "summary": "L'appareil (qui a un accès réseau, mais pas d'utilisateur au clavier) demande à l'AS d'ouvrir une session d'autorisation. Aucun humain impliqué à ce stade.",
+      "request": {
+        "channel": "back",
+        "request": {
+          "method": "POST",
+          "url": "https://as.example/device_authorization",
+          "headers": { "Content-Type": "application/x-www-form-urlencoded" },
+          "body": {
+            "type": "form",
+            "content": "client_id=tv-app&scope=photos.read",
+            "params": [
+              { "name": "client_id", "value": "tv-app", "specRef": "RFC 8628 §3.1" },
+              { "name": "scope", "value": "photos.read", "specRef": "RFC 8628 §3.1" }
+            ]
+          }
+        },
+        "response": {
+          "status": 200,
+          "statusText": "OK",
+          "headers": { "Content-Type": "application/json", "Cache-Control": "no-store" },
+          "body": {
+            "type": "json",
+            "content": "{\n  \"device_code\": \"GmRhmhcxhwAzkoEqiMEg_DnyEysNkuNhszIySk9eS\",\n  \"user_code\": \"WDJB-MJHT\",\n  \"verification_uri\": \"https://as.example/device\",\n  \"verification_uri_complete\": \"https://as.example/device?user_code=WDJB-MJHT\",\n  \"expires_in\": 1800,\n  \"interval\": 5\n}"
+          }
+        }
+      },
+      "tokens": [
+        {
+          "id": "device-code",
+          "label": "device_code (secret de l'appareil)",
+          "format": "opaque",
+          "value": "GmRhmhcxhwAzkoEqiMEg_DnyEysNkuNhszIySk9eS",
+          "note": "Long et imprévisible : c'est LUI que l'appareil échangera contre le token. Jamais montré à l'utilisateur."
+        },
+        {
+          "id": "user-code",
+          "label": "user_code (code humain)",
+          "format": "opaque",
+          "value": "WDJB-MJHT",
+          "note": "Court et saisissable : il identifie la session côté humain. Deux codes distincts pour deux canaux distincts — c'est le cœur du design."
+        }
+      ]
+    },
+    {
+      "id": "display",
+      "from": "device",
+      "to": "user",
+      "kind": "user-action",
+      "label": "Affiche : « Allez sur as.example/device, code WDJB-MJHT »",
+      "summary": "L'appareil affiche l'URL et le user_code (ou un QR code portant verification_uri_complete). Il ne peut rien faire de plus : la suite se joue ailleurs.",
+      "security": {
+        "level": "warning",
+        "note": "Surface de phishing connue : un attaquant peut afficher SON user_code à une victime (par mail, faux support…). L'AS doit rappeler clairement à l'utilisateur ce qu'il est en train d'autoriser, et pour quel appareil.",
+        "specRef": "RFC 8628 §5.4"
+      }
+    },
+    {
+      "id": "poll-1",
+      "from": "device",
+      "to": "as",
+      "kind": "http",
+      "label": "POST /token (polling) → authorization_pending",
+      "summary": "En parallèle, l'appareil commence à interroger le token endpoint toutes les `interval` secondes avec son device_code. Tant que l'utilisateur n'a pas autorisé : erreur authorization_pending — qui n'est pas un échec, juste « pas encore ».",
+      "request": {
+        "channel": "back",
+        "request": {
+          "method": "POST",
+          "url": "https://as.example/token",
+          "headers": { "Content-Type": "application/x-www-form-urlencoded" },
+          "body": {
+            "type": "form",
+            "content": "grant_type=urn:ietf:params:oauth:grant-type:device_code&device_code=GmRhmhcxhwAzkoEqiMEg_DnyEysNkuNhszIySk9eS&client_id=tv-app",
+            "params": [
+              {
+                "name": "grant_type",
+                "value": "urn:ietf:params:oauth:grant-type:device_code",
+                "description": "Le grant type dédié de la RFC 8628.",
+                "specRef": "RFC 8628 §3.4"
+              },
+              {
+                "name": "device_code",
+                "value": "GmRhmhcxhwAzkoEqiMEg_…",
+                "specRef": "RFC 8628 §3.4"
+              },
+              { "name": "client_id", "value": "tv-app", "specRef": "RFC 8628 §3.4" }
+            ]
+          }
+        },
+        "response": {
+          "status": 400,
+          "statusText": "Bad Request",
+          "headers": { "Content-Type": "application/json" },
+          "body": {
+            "type": "json",
+            "content": "{ \"error\": \"authorization_pending\" }"
+          }
+        }
+      },
+      "security": {
+        "level": "info",
+        "note": "L'AS peut répondre slow_down : l'appareil doit alors espacer ses requêtes. Un client bien élevé respecte `interval`.",
+        "specRef": "RFC 8628 §3.5"
+      }
+    },
+    {
+      "id": "open-uri",
+      "from": "user",
+      "to": "phone",
+      "kind": "user-action",
+      "label": "Ouvre as.example/device sur le téléphone",
+      "summary": "L'utilisateur passe sur SON appareil de confiance — celui qui a un navigateur, ses cookies de session, son gestionnaire de mots de passe, ses passkeys."
+    },
+    {
+      "id": "enter-code",
+      "from": "phone",
+      "to": "as",
+      "kind": "http",
+      "label": "Saisit WDJB-MJHT, s'authentifie, consent",
+      "summary": "Sur le site de l'AS : saisie du user_code, authentification normale (MFA compris), écran de consentement décrivant l'appareil et le scope. Le canal humain rejoint le canal machine.",
+      "request": {
+        "channel": "front",
+        "request": {
+          "method": "POST",
+          "url": "https://as.example/device",
+          "body": { "type": "form", "content": "user_code=WDJB-MJHT" }
+        },
+        "response": { "status": 200, "statusText": "OK" }
+      }
+    },
+    {
+      "id": "grant-linked",
+      "from": "as",
+      "to": "as",
+      "kind": "internal",
+      "label": "Marque la session device_code comme autorisée",
+      "summary": "L'AS relie le consentement (canal humain, user_code) à la session d'autorisation (canal machine, device_code). Le prochain poll de l'appareil aboutira."
+    },
+    {
+      "id": "poll-2",
+      "from": "device",
+      "to": "as",
+      "kind": "http",
+      "label": "POST /token (polling) → 200 access_token",
+      "summary": "Même requête qu'à l'étape 3 — mais cette fois l'autorisation est acquise : l'AS délivre les tokens à l'appareil, en back channel, sans que le token n'ait jamais approché le téléphone.",
+      "request": {
+        "channel": "back",
+        "request": {
+          "method": "POST",
+          "url": "https://as.example/token",
+          "body": {
+            "type": "form",
+            "content": "grant_type=urn:ietf:params:oauth:grant-type:device_code&device_code=GmRhmhcxhwAzkoEqiMEg_DnyEysNkuNhszIySk9eS&client_id=tv-app"
+          }
+        },
+        "response": {
+          "status": 200,
+          "statusText": "OK",
+          "headers": { "Content-Type": "application/json", "Cache-Control": "no-store" },
+          "body": {
+            "type": "json",
+            "content": "{\n  \"access_token\": \"eyJhbGciOiJFUzI1NiIsInR5cCI6ImF0K2p3dCIsImtpZCI6ImFzLTIwMjYtMDEifQ.…\",\n  \"token_type\": \"Bearer\",\n  \"expires_in\": 3600,\n  \"refresh_token\": \"hJ2ReXk41q\",\n  \"scope\": \"photos.read\"\n}"
+          }
+        }
+      },
+      "security": {
+        "level": "info",
+        "note": "Notez la séparation des canaux : le user_code (humain) ne donne aucun token, le device_code (machine) n'est jamais montré. L'un sans l'autre ne vaut rien.",
+        "specRef": "RFC 8628 §1"
+      }
+    }
+  ]
+}

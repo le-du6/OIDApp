@@ -1,0 +1,184 @@
+{
+  "id": "oauth2/dpop",
+  "title": "DPoP — lier le token à une clé (RFC 9449)",
+  "description": "La réponse au problème du bearer : le Client prouve à chaque requête qu'il détient une clé privée, et le token est lié à cette clé (sender-constrained). Un token volé sans la clé est inerte. Tous les JWT de ce scénario sont de vraies fixtures signées ES256 — décodez-les.",
+  "specRefs": ["RFC 9449", "RFC 6750 §5.2"],
+  "actors": [
+    { "id": "client", "name": "Client", "role": "client", "alias": "= l'app PhotoPrint" },
+    {
+      "id": "as",
+      "name": "Authorization Server",
+      "role": "authorization-server",
+      "alias": "= Keycloak, Auth0…"
+    },
+    { "id": "rs", "name": "Resource Server", "role": "resource-server", "alias": "= l'API photos" },
+    {
+      "id": "attacker",
+      "name": "Attacker",
+      "role": "attacker",
+      "alias": "= a volé le token… pas la clé"
+    }
+  ],
+  "steps": [
+    {
+      "id": "keygen",
+      "from": "client",
+      "to": "client",
+      "kind": "internal",
+      "label": "Génère une paire de clés EC P-256 (jetable, locale)",
+      "summary": "Le Client crée une paire de clés qui ne quittera jamais sa machine (WebCrypto : clé non extractible). La clé publique sera montrée ; la clé privée servira à signer une preuve par requête.",
+      "security": {
+        "level": "info",
+        "note": "Aucune PKI, aucun certificat, aucun enregistrement préalable : c'est ce qui rend DPoP déployable là où mTLS (RFC 8705) est trop lourd.",
+        "specRef": "RFC 9449 §1"
+      }
+    },
+    {
+      "id": "token-request",
+      "from": "client",
+      "to": "as",
+      "kind": "http",
+      "label": "POST /token + header DPoP (proof JWT)",
+      "summary": "L'échange du code (flow classique) gagne un header DPoP : un JWT signé par la clé privée du Client, contenant sa clé publique (jwk), la méthode et l'URL visées (htm, htu), un horodatage et un jti anti-rejeu. Traduction : « celui qui demande ce token détient cette clé ».",
+      "request": {
+        "channel": "back",
+        "request": {
+          "method": "POST",
+          "url": "https://as.example/token",
+          "headers": {
+            "DPoP": "eyJ0eXAiOiJkcG9wK2p3dCIsImFsZyI6IkVTMjU2IiwiandrIjp7Imt0eSI6IkVDIiwieCI6Ik9MeHdlNXVlMTRMdmdfM0l3OUlZdTA1VXhMZkZCVVdvQ2JuaVJaM0NPbU0iLCJ5IjoiTXp6OEFaUXdoaGJ0bkZYZC1IdFppTmhicHhQN1lkWklpcHRmMXBFUUhoOCIsImNydiI6IlAtMjU2In19.eyJodG0iOiJQT1NUIiwiaHR1IjoiaHR0cHM6Ly9hcy5leGFtcGxlL3Rva2VuIiwiaWF0IjoxNzY3MjI1NjAwLCJqdGkiOiJlMWozVl9iS2ljOC1MQUVCIn0.LhiPqr-m3C96qJmIf8AWBLPX0PGOs-8gP3k7hrdXkM_6_ZUjgEE13YDpfFiOHOFJDWcf7DuMRBgwicc4vfdSXg",
+            "Content-Type": "application/x-www-form-urlencoded"
+          },
+          "body": {
+            "type": "form",
+            "content": "grant_type=authorization_code&code=SplxlOBeZQQYbYS6WxSbIA&redirect_uri=https%3A%2F%2Fphotoprint.example%2Fcallback&code_verifier=dBjftJeZ4CVP-mB92K27uhbUJU1p1r_wW1gFWFOEjXk"
+          }
+        }
+      },
+      "tokens": [
+        {
+          "id": "dpop-proof-token",
+          "label": "DPoP proof (JWT) — à décoder",
+          "format": "jwt",
+          "value": "eyJ0eXAiOiJkcG9wK2p3dCIsImFsZyI6IkVTMjU2IiwiandrIjp7Imt0eSI6IkVDIiwieCI6Ik9MeHdlNXVlMTRMdmdfM0l3OUlZdTA1VXhMZkZCVVdvQ2JuaVJaM0NPbU0iLCJ5IjoiTXp6OEFaUXdoaGJ0bkZYZC1IdFppTmhicHhQN1lkWklpcHRmMXBFUUhoOCIsImNydiI6IlAtMjU2In19.eyJodG0iOiJQT1NUIiwiaHR1IjoiaHR0cHM6Ly9hcy5leGFtcGxlL3Rva2VuIiwiaWF0IjoxNzY3MjI1NjAwLCJqdGkiOiJlMWozVl9iS2ljOC1MQUVCIn0.LhiPqr-m3C96qJmIf8AWBLPX0PGOs-8gP3k7hrdXkM_6_ZUjgEE13YDpfFiOHOFJDWcf7DuMRBgwicc4vfdSXg",
+          "note": "Header : typ=dpop+jwt et la clé publique (jwk). Payload : htm=POST, htu=…/token, iat, jti. Signé par la clé privée — c'est la preuve de possession."
+        }
+      ]
+    },
+    {
+      "id": "bind-token",
+      "from": "as",
+      "to": "client",
+      "kind": "http",
+      "label": "200 — access token LIÉ à la clé (cnf.jkt)",
+      "summary": "L'AS vérifie la preuve, puis émet un access token portant l'empreinte de la clé publique du Client : claim cnf.jkt (JWK thumbprint). Le lien token ↔ clé est désormais gravé dans le token, signé par l'AS. token_type devient DPoP.",
+      "request": {
+        "channel": "back",
+        "request": { "method": "POST", "url": "https://as.example/token (réponse)" },
+        "response": {
+          "status": 200,
+          "statusText": "OK",
+          "headers": { "Content-Type": "application/json", "Cache-Control": "no-store" },
+          "body": {
+            "type": "json",
+            "content": "{\n  \"access_token\": \"eyJhbGciOiJFUzI1NiIsInR5cCI6ImF0K2p3dCIsImtpZCI6ImFzLTIwMjYtMDEifQ.…\",\n  \"token_type\": \"DPoP\",\n  \"expires_in\": 3600\n}"
+          }
+        }
+      },
+      "tokens": [
+        {
+          "id": "bound-access-token",
+          "label": "Access token lié (cherchez cnf.jkt)",
+          "format": "jwt",
+          "value": "eyJhbGciOiJFUzI1NiIsInR5cCI6ImF0K2p3dCIsImtpZCI6ImFzLTIwMjYtMDEifQ.eyJzY29wZSI6InBob3Rvcy5yZWFkIiwiY2xpZW50X2lkIjoid2ViLWFwcCIsImNuZiI6eyJqa3QiOiJRRjdDb1FSMk1lM091U0pRenlCSzNQcWpzaVlEcl85STY5Rmd3RTh2MHcwIn0sImlzcyI6Imh0dHBzOi8vYXMuZXhhbXBsZSIsInN1YiI6InVzZXItOGIyYzkxIiwiYXVkIjoiaHR0cHM6Ly9hcGkuZXhhbXBsZSIsImlhdCI6MTc2NzIyNTYwMCwiZXhwIjoxNzY3MjI5MjAwLCJqdGkiOiJhOWMxZTJkMC03YjQ0LTRjMmUtOGQzZi01ZTZhN2I4YzlkMDAifQ.1J4PZNutBOKj_xDNvLFdquao7YLNyVPASAj0cpWdGsyK-4RDl3oJ41BUzQg3U_yCkTitiuAVg0v2pwtPtFROiw",
+          "note": "Dans le payload : cnf.jkt = empreinte SHA-256 de la clé publique du Client. C'est le « cadenas » posé par l'AS.",
+          "specRef": "RFC 9449 §6.1"
+        }
+      ]
+    },
+    {
+      "id": "api-call",
+      "from": "client",
+      "to": "rs",
+      "kind": "http",
+      "label": "GET /photos — Authorization: DPoP … + proof (ath)",
+      "summary": "Chaque appel API porte DEUX choses : le token (header Authorization, scheme DPoP) et une NOUVELLE preuve signée, spécifique à cette requête (htm=GET, htu=…/photos) et liée au token par ath = hash de l'access token.",
+      "request": {
+        "channel": "back",
+        "request": {
+          "method": "GET",
+          "url": "https://api.example/photos",
+          "headers": {
+            "Authorization": "DPoP eyJhbGciOiJFUzI1NiIsInR5cCI6ImF0K2p3dCIsImtpZCI6ImFzLTIwMjYtMDEifQ.…",
+            "DPoP": "eyJ0eXAiOiJkcG9wK2p3dCIsImFsZyI6IkVTMjU2IiwiandrIjp7…}.eyJodG0iOiJHRVQiLCJodHUiOiJodHRwczovL2FwaS5leGFtcGxlL3Bob3RvcyIsImlhdCI6MTc2NzIyNTYwNSwiYXRoIjoiSWhCd1FhcENReW1DZXdxVFFnbGc4Zlg4eFM3RHBCZnluYUlOOUVYeUw3NCIsImp0aSI6Im43d0xiMlpxQW80LVhRMWMifQ.…"
+          }
+        }
+      },
+      "tokens": [
+        {
+          "id": "dpop-proof-api",
+          "label": "DPoP proof de la requête API",
+          "format": "jwt",
+          "value": "eyJ0eXAiOiJkcG9wK2p3dCIsImFsZyI6IkVTMjU2IiwiandrIjp7Imt0eSI6IkVDIiwieCI6Ik9MeHdlNXVlMTRMdmdfM0l3OUlZdTA1VXhMZkZCVVdvQ2JuaVJaM0NPbU0iLCJ5IjoiTXp6OEFaUXdoaGJ0bkZYZC1IdFppTmhicHhQN1lkWklpcHRmMXBFUUhoOCIsImNydiI6IlAtMjU2In19.eyJodG0iOiJHRVQiLCJodHUiOiJodHRwczovL2FwaS5leGFtcGxlL3Bob3RvcyIsImlhdCI6MTc2NzIyNTYwNSwiYXRoIjoiSWhCd1FhcENReW1DZXdxVFFnbGc4Zlg4eFM3RHBCZnluYUlOOUVYeUw3NCIsImp0aSI6Im43d0xiMlpxQW80LVhRMWMifQ.6Ujplq6DlMX15gvalWukKElNlHdksXP3AUKpGoBUWyw5Sfr-Uj5v6XKtWlZV6CHymIJffCl5ttaOS55bZU9l6w",
+          "note": "Comparez avec la preuve de l'étape 2 : htm/htu changent, et ath (hash du token) apparaît. Une preuve = une requête."
+        }
+      ]
+    },
+    {
+      "id": "rs-verify",
+      "from": "rs",
+      "to": "rs",
+      "kind": "internal",
+      "label": "Vérifie : signature du proof, jkt == cnf.jkt, ath, htm/htu, fraîcheur, jti",
+      "summary": "Le RS vérifie la chaîne complète : (1) le token est signé par l'AS et porte cnf.jkt ; (2) le proof est signé par la clé dont l'empreinte EST ce jkt ; (3) ath correspond au token présenté ; (4) htm/htu correspondent à la requête ; (5) iat est frais, jti jamais vu. Cinq maillons, zéro confiance implicite.",
+      "security": {
+        "level": "info",
+        "note": "Le RS n'a pas besoin de contacter l'AS : tout se vérifie localement à partir de signatures.",
+        "specRef": "RFC 9449 §4.3"
+      }
+    },
+    {
+      "id": "steal",
+      "from": "attacker",
+      "to": "client",
+      "kind": "attack",
+      "label": "Vole l'access token (logs, proxy, XSS…)",
+      "summary": "Posons le pire : l'attaquant a obtenu l'access token complet. Au chapitre 4, la partie était perdue. Voyons maintenant.",
+      "security": {
+        "level": "warning",
+        "note": "Le token volé contient cnf.jkt — l'attaquant peut le lire. Mais lire une empreinte de clé publique ne donne pas la clé privée.",
+        "specRef": "RFC 9449 §9"
+      }
+    },
+    {
+      "id": "replay-fails",
+      "from": "attacker",
+      "to": "rs",
+      "kind": "attack",
+      "label": "Rejoue le token sans la clé → 401 invalid_token",
+      "summary": "L'attaquant présente le token : il ne peut produire aucun proof valide — pas de clé privée. Forger un proof avec SA clé ? L'empreinte ne correspondra pas au cnf.jkt du token. Rejouer un proof intercepté ? jti déjà vu, iat périmé, htu/htm différents. Le bearer volé est devenu un objet inerte.",
+      "request": {
+        "channel": "back",
+        "request": {
+          "method": "GET",
+          "url": "https://api.example/photos",
+          "headers": {
+            "Authorization": "DPoP eyJhbGciOiJFUzI1NiIsInR5cCI6ImF0K2p3dCIsImtpZCI6ImFzLTIwMjYtMDEifQ.… (volé)"
+          }
+        },
+        "response": {
+          "status": 401,
+          "statusText": "Unauthorized",
+          "headers": {
+            "WWW-Authenticate": "DPoP error=\"invalid_token\", error_description=\"proof of possession required\""
+          }
+        }
+      },
+      "security": {
+        "level": "info",
+        "note": "C'est la définition d'un token « sender-constrained » : détenir ne suffit plus, il faut prouver. mTLS (RFC 8705) obtient le même résultat au niveau TLS, avec des certificats clients.",
+        "specRef": "RFC 9449 §1 · RFC 8705"
+      }
+    }
+  ]
+}

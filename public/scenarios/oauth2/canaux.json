@@ -1,0 +1,143 @@
+{
+  "id": "oauth2/canaux",
+  "title": "Front channel vs back channel",
+  "description": "La notion qui commande tout le reste : ce qui transite PAR le navigateur (observable, manipulable) contre ce qui va de serveur à serveur (TLS, authentifié). Suivez le même « secret » sur les deux canaux.",
+  "specRefs": ["RFC 6749 §1.5 (usage)", "RFC 9700 §4"],
+  "actors": [
+    { "id": "user", "name": "Resource Owner", "role": "user", "alias": "= vous" },
+    { "id": "browser", "name": "User-Agent", "role": "browser", "alias": "= le navigateur" },
+    { "id": "client", "name": "Client", "role": "client", "alias": "= l'application (serveur)" },
+    {
+      "id": "as",
+      "name": "Authorization Server",
+      "role": "authorization-server",
+      "alias": "= Keycloak, Auth0…"
+    }
+  ],
+  "steps": [
+    {
+      "id": "front-redirect",
+      "from": "client",
+      "to": "browser",
+      "kind": "redirect",
+      "label": "302 — le Client parle à l'AS… via le navigateur",
+      "summary": "Le Client et l'AS ne se connaissent pas encore : pour joindre l'AS « au nom de l'utilisateur », le Client rebondit sur le navigateur avec une redirection. C'est LE front channel : le message est une URL, portée par le navigateur.",
+      "request": {
+        "channel": "front",
+        "request": { "method": "GET", "url": "https://photoprint.example/connect" },
+        "response": {
+          "status": 302,
+          "statusText": "Found",
+          "headers": {
+            "Location": "https://as.example/authorize?response_type=code&client_id=web-app&…"
+          }
+        }
+      },
+      "security": {
+        "level": "warning",
+        "note": "Tout ce qui est dans cette URL est visible : barre d'adresse, historique, logs de proxys, en-têtes Referer, extensions. Et modifiable : l'utilisateur (ou un malware) peut éditer chaque paramètre avant de suivre la redirection."
+      }
+    },
+    {
+      "id": "front-carries",
+      "from": "browser",
+      "to": "as",
+      "kind": "redirect",
+      "label": "GET /authorize?… — paramètres exposés en clair*",
+      "summary": "Le navigateur suit la redirection et livre les paramètres à l'AS. (*en clair du point de vue de l'UTILISATEUR : TLS chiffre le transport, mais tout est lisible aux deux extrémités et dans le navigateur lui-même.)",
+      "request": {
+        "channel": "front",
+        "request": {
+          "method": "GET",
+          "url": "https://as.example/authorize",
+          "params": [
+            {
+              "name": "response_type",
+              "value": "code",
+              "description": "Observable par quiconque voit l'URL."
+            },
+            {
+              "name": "client_id",
+              "value": "web-app",
+              "description": "Public par nature — aucun secret ici, et c'est voulu."
+            }
+          ]
+        }
+      },
+      "security": {
+        "level": "info",
+        "note": "Règle de conception : on ne met sur le front channel QUE des données publiques ou inutilisables seules (un code éphémère, une empreinte PKCE, un state). Jamais un token, jamais un secret."
+      }
+    },
+    {
+      "id": "user-sees",
+      "from": "user",
+      "to": "browser",
+      "kind": "user-action",
+      "label": "L'utilisateur VOIT le flux — c'est une fonctionnalité",
+      "summary": "Le front channel n'est pas un défaut : c'est là que l'utilisateur vérifie le domaine de l'AS, lit l'écran de consentement, refuse s'il le veut. L'observabilité qui expose est aussi celle qui protège l'humain.",
+      "security": {
+        "level": "info",
+        "note": "C'est pour cela que le mot de passe se saisit ICI, sur le domaine de l'AS, visible et vérifiable — jamais dans l'interface du Client."
+      }
+    },
+    {
+      "id": "back-post",
+      "from": "client",
+      "to": "as",
+      "kind": "http",
+      "label": "POST /token — serveur à serveur, navigateur absent",
+      "summary": "Changement de monde : le Client (un serveur) appelle directement l'AS. Le navigateur n'existe plus dans cette conversation — il ne peut ni la voir, ni la modifier, ni même savoir qu'elle a lieu.",
+      "request": {
+        "channel": "back",
+        "request": {
+          "method": "POST",
+          "url": "https://as.example/token",
+          "headers": {
+            "Authorization": "Basic d2ViLWFwcDpzM2NyM3Q=",
+            "Content-Type": "application/x-www-form-urlencoded"
+          },
+          "body": { "type": "form", "content": "grant_type=authorization_code&code=…" }
+        }
+      },
+      "security": {
+        "level": "info",
+        "note": "Trois propriétés cumulées : TLS de bout en bout entre deux serveurs, authentification du Client (client_secret, mTLS…), et aucune exposition au poste de l'utilisateur. C'est ici — et seulement ici — que circulent secrets et tokens."
+      }
+    },
+    {
+      "id": "back-tokens",
+      "from": "as",
+      "to": "client",
+      "kind": "http",
+      "label": "200 — les tokens restent entre serveurs",
+      "summary": "La réponse (tokens compris) emprunte le même canal protégé. Le navigateur ne verra jamais l'access token — il verra seulement, plus tard, le RÉSULTAT de son utilisation.",
+      "request": {
+        "channel": "back",
+        "request": { "method": "POST", "url": "https://as.example/token (réponse)" },
+        "response": {
+          "status": 200,
+          "statusText": "OK",
+          "headers": { "Cache-Control": "no-store" },
+          "body": {
+            "type": "json",
+            "content": "{ \"access_token\": \"…\", \"token_type\": \"Bearer\" }"
+          }
+        }
+      }
+    },
+    {
+      "id": "principle",
+      "from": "client",
+      "to": "client",
+      "kind": "internal",
+      "label": "Le principe directeur de tout OAuth2",
+      "summary": "Relisez maintenant n'importe quel flow avec cette grille : chaque choix de conception — le code intermédiaire, PKCE, l'interdiction du token en URL, la mort d'implicit — découle d'une seule question : « cette donnée peut-elle survivre au front channel ? »",
+      "security": {
+        "level": "info",
+        "note": "Gardez cette grille pour les chapitres 3 et 5 : elle transforme des règles apparemment arbitraires en conséquences logiques.",
+        "specRef": "RFC 9700 §4"
+      }
+    }
+  ]
+}

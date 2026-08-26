@@ -1,0 +1,150 @@
+{
+  "id": "oauth2/csrf-attack",
+  "title": "CSRF sur le callback — sans state",
+  "description": "L'attaque du « code injecté » : l'attaquant fait terminer SON flow OAuth par le navigateur de la victime. Résultat : le compte de la victime chez PhotoPrint se retrouve lié aux ressources de l'ATTAQUANT — photos, moyen de paiement, stockage… — sans qu'elle ait rien vu.",
+  "specRefs": ["RFC 6749 §10.12", "RFC 9700 §4.7"],
+  "actors": [
+    {
+      "id": "attacker",
+      "name": "Attacker",
+      "role": "attacker",
+      "alias": "= a un compte chez l'AS"
+    },
+    {
+      "id": "victim",
+      "name": "Resource Owner",
+      "role": "user",
+      "alias": "= la victime, connectée à PhotoPrint"
+    },
+    {
+      "id": "browser",
+      "name": "User-Agent",
+      "role": "browser",
+      "alias": "= le navigateur de la victime"
+    },
+    {
+      "id": "client",
+      "name": "Client",
+      "role": "client",
+      "alias": "= PhotoPrint (sans vérification de state)"
+    },
+    {
+      "id": "as",
+      "name": "Authorization Server",
+      "role": "authorization-server",
+      "alias": "= l'AS, qui ne voit rien d'anormal"
+    }
+  ],
+  "steps": [
+    {
+      "id": "attacker-starts",
+      "from": "attacker",
+      "to": "as",
+      "kind": "attack",
+      "label": "Démarre un flow OAuth avec SON compte",
+      "summary": "L'attaquant lance un flow PhotoPrint ↔ AS parfaitement légitime… avec son propre compte, et consent à tout. L'AS n'a aucune raison de se méfier : c'est un utilisateur normal.",
+      "security": {
+        "level": "info",
+        "note": "Première leçon : une attaque CSRF n'exploite aucune faille de l'AS. Chaque acteur, pris isolément, fonctionne comme prévu."
+      }
+    },
+    {
+      "id": "attacker-intercepts",
+      "from": "as",
+      "to": "attacker",
+      "kind": "attack",
+      "label": "302 → callback?code=AttackerC0deXYZ — il NE le livre PAS",
+      "summary": "L'AS émet un code pour le compte de l'attaquant. Mais au lieu de laisser son navigateur le porter au callback, l'attaquant intercepte la redirection (c'est SON navigateur, il fait ce qu'il veut) et met le code de côté. Le flow reste suspendu, le code encore vierge.",
+      "tokens": [
+        {
+          "id": "attacker-code",
+          "label": "Code de l'ATTAQUANT (non consommé)",
+          "format": "opaque",
+          "value": "AttackerC0deXYZ",
+          "note": "Un authorization code valide, à usage unique, lié au compte de l'attaquant — et personne ne l'a encore échangé."
+        }
+      ]
+    },
+    {
+      "id": "trap",
+      "from": "attacker",
+      "to": "browser",
+      "kind": "attack",
+      "label": "Piège la victime : <img src=\"…/callback?code=AttackerC0deXYZ\">",
+      "summary": "L'attaquant place l'URL du callback — avec SON code — derrière n'importe quoi qui déclenche une requête : une image invisible dans une page, un lien « voir la photo », un mail. C'est la définition du CSRF : faire émettre au navigateur de la victime une requête qu'elle n'a pas voulue.",
+      "request": {
+        "channel": "front",
+        "request": {
+          "method": "GET",
+          "url": "https://evil.example/page-piégée",
+          "headers": { "Host": "evil.example" }
+        },
+        "response": {
+          "status": 200,
+          "statusText": "OK",
+          "body": {
+            "type": "html",
+            "content": "<!-- page anodine en apparence -->\n<img src=\"https://photoprint.example/callback?code=AttackerC0deXYZ\" style=\"display:none\">"
+          }
+        }
+      }
+    },
+    {
+      "id": "forged-callback",
+      "from": "browser",
+      "to": "client",
+      "kind": "attack",
+      "label": "GET /callback?code=AttackerC0deXYZ (avec les cookies de la victime !)",
+      "summary": "Le navigateur de la victime obéit : il appelle le callback de PhotoPrint avec le code de l'attaquant — et, comme pour toute requête vers photoprint.example, il joint les COOKIES DE SESSION de la victime. PhotoPrint voit : « l'utilisatrice V., connectée, revient d'un flow OAuth avec un code ».",
+      "security": {
+        "level": "danger",
+        "note": "Le point de compromission exact : rien ne relie ce code à un flow que CETTE session aurait démarré. Sans state, PhotoPrint ne peut pas le savoir.",
+        "specRef": "RFC 6749 §10.12"
+      }
+    },
+    {
+      "id": "client-exchanges",
+      "from": "client",
+      "to": "as",
+      "kind": "http",
+      "label": "POST /token — échange le code de l'attaquant",
+      "summary": "PhotoPrint, sans méfiance, échange le code au token endpoint. Tout est cryptographiquement valide : le code est authentique, l'échange aboutit. L'AS délivre les tokens… du compte de l'ATTAQUANT.",
+      "request": {
+        "channel": "back",
+        "request": {
+          "method": "POST",
+          "url": "https://as.example/token",
+          "headers": {
+            "Authorization": "Basic d2ViLWFwcDpzM2NyM3Q=",
+            "Content-Type": "application/x-www-form-urlencoded"
+          },
+          "body": {
+            "type": "form",
+            "content": "grant_type=authorization_code&code=AttackerC0deXYZ&redirect_uri=https%3A%2F%2Fphotoprint.example%2Fcallback"
+          }
+        },
+        "response": {
+          "status": 200,
+          "statusText": "OK",
+          "body": {
+            "type": "json",
+            "content": "{ \"access_token\": \"…tokens du compte de l'attaquant…\", \"token_type\": \"Bearer\", \"expires_in\": 3600 }"
+          }
+        }
+      }
+    },
+    {
+      "id": "account-linked",
+      "from": "client",
+      "to": "client",
+      "kind": "internal",
+      "label": "Lie le compte de la VICTIME aux ressources de l'ATTAQUANT",
+      "summary": "PhotoPrint associe les tokens obtenus à la session courante — celle de la victime. Désormais, quand la victime « importe ses photos », elles viennent du compte de l'attaquant ; et si elle en téléverse, elles ATTERRISSENT chez lui. Variante bancaire : le moyen de paiement enregistré est celui de l'attaquant, ou l'inverse.",
+      "security": {
+        "level": "danger",
+        "note": "Attaque discrète : aucun message d'erreur, aucun login suspect. La victime découvre le problème quand ses données apparaissent là où elles ne devraient pas.",
+        "specRef": "RFC 9700 §4.7"
+      }
+    }
+  ]
+}

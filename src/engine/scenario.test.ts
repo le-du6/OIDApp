@@ -1,4 +1,4 @@
-import { readFileSync } from 'node:fs'
+import { readdirSync, readFileSync } from 'node:fs'
 import { join } from 'node:path'
 import { describe, expect, it } from 'vitest'
 import { parseScenario } from './scenario'
@@ -43,6 +43,16 @@ describe('parseScenario', () => {
       actors: [{ id: 'a', name: 'A', role: 'hacker' }, validScenario.actors[1]],
     }
     expect(() => parseScenario(bad)).toThrow()
+  })
+
+  it('valide TOUS les scénarios livrés (public/scenarios/**)', () => {
+    const dir = join(__dirname, '../../public/scenarios/oauth2')
+    const files = readdirSync(dir).filter((f) => f.endsWith('.json'))
+    expect(files.length).toBeGreaterThanOrEqual(6) // Definition of done Phase 1
+    for (const file of files) {
+      const scenario = parseScenario(JSON.parse(readFileSync(join(dir, file), 'utf-8')))
+      expect(scenario.id, file).toBe(`oauth2/${file.replace(/\.json$/, '')}`)
+    }
   })
 
   it('valide le scénario livré : oauth2/authorization-code', () => {

@@ -1,0 +1,108 @@
+{
+  "id": "oauth2/csrf-protected",
+  "title": "Le même piège — avec state",
+  "description": "Rejouons exactement la même attaque contre un Client qui applique la RFC : un state imprévisible, lié à la session du navigateur, vérifié au callback. L'attaque meurt à l'étape 4.",
+  "specRefs": ["RFC 6749 §10.12", "RFC 9700 §4.7"],
+  "actors": [
+    { "id": "attacker", "name": "Attacker", "role": "attacker", "alias": "= même mode opératoire" },
+    {
+      "id": "victim",
+      "name": "Resource Owner",
+      "role": "user",
+      "alias": "= la victime, connectée à PhotoPrint"
+    },
+    {
+      "id": "browser",
+      "name": "User-Agent",
+      "role": "browser",
+      "alias": "= le navigateur de la victime"
+    },
+    { "id": "client", "name": "Client", "role": "client", "alias": "= PhotoPrint (state vérifié)" },
+    {
+      "id": "as",
+      "name": "Authorization Server",
+      "role": "authorization-server",
+      "alias": "= l'AS, inchangé"
+    }
+  ],
+  "steps": [
+    {
+      "id": "attacker-starts",
+      "from": "attacker",
+      "to": "as",
+      "kind": "attack",
+      "label": "Même départ : flow avec SON compte, code intercepté",
+      "summary": "Rien ne change pour l'attaquant : il obtient un code valide pour son compte, avec au passage un state — celui de SA session à lui (ou aucun, s'il bricole l'URL).",
+      "tokens": [
+        {
+          "id": "attacker-code",
+          "label": "Code de l'attaquant",
+          "format": "opaque",
+          "value": "AttackerC0deXYZ",
+          "note": "Toujours valide, toujours à usage unique. Le code n'est pas le problème — le lien à la session l'est."
+        }
+      ]
+    },
+    {
+      "id": "trap",
+      "from": "attacker",
+      "to": "browser",
+      "kind": "attack",
+      "label": "Piège identique : callback?code=AttackerC0deXYZ&state=???",
+      "summary": "L'attaquant forge son URL de callback. Problème : quel state mettre ? Celui de sa propre session ne vaut que pour SON navigateur. Celui de la victime ? Il est imprévisible (CSPRNG) et stocké dans un cookie qu'il ne peut pas lire. Il tente au hasard, ou l'omet.",
+      "security": {
+        "level": "info",
+        "note": "Tout repose sur deux propriétés du state : imprévisible (impossible à deviner) et lié à la session (impossible à réutiliser).",
+        "specRef": "RFC 6749 §10.12"
+      }
+    },
+    {
+      "id": "forged-callback",
+      "from": "browser",
+      "to": "client",
+      "kind": "attack",
+      "label": "GET /callback?code=AttackerC0deXYZ&state=deviné",
+      "summary": "Le navigateur de la victime déclenche la requête piégée, cookies de session inclus — jusqu'ici, l'attaque se déroule comme avant.",
+      "request": {
+        "channel": "front",
+        "request": {
+          "method": "GET",
+          "url": "https://photoprint.example/callback",
+          "params": [
+            { "name": "code", "value": "AttackerC0deXYZ" },
+            {
+              "name": "state",
+              "value": "zzz-mauvaise-valeur",
+              "description": "L'attaquant ne peut pas connaître le state attendu par la session de la victime — si tant est qu'un flow soit en cours."
+            }
+          ]
+        }
+      }
+    },
+    {
+      "id": "state-check-fails",
+      "from": "client",
+      "to": "client",
+      "kind": "internal",
+      "label": "state reçu ≠ state de la session → REJET, code jamais échangé",
+      "summary": "Le Client compare le state reçu au state associé aux cookies de cette session : aucun flow en cours pour cette session, ou valeur différente. Requête rejetée (400), journalisée. Le code de l'attaquant ne sera JAMAIS présenté au token endpoint — l'attaque s'arrête ici, silencieusement.",
+      "security": {
+        "level": "info",
+        "note": "Coût de la contre-mesure : générer un aléa, le stocker en session, faire une comparaison. C'est tout. PKCE offre la même protection en prime (le verifier joue le rôle de lien à la session) — d'où sa généralisation.",
+        "specRef": "RFC 9700 §4.7 · RFC 7636"
+      }
+    },
+    {
+      "id": "victim-safe",
+      "from": "client",
+      "to": "victim",
+      "kind": "http",
+      "label": "La victime ne remarque rien — et c'est le but",
+      "summary": "Aucun compte lié, aucune donnée croisée. Au pire, une ligne dans les logs de PhotoPrint signale un callback anormal — matière à détection, pas à incident.",
+      "security": {
+        "level": "info",
+        "note": "Comparez les deux onglets étape par étape : l'attaque est identique jusqu'au callback. Une seule vérification côté Client change l'issue."
+      }
+    }
+  ]
+}

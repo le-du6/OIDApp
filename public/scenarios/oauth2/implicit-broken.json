@@ -1,0 +1,136 @@
+{
+  "id": "oauth2/implicit-broken",
+  "title": "Implicit grant — pourquoi c'est mort",
+  "description": "Le flow historique des SPA (2012) : l'access token renvoyé DIRECTEMENT dans le fragment d'URL, sans passage par le token endpoint. Pratique — et structurellement exposé. Déprécié par le Security BCP (RFC 9700), retiré d'OAuth 2.1.",
+  "specRefs": ["RFC 6749 §4.2", "RFC 9700 §2.1.2"],
+  "actors": [
+    { "id": "user", "name": "Resource Owner", "role": "user", "alias": "= vous" },
+    { "id": "browser", "name": "User-Agent", "role": "browser", "alias": "= le navigateur" },
+    {
+      "id": "spa",
+      "name": "Client (SPA)",
+      "role": "client",
+      "alias": "= JS dans le navigateur, client public"
+    },
+    {
+      "id": "as",
+      "name": "Authorization Server",
+      "role": "authorization-server",
+      "alias": "= Keycloak, Auth0…"
+    },
+    { "id": "rs", "name": "Resource Server", "role": "resource-server", "alias": "= l'API photos" },
+    {
+      "id": "attacker",
+      "name": "Attacker",
+      "role": "attacker",
+      "alias": "= script injecté, extension, logs…"
+    }
+  ],
+  "steps": [
+    {
+      "id": "authorization-request",
+      "from": "browser",
+      "to": "as",
+      "kind": "redirect",
+      "label": "GET /authorize?response_type=token&…",
+      "summary": "Un seul caractère change tout : response_type=token (au lieu de code). La SPA demande à recevoir l'access token directement au callback — parce qu'en 2012, un navigateur ne pouvait pas appeler le token endpoint (pas de CORS généralisé) et qu'un client public n'a pas de secret.",
+      "request": {
+        "channel": "front",
+        "request": {
+          "method": "GET",
+          "url": "https://as.example/authorize",
+          "params": [
+            {
+              "name": "response_type",
+              "value": "token",
+              "description": "Le grant implicit : l'access token sera renvoyé directement, en front channel.",
+              "specRef": "RFC 6749 §4.2.1"
+            },
+            { "name": "client_id", "value": "spa-app", "specRef": "RFC 6749 §2.2" },
+            {
+              "name": "redirect_uri",
+              "value": "https://spa.example/callback",
+              "specRef": "RFC 6749 §3.1.2"
+            },
+            { "name": "scope", "value": "photos.read", "specRef": "RFC 6749 §3.3" }
+          ]
+        }
+      }
+    },
+    {
+      "id": "consent",
+      "from": "user",
+      "to": "as",
+      "kind": "user-action",
+      "label": "S'authentifie et consent",
+      "summary": "Côté utilisateur, rien ne distingue ce flow d'un flow sain. Le problème est invisible — il est dans le canal de retour."
+    },
+    {
+      "id": "token-in-fragment",
+      "from": "as",
+      "to": "browser",
+      "kind": "redirect",
+      "label": "302 → callback#access_token=…&token_type=Bearer",
+      "summary": "L'AS renvoie l'ACCESS TOKEN LUI-MÊME dans le fragment d'URL (#…). Le fragment n'est pas envoyé au serveur — seul le JS le lit — mais il traverse tout le front channel : barre d'adresse, historique, redirections.",
+      "request": {
+        "channel": "front",
+        "request": { "method": "POST", "url": "https://as.example/authorize/consent" },
+        "response": {
+          "status": 302,
+          "statusText": "Found",
+          "headers": {
+            "Location": "https://spa.example/callback#access_token=2YotnFZFEjr1zCsicMWpAA&token_type=Bearer&expires_in=3600&scope=photos.read"
+          }
+        }
+      },
+      "tokens": [
+        {
+          "id": "leaked-token",
+          "label": "Access token (dans l'URL !)",
+          "format": "opaque",
+          "value": "2YotnFZFEjr1zCsicMWpAA",
+          "note": "Comparez avec le flow code : ici, c'est le pouvoir lui-même qui transite par le navigateur, pas un jeton intermédiaire."
+        }
+      ],
+      "security": {
+        "level": "danger",
+        "note": "Trois défauts structurels : le token est exposé au front channel ; aucune authentification du Client à la remise (n'importe qui sur cette redirect_uri le reçoit) ; aucun refresh token possible. Et pas de PKCE applicable : il n'y a pas d'échange à protéger.",
+        "specRef": "RFC 9700 §2.1.2"
+      }
+    },
+    {
+      "id": "js-reads",
+      "from": "spa",
+      "to": "spa",
+      "kind": "internal",
+      "label": "Le JS lit location.hash, range le token",
+      "summary": "La SPA extrait le token du fragment et le range — en mémoire au mieux, en localStorage souvent (accessible à tout script de la page). Chaque emplacement de stockage côté navigateur est une surface d'attaque."
+    },
+    {
+      "id": "leak",
+      "from": "attacker",
+      "to": "browser",
+      "kind": "attack",
+      "label": "Exfiltration : XSS, extension, historique partagé…",
+      "summary": "L'attaquant n'a que l'embarras du choix : un script tiers compromis (XSS) lit le localStorage ; une extension lit l'URL ; l'historique du navigateur conserve le fragment ; une redirection ultérieure peut le faire fuiter. Le token — un bearer — suffit à lui seul.",
+      "security": {
+        "level": "danger",
+        "note": "Avec un authorization code, la même fuite donnait un jeton inutilisable (usage unique, échange authentifié, PKCE). Ici elle donne le pouvoir directement.",
+        "specRef": "RFC 6749 §10.3 · §10.16"
+      }
+    },
+    {
+      "id": "attacker-uses",
+      "from": "attacker",
+      "to": "rs",
+      "kind": "attack",
+      "label": "Rejoue le bearer token volé → accès accordé",
+      "summary": "Le voleur présente le token à l'API : bearer = au porteur, l'API ne demande rien d'autre. Session utilisateur clonée jusqu'à expiration.",
+      "security": {
+        "level": "danger",
+        "note": "La réponse moderne pour les SPA : Authorization Code + PKCE (le flow précédent), rendu possible par CORS sur le token endpoint. Implicit n'a plus AUCUN cas d'usage légitime.",
+        "specRef": "RFC 9700 §2.1.2"
+      }
+    }
+  ]
+}
