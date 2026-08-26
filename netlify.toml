@@ -1,0 +1,31 @@
+# Déploiement Netlify — alternative (ou complément) à GitHub Pages.
+#
+# Netlify sert le site à la RACINE du domaine : pas de VITE_BASE à définir,
+# contrairement à GitHub Pages qui sert sous /<repo>/.
+#
+# Mise en route : Netlify → « Add new site » → « Import an existing project »
+# → GitHub → dépôt OIDApp. Tout ce qui suit est détecté automatiquement.
+# (Ou, sans connecter le dépôt : `npm run build` puis glisser le dossier
+# `dist/` sur app.netlify.com/drop.)
+
+[build]
+  command = "npm run build"
+  publish = "dist"
+
+[build.environment]
+  # Aligné sur .nvmrc — Netlify lit aussi ce fichier, on l'explicite ici.
+  NODE_VERSION = "24"
+
+# SPA : toute route inconnue (deep link /oidc/validation/…) doit servir
+# index.html, à charge du routeur client de résoudre l'URL. status = 200
+# (rewrite, pas redirect) pour conserver l'URL dans la barre d'adresse.
+[[redirects]]
+  from = "/*"
+  to = "/index.html"
+  status = 200
+
+# Les assets versionnés (hash dans le nom) peuvent être mis en cache à vie.
+[[headers]]
+  for = "/assets/*"
+  [headers.values]
+    Cache-Control = "public, max-age=31536000, immutable"
