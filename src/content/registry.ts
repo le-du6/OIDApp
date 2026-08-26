@@ -61,4 +61,23 @@ export const lessonComponents: Record<string, LazyExoticComponent<ComponentType>
     () => import('./oid4vci/ch5-key-attestation'),
   ),
   [lessonKey('oid4vci', 'eidas', 'contexte-eudi')]: lazy(() => import('./oid4vci/ch6-eidas')),
+
+  // — OID4VP (Phase 4) —
+  [lessonKey('oid4vp', 'authorization-request', 'flow-presentation')]: lazy(
+    () => import('./oid4vp/ch0-authorization-request'),
+  ),
+  [lessonKey('oid4vp', 'verifier-id', 'client-id-prefixes')]: lazy(
+    () => import('./oid4vp/ch1-verifier-id'),
+  ),
+  [lessonKey('oid4vp', 'dcql', 'langage-requete')]: lazy(() => import('./oid4vp/ch2-dcql')),
+  [lessonKey('oid4vp', 'divulgation-selective', 'choisir-ses-claims')]: lazy(
+    () => import('./oid4vp/ch3-divulgation'),
+  ),
+  [lessonKey('oid4vp', 'key-binding', 'anti-rejeu')]: lazy(
+    () => import('./oid4vp/ch4-key-binding'),
+  ),
+  [lessonKey('oid4vp', 'unlinkability', 'federation-vs-wallet')]: lazy(
+    () => import('./oid4vp/ch5-unlinkability'),
+  ),
+  [lessonKey('oid4vp', 'ouverture', 'dc-api-haip')]: lazy(() => import('./oid4vp/ch6-ouverture')),
 }

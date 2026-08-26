@@ -611,6 +611,89 @@ export const glossary: GlossaryEntry[] = [
       'Le défaut structurel du modèle fédéré : chaque connexion repasse par l’IdP, qui apprend où et quand vous vous connectez. Le triangle Issuer/Holder/Verifier le supprime par construction : l’émetteur n’est pas contacté lors des présentations.',
     specRef: '(propriété d’architecture — motivation d’eIDAS 2.0)',
   },
+
+  {
+    id: 'verifier',
+    term: 'Verifier',
+    definition:
+      'L’entité qui demande et vérifie une présentation : un site, un guichet, un contrôle. Côté protocole, c’est un Client OAuth2 qui envoie une Authorization Request au wallet — et que le WALLET doit authentifier avant tout consentement.',
+    specRef: 'OID4VP 1.0 §2',
+    actorRole: 'verifier',
+  },
+  {
+    id: 'vp-token',
+    term: 'vp_token',
+    definition:
+      'Le paramètre de réponse d’OID4VP : un objet JSON dont les clés sont les ids des Credential Queries DCQL et les valeurs des tableaux de présentations (ex. SD-JWT+KB). La réponse est structurée par la requête qui l’a demandée.',
+    specRef: 'OID4VP 1.0 §8.1',
+  },
+  {
+    id: 'dcql',
+    term: 'DCQL',
+    expansion: 'Digital Credentials Query Language',
+    definition:
+      'Le langage de requête d’OID4VP 1.0 (paramètre dcql_query) : credentials[] avec id, format, meta (ex. vct_values), claims[{path}], claim_sets, trusted_authorities, et credential_sets pour les alternatives. Il a entièrement remplacé Presentation Exchange dans la version finale.',
+    specRef: 'OID4VP 1.0 §6',
+  },
+  {
+    id: 'client-identifier-prefix',
+    term: 'Client Identifier Prefix',
+    definition:
+      'Le mode d’identification du Verifier, porté en préfixe du client_id (« x509_san_dns:verifier.example ») : redirect_uri, openid_federation, decentralized_identifier, verifier_attestation, x509_san_dns, x509_hash — et origin (réservé DC API). Sans deux-points : client pré-enregistré.',
+    specRef: 'OID4VP 1.0 §5.9.3',
+    naming:
+      'A remplacé l’ancien paramètre séparé client_id_scheme (drafts) — attention aux articles antérieurs à 2025.',
+  },
+  {
+    id: 'kb-jwt',
+    term: 'Key Binding JWT',
+    definition:
+      'Le JWT (typ kb+jwt, obligatoire) qui clôt une présentation SD-JWT : signé par la clé du cnf du credential, il porte iat, aud (le Verifier), nonce (le défi de la transaction) et sd_hash (l’empreinte de la présentation exacte). C’est lui qui rend une présentation volée irrejouable.',
+    specRef: 'draft-ietf-oauth-selective-disclosure-jwt',
+  },
+  {
+    id: 'sd-hash',
+    term: 'sd_hash',
+    definition:
+      'Claim du KB-JWT : hachage (algorithme du _sd_alg, base64url) de la chaîne « <JWT signé>~<disclosures choisies>~ » — tilde final inclus. Il scelle EXACTEMENT ce qui est présenté : ajouter ou retirer une disclosure invalide le KB-JWT.',
+    specRef: 'draft-ietf-oauth-selective-disclosure-jwt',
+  },
+  {
+    id: 'direct-post',
+    term: 'direct_post',
+    definition:
+      'Response mode d’OID4VP : le wallet POSTe la réponse (vp_token…) directement à la response_uri du Verifier, sans charger une redirection navigateur d’artefacts volumineux. La variante direct_post.jwt emballe la réponse dans un JWT signé et/ou chiffré.',
+    specRef: 'OID4VP 1.0 §8.2-8.3',
+  },
+  {
+    id: 'unlinkability',
+    term: 'Unlinkability',
+    definition:
+      'Propriété visée : deux présentations d’une même personne ne doivent pas être corrélables — ni par l’émetteur (qui ne voit rien), ni entre Verifiers. Les ennemis concrets : signature du credential réutilisée, mêmes digests salés, mêmes identifiants. Les parades : émission par lots de credentials à usage limité, rotation.',
+    specRef: 'OID4VP 1.0 (considérations vie privée) · ARF',
+  },
+  {
+    id: 'dc-api',
+    term: 'Digital Credentials API (DC API)',
+    definition:
+      'API du navigateur (W3C) par laquelle un site demande une présentation SANS QR ni deep link : le navigateur/OS route la requête vers les wallets installés. OID4VP la profile en annexe (client_id préfixé origin, fourni par le navigateur). L’avenir probable du flow same-device.',
+    specRef: 'OID4VP 1.0 App. A · W3C Digital Credentials',
+  },
+  {
+    id: 'haip',
+    term: 'HAIP',
+    expansion: 'High Assurance Interoperability Profile',
+    definition:
+      'Profil OpenID qui fige, parmi toutes les options d’OID4VCI/OID4VP, un sous-ensemble interopérable à haut niveau de garantie (formats, algorithmes, méthodes d’identification du Verifier…). C’est le genre de profil que les écosystèmes réels — dont l’EUDI — imposent par-dessus les specs de base.',
+    specRef: 'OpenID HAIP (draft)',
+  },
+  {
+    id: 'presentation',
+    term: 'Presentation',
+    definition:
+      'Ce que le wallet remet au Verifier : pour SD-JWT VC, la chaîne <credential signé>~<disclosures choisies>~<KB-JWT>. Elle prouve trois choses à la fois : l’authenticité (signature Issuer), le contenu choisi (disclosures), la possession ici-et-maintenant (KB-JWT).',
+    specRef: 'OID4VP 1.0 §2 · App. B.3',
+  },
 ]
 
 export const glossaryById = new Map(glossary.map((e) => [e.id, e]))

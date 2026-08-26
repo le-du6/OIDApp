@@ -306,21 +306,96 @@ export const curriculum: ModuleMeta[] = [
     id: 'oid4vp',
     title: 'OID4VP — la présentation vérifiable',
     shortTitle: 'OID4VP',
-    description: 'DCQL, vp_token, divulgation sélective, Key Binding.',
-    available: false,
+    description:
+      'La seconde moitié du triangle : demander une preuve (DCQL), choisir ce qu’on révèle (divulgation sélective), prouver qu’on est le détenteur (Key Binding JWT) — sans que l’émetteur ne voie rien.',
+    specVersions: [
+      'OID4VP 1.0 (Final, 9 juil. 2025)',
+      'draft-ietf-oauth-selective-disclosure-jwt (KB-JWT)',
+      'draft-ietf-oauth-sd-jwt-vc-13',
+    ],
+    available: true,
     phase: 4,
-    chapters: [],
-  },
-  {
-    id: 'crypto',
-    title: 'Fondations crypto',
-    shortTitle: 'Crypto',
-    description: 'Hachage, sel, signatures, preuve de possession, aléa.',
-    available: false,
-    phase: 1,
-    chapters: [],
+    chapters: [
+      {
+        id: 'authorization-request',
+        number: 0,
+        title: 'Demander une preuve',
+        lessons: [
+          {
+            id: 'flow-presentation',
+            title: 'Le flow de présentation, de bout en bout',
+            scenarioId: 'oid4vp/presentation-flow',
+            ready: true,
+          },
+        ],
+      },
+      {
+        id: 'verifier-id',
+        number: 1,
+        title: 'Identifier le Verifier',
+        lessons: [
+          {
+            id: 'client-id-prefixes',
+            title: 'Client Identifier Prefixes (x509_san_dns…)',
+            scenarioId: 'oid4vp/verifier-identification',
+            ready: true,
+          },
+        ],
+      },
+      {
+        id: 'dcql',
+        number: 2,
+        title: 'DCQL : demander au claim près',
+        lessons: [{ id: 'langage-requete', title: 'Le langage de requête', ready: true }],
+      },
+      {
+        id: 'divulgation-selective',
+        number: 3,
+        title: 'La divulgation sélective en pratique',
+        lessons: [{ id: 'choisir-ses-claims', title: 'Choisir ce que l’on révèle', ready: true }],
+      },
+      {
+        id: 'key-binding',
+        number: 4,
+        title: 'Key Binding JWT',
+        lessons: [
+          {
+            id: 'anti-rejeu',
+            title: 'Le rejeu, et ce qui l’empêche',
+            scenarioId: 'oid4vp/replay-attack',
+            ready: true,
+          },
+        ],
+      },
+      {
+        id: 'unlinkability',
+        number: 5,
+        title: 'Unlinkability & vie privée',
+        lessons: [
+          {
+            id: 'federation-vs-wallet',
+            title: 'Le comparateur final : fédération vs wallet',
+            ready: true,
+          },
+        ],
+      },
+      {
+        id: 'ouverture',
+        number: 6,
+        title: 'Ouverture : DC API, HAIP',
+        lessons: [{ id: 'dc-api-haip', title: 'Là où ça va', ready: true }],
+      },
+    ],
   },
 ]
+
+/*
+ * Note : le module transversal « Fondations crypto » prévu au cahier des
+ * charges a été absorbé par le Crypto Lab (/labo-crypto), alimenté au fil
+ * des phases : hachage, PKCE, signatures ES256, validation d'ID Token,
+ * proof of possession, divulgation sélective. Un module de leçons dédié
+ * ferait doublon — retiré du curriculum en accord avec Benoit (2026-08-26).
+ */
 
 export function getModule(moduleId: string): ModuleMeta | undefined {
   return curriculum.find((m) => m.id === moduleId)
