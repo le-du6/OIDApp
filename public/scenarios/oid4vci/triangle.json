@@ -1,0 +1,98 @@
+{
+  "id": "oid4vci/triangle",
+  "title": "Le triangle Issuer · Holder (Wallet) · Verifier",
+  "description": "Le changement de paradigme : l'émission (une fois) et la présentation (autant de fois qu'on veut) sont DÉCOUPLÉES. L'Issuer signe un credential remis au Wallet ; plus tard, le Wallet le présente à un Verifier — sans que l'Issuer ne soit contacté, ni même informé.",
+  "specRefs": ["OID4VCI 1.0 (Final) §3", "eIDAS 2.0 (Règlement UE 2024/1183)"],
+  "actors": [
+    { "id": "user", "name": "Holder", "role": "user", "alias": "= vous (détenteur)" },
+    { "id": "wallet", "name": "Wallet", "role": "wallet", "alias": "= votre app portefeuille" },
+    {
+      "id": "issuer",
+      "name": "Credential Issuer",
+      "role": "issuer",
+      "alias": "= l'émetteur (État, université…)"
+    },
+    {
+      "id": "verifier",
+      "name": "Verifier",
+      "role": "verifier",
+      "alias": "= qui veut vérifier (plus tard)"
+    }
+  ],
+  "steps": [
+    {
+      "id": "request-issuance",
+      "from": "user",
+      "to": "wallet",
+      "kind": "user-action",
+      "label": "Demande son attestation d'identité",
+      "summary": "Phase d'ÉMISSION — elle n'a lieu qu'une fois (ou au renouvellement). L'utilisateur demande à son wallet d'obtenir un credential auprès d'un émetteur."
+    },
+    {
+      "id": "issue",
+      "from": "wallet",
+      "to": "issuer",
+      "kind": "http",
+      "label": "Flow OID4VCI → credential signé",
+      "summary": "Le wallet exécute le flow d'émission (détaillé aux chapitres suivants : offer, token, proof, credential). Il en ressort un credential SIGNÉ par l'Issuer et LIÉ à une clé du wallet.",
+      "security": {
+        "level": "info",
+        "note": "L'Issuer authentifie l'utilisateur à CE moment-là, avec ses propres moyens. C'est le seul moment où il est en ligne dans l'histoire.",
+        "specRef": "OID4VCI 1.0 §3"
+      }
+    },
+    {
+      "id": "store",
+      "from": "wallet",
+      "to": "wallet",
+      "kind": "internal",
+      "label": "Credential stocké localement, lié à sa clé",
+      "summary": "Le credential vit dans le wallet de l'utilisateur — pas chez l'émetteur, pas dans un cloud tiers. La signature de l'Issuer le rend vérifiable partout, hors ligne compris."
+    },
+    {
+      "id": "presentation-request",
+      "from": "verifier",
+      "to": "wallet",
+      "kind": "http",
+      "label": "Des semaines plus tard : demande de présentation",
+      "summary": "Phase de PRÉSENTATION (protocole OID4VP — Phase 4). Un Verifier — un site, un guichet — demande une preuve : « avez-vous plus de 18 ans ? », « votre nom ? »."
+    },
+    {
+      "id": "consent",
+      "from": "user",
+      "to": "wallet",
+      "kind": "user-action",
+      "label": "Consent : choisit QUELS claims révéler",
+      "summary": "La divulgation sélective : l'utilisateur montre sa date de naissance SANS son adresse, par exemple. Mécanique SD-JWT au chapitre formats.",
+      "security": {
+        "level": "info",
+        "note": "Le consentement est par présentation ET par claim — granularité impossible dans le modèle fédéré, où l'IdP renvoie un paquet de claims défini par scope."
+      }
+    },
+    {
+      "id": "present",
+      "from": "wallet",
+      "to": "verifier",
+      "kind": "http",
+      "label": "Présente le credential (+ preuve de clé)",
+      "summary": "Le wallet transmet le credential et prouve qu'il contrôle la clé liée (key binding). Le Verifier vérifie la signature de l'Issuer avec ses clés PUBLIQUES, déjà publiées.",
+      "security": {
+        "level": "info",
+        "note": "Regardez ce qui NE se passe PAS : aucune flèche vers l'Issuer. Il n'est ni contacté, ni informé. Il ne peut pas savoir où, quand, ni auprès de qui le credential est présenté — le « phone home » a disparu par construction.",
+        "specRef": "eIDAS 2.0 — exigence de non-traçabilité"
+      }
+    },
+    {
+      "id": "verify",
+      "from": "verifier",
+      "to": "verifier",
+      "kind": "internal",
+      "label": "Vérifie signature + fraîcheur, localement",
+      "summary": "Signature de l'Issuer (clés publiques en cache), liaison à la clé du wallet, validité. Tout se vérifie SANS appel réseau vers l'émetteur — le triangle tient sans que ses trois côtés soient simultanément en ligne.",
+      "security": {
+        "level": "warning",
+        "note": "Contrepartie à connaître : la révocation devient un vrai sujet (listes de statut, durées courtes) puisqu'on ne demande plus à l'émetteur en temps réel. Rien n'est gratuit — on y reviendra."
+      }
+    }
+  ]
+}

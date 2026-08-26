@@ -1,0 +1,262 @@
+{
+  "id": "oid4vci/pre-authorized-code",
+  "title": "Pre-Authorized Code Flow : du QR au credential",
+  "description": "Le flow d'émission le plus courant : l'Issuer a déjà identifié l'utilisateur (portail en ligne, guichet). Il lui remet un Credential Offer (QR code) contenant un pre-authorized code ; le wallet l'échange contre un access token, prouve sa clé (jwt proof lié au c_nonce), et reçoit le credential SD-JWT VC. Version de référence : OID4VCI 1.0 (Final).",
+  "specRefs": ["OID4VCI 1.0 §4.1 (offer)", "OID4VCI 1.0 §7 (nonce)", "OID4VCI 1.0 §8 (credential)"],
+  "actors": [
+    {
+      "id": "user",
+      "name": "Holder",
+      "role": "user",
+      "alias": "= vous"
+    },
+    {
+      "id": "wallet",
+      "name": "Wallet",
+      "role": "wallet",
+      "alias": "= l'app portefeuille (EUDI…)"
+    },
+    {
+      "id": "issuer",
+      "name": "Credential Issuer",
+      "role": "issuer",
+      "alias": "= l'émetteur du credential"
+    }
+  ],
+  "steps": [
+    {
+      "id": "identify",
+      "from": "user",
+      "to": "issuer",
+      "kind": "user-action",
+      "label": "S'authentifie au portail de l'émetteur",
+      "summary": "Point de départ du pre-authorized flow : l'Issuer identifie l'utilisateur PAR SES PROPRES MOYENS — session du portail, comparution au guichet, parcours d'identification déjà réalisé. L'« autorisation » est donc acquise AVANT que le wallet n'entre en scène.",
+      "security": {
+        "level": "info",
+        "note": "C'est la différence structurante avec l'authorization code flow : ici, pas d'étape d'authentification pilotée par le wallet — l'Issuer a déjà fait le travail.",
+        "specRef": "OID4VCI 1.0 §4.1.1"
+      }
+    },
+    {
+      "id": "offer",
+      "from": "issuer",
+      "to": "user",
+      "kind": "http",
+      "label": "Affiche le Credential Offer (QR code)",
+      "summary": "Le portail affiche un QR contenant le Credential Offer : qui émet (credential_issuer), quoi (credential_configuration_ids), et comment (grants — ici le pre-authorized code, avec un tx_code exigé).",
+      "request": {
+        "channel": "front",
+        "request": {
+          "method": "GET",
+          "url": "openid-credential-offer:// (encodé dans le QR)"
+        },
+        "response": {
+          "status": 200,
+          "statusText": "OK",
+          "body": {
+            "type": "json",
+            "content": "{\n  \"credential_issuer\": \"https://issuer.example\",\n  \"credential_configuration_ids\": [\"identity_credential\"],\n  \"grants\": {\n    \"urn:ietf:params:oauth:grant-type:pre-authorized_code\": {\n      \"pre-authorized_code\": \"oaKazRN8I0IbtZ0C7JuMn5\",\n      \"tx_code\": {\n        \"input_mode\": \"numeric\",\n        \"length\": 5,\n        \"description\": \"Code reçu par SMS\"\n      }\n    }\n  }\n}"
+          }
+        }
+      },
+      "security": {
+        "level": "warning",
+        "note": "Un QR s'affiche… et se photographie. Seul, le pre-authorized code serait un bearer secret volable du regard. D'où le tx_code, transmis par un AUTRE canal.",
+        "specRef": "OID4VCI 1.0 §4.1.1"
+      }
+    },
+    {
+      "id": "scan",
+      "from": "user",
+      "to": "wallet",
+      "kind": "user-action",
+      "label": "Scanne le QR avec son wallet",
+      "summary": "Le wallet lit l'offer : il sait désormais à qui parler, quel credential demander, et qu'un tx_code numérique de 5 chiffres lui sera demandé."
+    },
+    {
+      "id": "tx-code-sms",
+      "from": "issuer",
+      "to": "user",
+      "kind": "http",
+      "label": "SMS : « votre code : 86420 »",
+      "summary": "Le Transaction Code arrive par un canal SÉPARÉ (SMS, e-mail, courrier). La spec le RECOMMANDE explicitement : c'est ce qui lie la transaction à la bonne personne.",
+      "security": {
+        "level": "info",
+        "note": "Défense anti-interception : qui n'a que le QR (photographié par-dessus une épaule) ne peut pas encaisser le credential — il lui manque le canal secondaire.",
+        "specRef": "OID4VCI 1.0 §4.1.1 (tx_code)"
+      }
+    },
+    {
+      "id": "enter-tx",
+      "from": "user",
+      "to": "wallet",
+      "kind": "user-action",
+      "label": "Saisit le tx_code dans le wallet",
+      "summary": "L'utilisateur recopie le code dans son wallet. Les deux canaux (QR + SMS) se rejoignent ici."
+    },
+    {
+      "id": "token",
+      "from": "wallet",
+      "to": "issuer",
+      "kind": "http",
+      "label": "POST /token (grant pre-authorized_code + tx_code)",
+      "summary": "Le wallet échange le pre-authorized code (et le tx_code) contre un access token, en back channel. C'est un grant OAuth2 à part entière — tout le socle de la Phase 1 resurgit ici.",
+      "request": {
+        "channel": "back",
+        "request": {
+          "method": "POST",
+          "url": "https://issuer.example/token",
+          "headers": {
+            "Content-Type": "application/x-www-form-urlencoded"
+          },
+          "body": {
+            "type": "form",
+            "content": "grant_type=urn%3Aietf%3Aparams%3Aoauth%3Agrant-type%3Apre-authorized_code&pre-authorized_code=oaKazRN8I0IbtZ0C7JuMn5&tx_code=86420",
+            "params": [
+              {
+                "name": "grant_type",
+                "value": "urn:ietf:params:oauth:grant-type:pre-authorized_code",
+                "description": "L'URN exact du grant pre-authorized code.",
+                "specRef": "OID4VCI 1.0 §4.1.1"
+              },
+              {
+                "name": "pre-authorized_code",
+                "value": "oaKazRN8I0IbtZ0C7JuMn5",
+                "description": "Le code de l'offer — courte durée, usage unique.",
+                "specRef": "OID4VCI 1.0 §4.1.1"
+              },
+              {
+                "name": "tx_code",
+                "value": "86420",
+                "description": "Le code du canal séparé, saisi par l'utilisateur.",
+                "specRef": "OID4VCI 1.0 §4.1.1"
+              }
+            ]
+          }
+        },
+        "response": {
+          "status": 200,
+          "statusText": "OK",
+          "headers": {
+            "Content-Type": "application/json",
+            "Cache-Control": "no-store"
+          },
+          "body": {
+            "type": "json",
+            "content": "{\n  \"access_token\": \"vci-at-91kD2p\",\n  \"token_type\": \"Bearer\",\n  \"expires_in\": 300\n}"
+          }
+        }
+      }
+    },
+    {
+      "id": "nonce",
+      "from": "wallet",
+      "to": "issuer",
+      "kind": "http",
+      "label": "POST /nonce → c_nonce",
+      "summary": "Nouveauté de la 1.0 finale : un Nonce Endpoint DÉDIÉ fournit le c_nonce (il ne vient plus de la token response). Ce nonce servira à lier la preuve de clé à CE flow d'émission.",
+      "request": {
+        "channel": "back",
+        "request": {
+          "method": "POST",
+          "url": "https://issuer.example/nonce"
+        },
+        "response": {
+          "status": 200,
+          "statusText": "OK",
+          "headers": {
+            "Content-Type": "application/json",
+            "Cache-Control": "no-store"
+          },
+          "body": {
+            "type": "json",
+            "content": "{ \"c_nonce\": \"cn-7f3b9d24aa\" }"
+          }
+        }
+      },
+      "security": {
+        "level": "info",
+        "note": "Cache-Control: no-store obligatoire — un nonce mis en cache n'est plus un nonce. Même besoin d'imprévisibilité que state, nonce OIDC et code_verifier : troisième variation du même thème.",
+        "specRef": "OID4VCI 1.0 §7"
+      }
+    },
+    {
+      "id": "build-proof",
+      "from": "wallet",
+      "to": "wallet",
+      "kind": "internal",
+      "label": "Génère sa clé + construit le jwt proof",
+      "summary": "Le wallet crée (ou mobilise) une paire de clés — idéalement dans du matériel sécurisé — et signe un proof JWT : typ openid4vci-proof+jwt, aud = l'Issuer, nonce = c_nonce, clé publique dans le header jwk. Détail au chapitre proof of possession.",
+      "tokens": [
+        {
+          "id": "proof",
+          "label": "jwt proof (signé par la clé du wallet)",
+          "format": "jwt",
+          "value": "eyJhbGciOiJFUzI1NiIsInR5cCI6Im9wZW5pZDR2Y2ktcHJvb2Yrand0IiwiandrIjp7Imt0eSI6IkVDIiwieCI6IjVMTTJyaEhEeUZGNWRSOGxvc1N2dmpDbmRwMlFKbEZBenZWVHRlOXZ6WEEiLCJ5Ijoib2tNeGp5VnhfVURpUXVTdjF5b1R1d2pvX0tfLUVHNHJZa2Y5Z0dXLWdGQSIsImNydiI6IlAtMjU2In19.eyJub25jZSI6ImNuLTdmM2I5ZDI0YWEiLCJhdWQiOiJodHRwczovL2lzc3Vlci5leGFtcGxlIiwiaWF0IjoxNzY3MjI1NjAwfQ.bYlD28QgkkWrtpO5wzJWeehrRe75AjCchBCHUzVdGi7bmUuGbjfrWhh_iApbZyRdtE6-asrsm1HGFFxhDOi7kg",
+          "note": "Décodez : typ openid4vci-proof+jwt dans le header, la clé publique en jwk, et nonce = le c_nonce reçu. Signé par la clé PRIVÉE du wallet, qui ne quitte jamais l'appareil."
+        }
+      ]
+    },
+    {
+      "id": "credential-request",
+      "from": "wallet",
+      "to": "issuer",
+      "kind": "http",
+      "label": "POST /credential (Bearer + proofs.jwt)",
+      "summary": "La Credential Request : le wallet présente l'access token ET la preuve de possession de sa clé. L'Issuer vérifie le proof (signature, aud, nonce) puis émet le credential lié à cette clé.",
+      "request": {
+        "channel": "back",
+        "request": {
+          "method": "POST",
+          "url": "https://issuer.example/credential",
+          "headers": {
+            "Authorization": "Bearer vci-at-91kD2p",
+            "Content-Type": "application/json"
+          },
+          "body": {
+            "type": "json",
+            "content": "{\n  \"credential_configuration_id\": \"identity_credential\",\n  \"proofs\": {\n    \"jwt\": [\"eyJhbGciOiJFUzI1NiIsInR5cCI6Im9wZW5pZDR2Y2ktcHJvb2Yrand0Iiwiandr…\"]\n  }\n}"
+          }
+        },
+        "response": {
+          "status": 200,
+          "statusText": "OK",
+          "headers": {
+            "Content-Type": "application/json",
+            "Cache-Control": "no-store"
+          },
+          "body": {
+            "type": "json",
+            "content": "{\n  \"credentials\": [\n    { \"credential\": \"eyJhbGciOiJFUzI1NiIsInR5cCI6ImRjK3NkLWp3dCIs…~WyJzYWx0LWduLThLazFWYlhxIiwi…~…~\" }\n  ]\n}"
+          }
+        }
+      },
+      "tokens": [
+        {
+          "id": "sd-jwt-vc",
+          "label": "SD-JWT VC reçu (partie JWT signée)",
+          "format": "jwt",
+          "value": "eyJhbGciOiJFUzI1NiIsInR5cCI6ImRjK3NkLWp3dCIsImtpZCI6InZjaS1pc3N1ZXItMjAyNi0wMSJ9.eyJ2Y3QiOiJodHRwczovL2NyZWRlbnRpYWxzLmV4YW1wbGUvaWRlbnRpdHlfY3JlZGVudGlhbCIsIl9zZCI6WyJNUHhraGJHN2tsTm13SXlvbndIRWRMTDJ5Nk5TbEIwNE5yZ3dpcXpZaE9ZIiwiWmlOUDRGMmNRcTdURVhxd0hKSVZjUVZyTGlCakNDVVhqTzJETHphTk9tdyIsIjQzTmxHZm1EcTBTTjBoNGEyVkdvODNNSy1OQnY1aktsMXVDcDhzOWd0OU0iXSwiX3NkX2FsZyI6InNoYS0yNTYiLCJjbmYiOnsiandrIjp7Imt0eSI6IkVDIiwieCI6IjVMTTJyaEhEeUZGNWRSOGxvc1N2dmpDbmRwMlFKbEZBenZWVHRlOXZ6WEEiLCJ5Ijoib2tNeGp5VnhfVURpUXVTdjF5b1R1d2pvX0tfLUVHNHJZa2Y5Z0dXLWdGQSIsImNydiI6IlAtMjU2In19LCJpc3MiOiJodHRwczovL2lzc3Vlci5leGFtcGxlIiwiaWF0IjoxNzY3MjI1NjAwLCJleHAiOjE3OTg3NjE2MDB9.Xti8UVrKg1vz_wi95SBs0b73955qG_fhSqzAr0qfY072fAUx8IZQUBy49vHhCyiKneCAvyJcDl39AhhAYYOv0g",
+          "note": "Décodez : typ dc+sd-jwt, vct, _sd (les hachages salés des claims — PAS les claims eux-mêmes), _sd_alg, et cnf.jwk = la clé du wallet. Le credential complet ajoute les disclosures : <jwt>~<disclosure>~…~ (chapitre formats)."
+        }
+      ],
+      "security": {
+        "level": "info",
+        "note": "Regardez cnf.jwk dans le credential : c'est la clé prouvée à l'étape précédente. Le credential est désormais inutilisable sans la clé privée du wallet — fondation du key binding de la Phase 4.",
+        "specRef": "OID4VCI 1.0 §8"
+      }
+    },
+    {
+      "id": "stored",
+      "from": "wallet",
+      "to": "wallet",
+      "kind": "internal",
+      "label": "Credential stocké — l'émission est terminée",
+      "summary": "Fin du flow : le wallet détient un credential signé par l'Issuer, lié à sa clé, prêt à être présenté (Phase 4) sans jamais recontacter l'émetteur.",
+      "security": {
+        "level": "info",
+        "note": "Bilan sécurité du flow : QR interceptable → tx_code par canal séparé ; token volable → durée courte ; credential copiable → inutilisable sans la clé privée (cnf). Chaque artefact a sa contre-mesure."
+      }
+    }
+  ]
+}

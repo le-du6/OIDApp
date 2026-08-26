@@ -1,0 +1,220 @@
+{
+  "id": "oid4vci/authorization-code",
+  "title": "Authorization Code Flow pour l'émission",
+  "description": "L'autre voie d'émission : quand l'utilisateur part de son wallet (pas d'offer pré-autorisée), c'est l'Authorization Code Flow de la Phase 1 qui reprend du service — PKCE compris — avec une nouveauté : authorization_details, qui demande précisément un CREDENTIAL et non un scope d'API.",
+  "specRefs": [
+    "OID4VCI 1.0 §5",
+    "RFC 9396 (authorization_details)",
+    "OID4VCI 1.0 §12.2.2 (metadata)"
+  ],
+  "actors": [
+    { "id": "user", "name": "Holder", "role": "user", "alias": "= vous" },
+    { "id": "wallet", "name": "Wallet", "role": "wallet", "alias": "= l'app portefeuille" },
+    {
+      "id": "issuer",
+      "name": "Credential Issuer",
+      "role": "issuer",
+      "alias": "= AS + Credential Endpoint"
+    }
+  ],
+  "steps": [
+    {
+      "id": "pick",
+      "from": "user",
+      "to": "wallet",
+      "kind": "user-action",
+      "label": "Choisit « obtenir mon attestation » dans le wallet",
+      "summary": "Cette fois le point de départ est le wallet : l'utilisateur veut un credential, sans être passé par le portail de l'émetteur. Le wallet va devoir TOUT découvrir, puis faire authentifier l'utilisateur."
+    },
+    {
+      "id": "metadata",
+      "from": "wallet",
+      "to": "issuer",
+      "kind": "http",
+      "label": "GET /.well-known/openid-credential-issuer",
+      "summary": "Même réflexe que la Discovery OIDC : le wallet récupère la configuration de l'Issuer — endpoints, et surtout le catalogue des credentials offerts avec leurs formats.",
+      "request": {
+        "channel": "back",
+        "request": {
+          "method": "GET",
+          "url": "https://issuer.example/.well-known/openid-credential-issuer"
+        },
+        "response": {
+          "status": 200,
+          "statusText": "OK",
+          "body": {
+            "type": "json",
+            "content": "{\n  \"credential_issuer\": \"https://issuer.example\",\n  \"credential_endpoint\": \"https://issuer.example/credential\",\n  \"nonce_endpoint\": \"https://issuer.example/nonce\",\n  \"credential_configurations_supported\": {\n    \"identity_credential\": {\n      \"format\": \"dc+sd-jwt\",\n      \"vct\": \"https://credentials.example/identity_credential\",\n      \"cryptographic_binding_methods_supported\": [\"jwk\"],\n      \"proof_types_supported\": { \"jwt\": { \"proof_signing_alg_values_supported\": [\"ES256\"] } }\n    }\n  }\n}"
+          }
+        }
+      },
+      "security": {
+        "level": "info",
+        "note": "Le well-known dédié d'OID4VCI : /.well-known/openid-credential-issuer. On y lit le format (dc+sd-jwt), le vct, et les types de proofs acceptés — tout ce que le wallet doit savoir avant de se lancer.",
+        "specRef": "OID4VCI 1.0 §12.2.2"
+      }
+    },
+    {
+      "id": "authorize",
+      "from": "wallet",
+      "to": "issuer",
+      "kind": "redirect",
+      "label": "GET /authorize?authorization_details=…&code_challenge=…",
+      "summary": "Authorization request classique (navigateur, PKCE S256…), avec la brique RAR vue au chapitre 7 d'OAuth2 : authorization_details de type openid_credential désigne LE credential demandé, bien plus précis qu'un scope.",
+      "request": {
+        "channel": "front",
+        "request": {
+          "method": "GET",
+          "url": "https://issuer.example/authorize",
+          "params": [
+            {
+              "name": "response_type",
+              "value": "code",
+              "description": "Code flow, comme toujours.",
+              "specRef": "RFC 6749 §4.1.1"
+            },
+            {
+              "name": "client_id",
+              "value": "wallet-app",
+              "description": "Le wallet est un Client OAuth2 comme un autre.",
+              "specRef": "RFC 6749 §2.2"
+            },
+            {
+              "name": "authorization_details",
+              "value": "[{\"type\":\"openid_credential\",\"credential_configuration_id\":\"identity_credential\"}]",
+              "description": "RAR (RFC 9396) appliqué à l'émission : on demande une configuration de credential précise, pas un périmètre d'API.",
+              "specRef": "OID4VCI 1.0 §5.1.1"
+            },
+            {
+              "name": "code_challenge",
+              "value": "E9Melhoa2OwvFrEMTJguCHaoeK1t8URWbuGJSstw-cM",
+              "description": "PKCE S256 — le wallet est un client public : PKCE est indispensable.",
+              "specRef": "RFC 7636 §4.2"
+            },
+            {
+              "name": "code_challenge_method",
+              "value": "S256",
+              "description": "Méthode de dérivation du challenge.",
+              "specRef": "RFC 7636 §4.3"
+            }
+          ]
+        }
+      }
+    },
+    {
+      "id": "authn",
+      "from": "user",
+      "to": "issuer",
+      "kind": "user-action",
+      "label": "S'authentifie auprès de l'émetteur + consent",
+      "summary": "L'Issuer authentifie l'utilisateur MAINTENANT (contrairement au pre-authorized flow où c'était déjà fait) — avec le niveau requis pour le credential demandé : pour une attestation d'identité régalienne, attendez-vous à une identification forte.",
+      "security": {
+        "level": "info",
+        "note": "Le niveau d'authentification exigé ici borne la valeur du credential émis : c'est le maillon « enrôlement » de toute la chaîne de confiance (LoA — Level of Assurance).",
+        "specRef": "eIDAS 2.0 — niveaux de garantie"
+      }
+    },
+    {
+      "id": "code-back",
+      "from": "issuer",
+      "to": "wallet",
+      "kind": "redirect",
+      "label": "302 → callback du wallet ?code=…",
+      "summary": "Retour du code d'autorisation vers le wallet (deep link / claimed HTTPS URL sur mobile — les redirect URIs d'app mobile du chapitre PKCE, exactement)."
+    },
+    {
+      "id": "token",
+      "from": "wallet",
+      "to": "issuer",
+      "kind": "http",
+      "label": "POST /token (code + code_verifier)",
+      "summary": "Échange standard code → access token, PKCE vérifié. À partir d'ici, les deux flows d'émission convergent : token en poche, il reste à prouver la clé.",
+      "request": {
+        "channel": "back",
+        "request": {
+          "method": "POST",
+          "url": "https://issuer.example/token",
+          "body": {
+            "type": "form",
+            "content": "grant_type=authorization_code&code=vciSplxl0BeZQQYbYS6W&code_verifier=dBjftJeZ4CVP-mB92K27uhbUJU1p1r_wW1gFWFOEjXk",
+            "params": [
+              {
+                "name": "grant_type",
+                "value": "authorization_code",
+                "description": "Le grant classique de la Phase 1.",
+                "specRef": "RFC 6749 §4.1.3"
+              },
+              {
+                "name": "code",
+                "value": "vciSplxl0BeZQQYbYS6W",
+                "description": "Le code du callback.",
+                "specRef": "RFC 6749 §4.1.3"
+              },
+              {
+                "name": "code_verifier",
+                "value": "dBjftJeZ4CVP-mB92K27uhbUJU1p1r_wW1gFWFOEjXk",
+                "description": "Le secret PKCE originel — l'AS recalcule S256 et compare.",
+                "specRef": "RFC 7636 §4.5"
+              }
+            ]
+          }
+        },
+        "response": {
+          "status": 200,
+          "statusText": "OK",
+          "headers": { "Content-Type": "application/json", "Cache-Control": "no-store" },
+          "body": {
+            "type": "json",
+            "content": "{\n  \"access_token\": \"vci-at-77xQ4c\",\n  \"token_type\": \"Bearer\",\n  \"expires_in\": 300,\n  \"authorization_details\": [{\n    \"type\": \"openid_credential\",\n    \"credential_configuration_id\": \"identity_credential\",\n    \"credential_identifiers\": [\"identity_credential_1\"]\n  }]\n}"
+          }
+        }
+      },
+      "security": {
+        "level": "info",
+        "note": "La token response peut renvoyer des credential_identifiers : dans ce cas, la Credential Request utilisera credential_identifier (et non credential_configuration_id).",
+        "specRef": "OID4VCI 1.0 §6.2"
+      }
+    },
+    {
+      "id": "nonce-proof-credential",
+      "from": "wallet",
+      "to": "issuer",
+      "kind": "http",
+      "label": "POST /nonce, puis /credential (proofs.jwt)",
+      "summary": "Suite identique au pre-authorized flow : c_nonce au Nonce Endpoint, jwt proof signé par la clé du wallet, Credential Request, et le SD-JWT VC arrive — lié à la clé via cnf. Le zoom complet est au chapitre proof of possession.",
+      "request": {
+        "channel": "back",
+        "request": {
+          "method": "POST",
+          "url": "https://issuer.example/credential",
+          "headers": { "Authorization": "Bearer vci-at-77xQ4c" },
+          "body": {
+            "type": "json",
+            "content": "{\n  \"credential_identifier\": \"identity_credential_1\",\n  \"proofs\": { \"jwt\": [\"eyJ…openid4vci-proof+jwt…\"] }\n}"
+          }
+        },
+        "response": {
+          "status": 200,
+          "statusText": "OK",
+          "body": {
+            "type": "json",
+            "content": "{\n  \"credentials\": [ { \"credential\": \"eyJ…dc+sd-jwt…~disclosures~\" } ]\n}"
+          }
+        }
+      }
+    },
+    {
+      "id": "compare",
+      "from": "wallet",
+      "to": "wallet",
+      "kind": "internal",
+      "label": "Bilan : quand utiliser quel flow ?",
+      "summary": "Pre-authorized : l'Issuer a déjà identifié l'utilisateur (portail, guichet) — le wallet n'orchestre pas d'authentification. Authorization code : le wallet initie, l'Issuer authentifie pendant le flow. Les deux finissent pareil : nonce → proof → credential.",
+      "security": {
+        "level": "info",
+        "note": "Deux chemins d'entrée, un seul chemin de sortie : la preuve de possession de clé est le passage obligé des DEUX flows. C'est elle qui fait du credential un objet lié au wallet, pas un simple fichier.",
+        "specRef": "OID4VCI 1.0 §8"
+      }
+    }
+  ]
+}

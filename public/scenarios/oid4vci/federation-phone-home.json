@@ -1,0 +1,105 @@
+{
+  "id": "oid4vci/federation-phone-home",
+  "title": "Fédération : le problème du « phone home »",
+  "description": "Le modèle OIDC que vous connaissez a un coût structurel pour la vie privée : à CHAQUE connexion, le navigateur retourne chez l'IdP — qui apprend donc où vous vous connectez, et quand. Ce n'est pas un bug, c'est l'architecture. Regardez ce que l'IdP accumule.",
+  "specRefs": ["OIDC Core 1.0 §3.1.2.1 (architecture)", "eIDAS 2.0 — considérants vie privée"],
+  "actors": [
+    { "id": "user", "name": "End-User", "role": "user", "alias": "= vous" },
+    { "id": "browser", "name": "User-Agent", "role": "browser", "alias": "= le navigateur" },
+    {
+      "id": "rp",
+      "name": "Relying Party",
+      "role": "client",
+      "alias": "= chaque site où vous vous connectez"
+    },
+    {
+      "id": "op",
+      "name": "Identity Provider",
+      "role": "authorization-server",
+      "alias": "= l'IdP qui « voit tout »"
+    }
+  ],
+  "steps": [
+    {
+      "id": "login-site-a",
+      "from": "user",
+      "to": "browser",
+      "kind": "user-action",
+      "label": "Lundi : « Se connecter » sur sante.example",
+      "summary": "Une connexion parfaitement légitime, sur un site sensible : un service de santé. L'utilisateur choisit « login avec son IdP » — le réflexe que toute la Phase 2 a construit."
+    },
+    {
+      "id": "authz-site-a",
+      "from": "browser",
+      "to": "op",
+      "kind": "redirect",
+      "label": "GET /authorize?client_id=sante-example&…",
+      "summary": "Mécanique OIDC normale : l'authentication request porte le client_id du site. Conséquence structurelle : l'IdP SAIT que cet utilisateur se connecte à sante.example, à cet instant précis.",
+      "request": {
+        "channel": "front",
+        "request": {
+          "method": "GET",
+          "url": "https://idp.example/authorize",
+          "params": [
+            {
+              "name": "client_id",
+              "value": "sante-example",
+              "description": "Identifie le site demandeur — c'est nécessaire au protocole, et c'est précisément l'information que l'IdP accumule.",
+              "specRef": "OIDC Core §3.1.2.1"
+            },
+            { "name": "scope", "value": "openid", "description": "Requête OIDC standard." }
+          ]
+        }
+      },
+      "security": {
+        "level": "danger",
+        "note": "Rien d'anormal protocolairement — et c'est bien le problème : la fuite d'information est CONSTITUTIVE du modèle fédéré. Impossible de l'éviter sans changer d'architecture.",
+        "specRef": "OIDC Core §3.1.2.1"
+      }
+    },
+    {
+      "id": "log-a",
+      "from": "op",
+      "to": "op",
+      "kind": "internal",
+      "label": "Journal : user-8b2c91 → sante.example, lundi 9 h 12",
+      "summary": "L'IdP journalise — ne serait-ce que pour la sécurité et l'audit. L'entrée dit : QUI, OÙ, QUAND.",
+      "security": {
+        "level": "warning",
+        "note": "Même un IdP de bonne foi détient cette donnée : elle existe, donc elle peut être exigée, fuiter, ou être exploitée. La question n'est pas la confiance, c'est l'existence de la donnée."
+      }
+    },
+    {
+      "id": "login-site-b",
+      "from": "user",
+      "to": "browser",
+      "kind": "user-action",
+      "label": "Mardi : « Se connecter » sur syndicat.example",
+      "summary": "Le lendemain, une autre connexion — un site d'organisation professionnelle. Même mécanique, même retour chez l'IdP."
+    },
+    {
+      "id": "authz-site-b",
+      "from": "browser",
+      "to": "op",
+      "kind": "redirect",
+      "label": "GET /authorize?client_id=syndicat-example&…",
+      "summary": "Chaque service fréquenté défile ainsi, connexion après connexion, dans les requêtes reçues par l'IdP.",
+      "security": {
+        "level": "danger",
+        "note": "Le « phone home » : le flux repasse TOUJOURS par la maison mère. Notez que le contenu échangé peut être irréprochable — c'est la MÉTADONNÉE (qui va où, quand) qui trahit."
+      }
+    },
+    {
+      "id": "profile",
+      "from": "op",
+      "to": "op",
+      "kind": "internal",
+      "label": "Résultat : le graphe complet de vos usages",
+      "summary": "santé lundi, syndicat mardi, banque mercredi… L'IdP détient de fait l'historique de votre vie numérique — un profil que personne n'a explicitement consenti à constituer.",
+      "security": {
+        "level": "danger",
+        "note": "C'est l'argument vie privée central derrière le modèle wallet (eIDAS 2.0 / EUDI) : émettre UNE FOIS une attestation, puis la présenter SANS retourner chez l'émetteur. Basculez sur le triangle pour voir la différence."
+      }
+    }
+  ]
+}

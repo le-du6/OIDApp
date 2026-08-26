@@ -1,0 +1,160 @@
+{
+  "id": "oid4vci/jwt-proof",
+  "title": "Proof of possession : c_nonce + jwt proof",
+  "description": "Zoom sur LE mécanisme crypto de l'émission : comment l'Issuer s'assure que le wallet CONTRÔLE la clé à laquelle le credential sera lié. Un nonce imprévisible, une signature, et une clé publique déclarée — trois ingrédients, aucun secret partagé.",
+  "specRefs": ["OID4VCI 1.0 §7 (Nonce Endpoint)", "OID4VCI 1.0 §8.2 + App. F.1 (jwt proof)"],
+  "actors": [
+    {
+      "id": "wallet",
+      "name": "Wallet",
+      "role": "wallet",
+      "alias": "= détient la clé privée"
+    },
+    {
+      "id": "issuer",
+      "name": "Credential Issuer",
+      "role": "issuer",
+      "alias": "= exige la preuve avant d'émettre"
+    }
+  ],
+  "steps": [
+    {
+      "id": "nonce",
+      "from": "wallet",
+      "to": "issuer",
+      "kind": "http",
+      "label": "POST /nonce → { c_nonce }",
+      "summary": "Le wallet demande un c_nonce au Nonce Endpoint (dédié dans la 1.0 finale). Cette valeur imprévisible, à courte durée de vie, est ce qui rendra la preuve FRAÎCHE : impossible de resservir une vieille signature.",
+      "request": {
+        "channel": "back",
+        "request": {
+          "method": "POST",
+          "url": "https://issuer.example/nonce"
+        },
+        "response": {
+          "status": 200,
+          "statusText": "OK",
+          "headers": {
+            "Cache-Control": "no-store",
+            "Content-Type": "application/json"
+          },
+          "body": {
+            "type": "json",
+            "content": "{ \"c_nonce\": \"cn-7f3b9d24aa\" }"
+          }
+        }
+      },
+      "security": {
+        "level": "info",
+        "note": "Quatrième apparition du même besoin dans ce cours : state (callback), nonce OIDC (ID Token), code_verifier (PKCE), c_nonce (preuve de clé). Un seul concept — l'imprévisibilité liée à une transaction — décliné par artefact à protéger.",
+        "specRef": "OID4VCI 1.0 §7"
+      }
+    },
+    {
+      "id": "keypair",
+      "from": "wallet",
+      "to": "wallet",
+      "kind": "internal",
+      "label": "Paire de clés : la privée ne sort JAMAIS",
+      "summary": "Le wallet dispose d'une paire de clés — générée pour ce credential, idéalement dans le matériel sécurisé de l'appareil (Secure Enclave, StrongBox, ou le WSCD du monde EUDI). Ce qui va voyager, c'est exclusivement la clé PUBLIQUE.",
+      "security": {
+        "level": "info",
+        "note": "Toute la valeur du key binding repose sur la non-exportabilité de la clé privée. C'est ce que la key attestation (chapitre suivant) permettra de PROUVER à l'Issuer, au-delà de la simple possession."
+      }
+    },
+    {
+      "id": "build",
+      "from": "wallet",
+      "to": "wallet",
+      "kind": "internal",
+      "label": "Construit et signe le jwt proof",
+      "summary": "Le proof est un petit JWT : header { typ: openid4vci-proof+jwt, alg: ES256, jwk: clé publique } ; payload { aud: l'Issuer, iat, nonce: c_nonce }. Signé avec la clé privée. Décodez-le ci-contre — chaque champ a un rôle précis.",
+      "tokens": [
+        {
+          "id": "proof",
+          "label": "jwt proof",
+          "format": "jwt",
+          "value": "eyJhbGciOiJFUzI1NiIsInR5cCI6Im9wZW5pZDR2Y2ktcHJvb2Yrand0IiwiandrIjp7Imt0eSI6IkVDIiwieCI6IjVMTTJyaEhEeUZGNWRSOGxvc1N2dmpDbmRwMlFKbEZBenZWVHRlOXZ6WEEiLCJ5Ijoib2tNeGp5VnhfVURpUXVTdjF5b1R1d2pvX0tfLUVHNHJZa2Y5Z0dXLWdGQSIsImNydiI6IlAtMjU2In19.eyJub25jZSI6ImNuLTdmM2I5ZDI0YWEiLCJhdWQiOiJodHRwczovL2lzc3Vlci5leGFtcGxlIiwiaWF0IjoxNzY3MjI1NjAwfQ.bYlD28QgkkWrtpO5wzJWeehrRe75AjCchBCHUzVdGi7bmUuGbjfrWhh_iApbZyRdtE6-asrsm1HGFFxhDOi7kg",
+          "note": "typ dédié (openid4vci-proof+jwt) : un proof ne peut pas être confondu avec un autre JWT ni réutilisé ailleurs. aud : ce proof ne vaut QUE pour cet Issuer. nonce : QUE pour ce flow. jwk : la clé dont on prouve le contrôle."
+        }
+      ],
+      "security": {
+        "level": "warning",
+        "note": "Pourquoi aud est-il indispensable ? Sans lui, un Issuer malhonnête pourrait REJOUER votre proof auprès d'un autre Issuer et obtenir un credential lié à votre clé… en votre nom. Chaque claim du proof ferme un rejeu précis.",
+        "specRef": "OID4VCI 1.0 App. F.1"
+      }
+    },
+    {
+      "id": "send",
+      "from": "wallet",
+      "to": "issuer",
+      "kind": "http",
+      "label": "POST /credential { proofs: { jwt: […] } }",
+      "summary": "Le proof part dans la Credential Request (paramètre proofs, tableau — on peut prouver plusieurs clés d'un coup pour recevoir un lot de credentials).",
+      "request": {
+        "channel": "back",
+        "request": {
+          "method": "POST",
+          "url": "https://issuer.example/credential",
+          "headers": {
+            "Authorization": "Bearer vci-at-91kD2p"
+          },
+          "body": {
+            "type": "json",
+            "content": "{\n  \"credential_configuration_id\": \"identity_credential\",\n  \"proofs\": { \"jwt\": [\"eyJhbGciOiJFUzI1NiIsInR5cCI6Im9wZW5pZDR2Y2ktcHJvb2Yrand0Iiwiandr…\"] }\n}"
+          }
+        }
+      }
+    },
+    {
+      "id": "verify",
+      "from": "issuer",
+      "to": "issuer",
+      "kind": "internal",
+      "label": "Vérifie : signature ✓ nonce ✓ aud ✓ fraîcheur ✓",
+      "summary": "L'Issuer vérifie la signature avec la jwk du header (la clé se prouve elle-même), que nonce est un c_nonce émis par lui et non consommé, que aud le désigne, et que iat est récent. Quatre contrôles, quatre rejets possibles.",
+      "security": {
+        "level": "info",
+        "note": "La signature valide ≠ preuve suffisante — exactement la leçon de la validation d'ID Token. Ici aussi : signature (contrôle de la clé) + nonce (fraîcheur) + aud (destinataire). Le motif se répète parce que les menaces se répètent.",
+        "specRef": "OID4VCI 1.0 §8.2"
+      }
+    },
+    {
+      "id": "bind",
+      "from": "issuer",
+      "to": "wallet",
+      "kind": "http",
+      "label": "Émet le credential avec cnf.jwk = la clé prouvée",
+      "summary": "L'Issuer inscrit la clé publique prouvée dans le claim cnf du credential, puis signe le tout. Le lien clé↔credential est désormais gravé dans la signature de l'émetteur — infalsifiable.",
+      "request": {
+        "channel": "back",
+        "request": {
+          "method": "POST",
+          "url": "https://issuer.example/credential (réponse)"
+        },
+        "response": {
+          "status": 200,
+          "statusText": "OK",
+          "body": {
+            "type": "json",
+            "content": "{ \"credentials\": [ { \"credential\": \"<SD-JWT VC avec cnf.jwk>\" } ] }"
+          }
+        }
+      },
+      "tokens": [
+        {
+          "id": "sdjwt",
+          "label": "SD-JWT VC émis — regardez cnf.jwk",
+          "format": "jwt",
+          "value": "eyJhbGciOiJFUzI1NiIsInR5cCI6ImRjK3NkLWp3dCIsImtpZCI6InZjaS1pc3N1ZXItMjAyNi0wMSJ9.eyJ2Y3QiOiJodHRwczovL2NyZWRlbnRpYWxzLmV4YW1wbGUvaWRlbnRpdHlfY3JlZGVudGlhbCIsIl9zZCI6WyJNUHhraGJHN2tsTm13SXlvbndIRWRMTDJ5Nk5TbEIwNE5yZ3dpcXpZaE9ZIiwiWmlOUDRGMmNRcTdURVhxd0hKSVZjUVZyTGlCakNDVVhqTzJETHphTk9tdyIsIjQzTmxHZm1EcTBTTjBoNGEyVkdvODNNSy1OQnY1aktsMXVDcDhzOWd0OU0iXSwiX3NkX2FsZyI6InNoYS0yNTYiLCJjbmYiOnsiandrIjp7Imt0eSI6IkVDIiwieCI6IjVMTTJyaEhEeUZGNWRSOGxvc1N2dmpDbmRwMlFKbEZBenZWVHRlOXZ6WEEiLCJ5Ijoib2tNeGp5VnhfVURpUXVTdjF5b1R1d2pvX0tfLUVHNHJZa2Y5Z0dXLWdGQSIsImNydiI6IlAtMjU2In19LCJpc3MiOiJodHRwczovL2lzc3Vlci5leGFtcGxlIiwiaWF0IjoxNzY3MjI1NjAwLCJleHAiOjE3OTg3NjE2MDB9.Xti8UVrKg1vz_wi95SBs0b73955qG_fhSqzAr0qfY072fAUx8IZQUBy49vHhCyiKneCAvyJcDl39AhhAYYOv0g",
+          "note": "cnf.jwk contient exactement la clé du proof. En Phase 4, présenter ce credential exigera une signature fraîche de cette clé (Key Binding JWT) : un credential volé, sans la clé privée, est un fichier mort."
+        }
+      ],
+      "security": {
+        "level": "info",
+        "note": "À manipuler dans le Crypto Lab : section « Proof of possession » — générez une clé, signez un proof sur un c_nonce, vérifiez-le, puis altérez le nonce pour voir l'Issuer (vous) le rejeter.",
+        "specRef": "OID4VCI 1.0 §8"
+      }
+    }
+  ]
+}
