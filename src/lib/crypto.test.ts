@@ -95,3 +95,87 @@ describe('verifyCompactJwsES256', () => {
     )
   })
 })
+
+/* ------------------------------------------------- SD-JWT / OID4VCI */
+
+import { computeDisclosureDigest, decodeDisclosure } from './crypto'
+import {
+  VCI_C_NONCE,
+  VCI_DISCLOSURES,
+  VCI_ISSUER,
+  VCI_ISSUER_JWKS,
+  VCI_JWT_PROOF,
+  VCI_SD_JWT,
+  VCI_SD_JWT_COMPACT,
+  WALLET_PUBLIC_JWK,
+} from '../data/fixtures/oid4vci'
+import { decodeJwt } from './jwt'
+
+describe('fixtures SD-JWT VC (draft-ietf-oauth-sd-jwt-vc)', () => {
+  const payload = decodeJwt(VCI_SD_JWT).payload as {
+    _sd: string[]
+    _sd_alg: string
+    vct: string
+    cnf: { jwk: { x: string; y: string } }
+  }
+
+  it('chaque digest de disclosure figure dans _sd (hachage salé réel)', async () => {
+    expect(payload._sd_alg).toBe('sha-256')
+    for (const d of VCI_DISCLOSURES) {
+      expect(await computeDisclosureDigest(d.b64)).toBe(d.digest)
+      expect(payload._sd).toContain(d.digest)
+    }
+  })
+
+  it('les disclosures décodées redonnent [salt, nom, valeur]', () => {
+    const [salt, name, value] = decodeDisclosure(VCI_DISCLOSURES[0]!.b64)
+    expect(salt).toBe(VCI_DISCLOSURES[0]!.salt)
+    expect(name).toBe('given_name')
+    expect(value).toBe('Camille')
+  })
+
+  it('le SD-JWT est signé par l’Issuer (typ dc+sd-jwt) et vérifiable', async () => {
+    expect(decodeJwt(VCI_SD_JWT).header.typ).toBe('dc+sd-jwt')
+    expect(payload.vct).toMatch(/^https:/)
+    expect(await verifyCompactJwsES256(VCI_SD_JWT, VCI_ISSUER_JWKS.keys[0] as JsonWebKey)).toBe(
+      true,
+    )
+  })
+
+  it('cnf.jwk du credential est exactement la clé publique du Wallet', () => {
+    expect(payload.cnf.jwk.x).toBe(WALLET_PUBLIC_JWK.x)
+    expect(payload.cnf.jwk.y).toBe(WALLET_PUBLIC_JWK.y)
+  })
+
+  it('le format compact est <jwt>~<d1>~<d2>~<d3>~', () => {
+    const parts = VCI_SD_JWT_COMPACT.split('~')
+    expect(parts[0]).toBe(VCI_SD_JWT)
+    expect(parts.slice(1, -1)).toHaveLength(3)
+    expect(parts.at(-1)).toBe('')
+  })
+})
+
+describe('fixture jwt proof (OID4VCI 1.0 App. F.1)', () => {
+  it('typ openid4vci-proof+jwt, aud = issuer, nonce = c_nonce', () => {
+    const { header, payload } = decodeJwt(VCI_JWT_PROOF)
+    expect(header.typ).toBe('openid4vci-proof+jwt')
+    expect(payload.aud).toBe(VCI_ISSUER)
+    expect(payload.nonce).toBe(VCI_C_NONCE)
+  })
+
+  it('signé par la clé du Wallet (celle du header jwk)', async () => {
+    const { header } = decodeJwt(VCI_JWT_PROOF)
+    expect(await verifyCompactJwsES256(VCI_JWT_PROOF, header.jwk as JsonWebKey)).toBe(true)
+    // et cette clé est bien celle attestée dans le credential (cnf)
+    expect((header.jwk as { x: string }).x).toBe(WALLET_PUBLIC_JWK.x)
+  })
+
+  it('un proof au nonce altéré ne vérifie plus', async () => {
+    const [h, p, s] = VCI_JWT_PROOF.split('.') as [string, string, string]
+    const claims = JSON.parse(Buffer.from(p, 'base64url').toString())
+    claims.nonce = 'cn-forged'
+    const forged = Buffer.from(JSON.stringify(claims)).toString('base64url')
+    const { header } = decodeJwt(VCI_JWT_PROOF)
+    expect(await verifyCompactJwsES256(`${h}.${forged}.${s}`, header.jwk as JsonWebKey)).toBe(false)
+  })
+})

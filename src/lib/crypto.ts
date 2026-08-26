@@ -114,3 +114,25 @@ export async function verifyCompactJwsES256(jws: string, jwk: JsonWebKey): Promi
   const key = await importEs256PublicJwk(jwk)
   return verifyES256(key, base64UrlToBytes(signature), `${header}.${payload}`)
 }
+
+/* ------------------------------------------------- SD-JWT : disclosures */
+
+/**
+ * Digest d'une disclosure SD-JWT : base64url(SHA-256(ascii(disclosure))).
+ * ATTENTION, différent d'at_hash : ici c'est le hachage COMPLET (32 octets),
+ * pas la moitié gauche. C'est ce digest qui figure dans le tableau _sd du
+ * SD-JWT — la disclosure elle-même (salt, nom, valeur) reste hors du jeton.
+ */
+export async function computeDisclosureDigest(disclosureB64u: string): Promise<string> {
+  return bytesToBase64Url(await sha256(disclosureB64u))
+}
+
+/** Décode une disclosure base64url → [salt, nom, valeur]. */
+export function decodeDisclosure(disclosureB64u: string): [string, string, unknown] {
+  const json = new TextDecoder().decode(base64UrlToBytes(disclosureB64u))
+  const parsed: unknown = JSON.parse(json)
+  if (!Array.isArray(parsed) || parsed.length !== 3) {
+    throw new Error('Disclosure invalide : attendu [salt, nom, valeur]')
+  }
+  return parsed as [string, string, unknown]
+}
