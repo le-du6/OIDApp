@@ -5,6 +5,7 @@ import {
   bytesToBase64Url,
   computeAtHash,
   computeCodeChallenge,
+  computeDisclosureDigest,
   exportPublicJwk,
   generateCodeVerifier,
   generateES256KeyPair,
@@ -16,6 +17,7 @@ import {
 import { JwtInspector } from '../components/jwt/JwtInspector'
 import { Callout } from '../components/content/Callout'
 import { OIDC_ACCESS_TOKEN, OIDC_AT_HASH, OIDC_ID_TOKEN, OIDC_JWKS } from '../data/fixtures/oidc'
+import { VCI_DISCLOSURES, VCI_SD_JWT } from '../data/fixtures/oid4vci'
 
 export const Route = createFileRoute('/labo-crypto')({
   component: CryptoLabPage,
@@ -44,6 +46,7 @@ function CryptoLabPage() {
       <SignSection />
       <IdTokenSection />
       <PopSection />
+      <SdSection />
       <JwtSection />
     </div>
   )
@@ -500,6 +503,99 @@ function PopSection() {
               : 'payload altéré après signature : rejet immédiat.'}
         </p>
       )}
+    </Section>
+  )
+}
+
+/* --------------------------------------- OID4VP : divulgation sélective */
+function SdSection() {
+  const [revealed, setRevealed] = useState<Record<string, boolean>>({
+    given_name: true,
+    family_name: false,
+    birthdate: true,
+  })
+  const [digests, setDigests] = useState<Record<string, string>>({})
+  const [sdHash, setSdHash] = useState<string | null>(null)
+
+  const chosen = VCI_DISCLOSURES.filter((d) => revealed[d.name])
+  const presentationPart = [VCI_SD_JWT, ...chosen.map((d) => d.b64), ''].join('~')
+
+  // Recalcule les digests des disclosures révélées + le sd_hash de la sélection.
+  useEffect(() => {
+    let cancelled = false
+    void (async () => {
+      const next: Record<string, string> = {}
+      for (const d of chosen) next[d.name] = await computeDisclosureDigest(d.b64)
+      const hash = await computeDisclosureDigest(presentationPart)
+      if (!cancelled) {
+        setDigests(next)
+        setSdHash(hash)
+      }
+    })()
+    return () => {
+      cancelled = true
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [presentationPart])
+
+  return (
+    <Section
+      title="🎭 Divulgation sélective — choisissez ce que vous révélez"
+      intro="Vous êtes le wallet, face à une demande de présentation. Cochez les claims à révéler : la présentation SD-JWT se construit en direct, chaque digest est recalculé et vérifié contre le _sd signé par l'Issuer, et le sd_hash de VOTRE sélection s'affiche — c'est lui que le Key Binding JWT scellerait."
+    >
+      <div className="flex flex-wrap gap-4">
+        {VCI_DISCLOSURES.map((d) => (
+          <label key={d.name} className="flex items-center gap-2 text-sm">
+            <input
+              type="checkbox"
+              checked={!!revealed[d.name]}
+              onChange={(e) => setRevealed((r) => ({ ...r, [d.name]: e.target.checked }))}
+              className="accent-[var(--ok)]"
+            />
+            <span className="font-mono text-xs">{d.name}</span>
+            <span className="text-muted">= {String(d.value)}</span>
+          </label>
+        ))}
+      </div>
+
+      <output className={outCls}>
+        Présentation ({chosen.length}/3 claims révélés) :{' '}
+        <span className="text-ink/90">&lt;jwt signé&gt;</span>
+        {chosen.map((d) => (
+          <span key={d.name}>
+            <span className="text-muted">~</span>
+            <span className="text-ok">&lt;{d.name}&gt;</span>
+          </span>
+        ))}
+        <span className="text-muted">~</span>
+        <span className="text-accent">&lt;kb-jwt&gt;</span>
+      </output>
+
+      {chosen.map((d) => (
+        <output key={d.name} className={outCls}>
+          digest({d.name}) = <span className="text-ok">{digests[d.name] ?? '…'}</span>{' '}
+          {digests[d.name] === d.digest ? (
+            <span className="text-ok">✔ présent dans _sd</span>
+          ) : (
+            <span className="text-muted">calcul…</span>
+          )}
+        </output>
+      ))}
+
+      {sdHash && (
+        <output className={outCls}>
+          sd_hash de cette sélection = <span className="text-accent">{sdHash}</span>
+        </output>
+      )}
+
+      <Callout kind="note">
+        <p>
+          Observez : cocher/décocher ne touche jamais au JWT signé — la signature de l'Issuer reste
+          valide quelle que soit la sélection, car elle ne couvre que les digests. En revanche le{' '}
+          <strong>sd_hash change à chaque sélection</strong> : le Key Binding JWT signé dessus fige
+          exactement ce qui a été consenti — ni plus, ni moins.
+        </p>
+      </Callout>
     </Section>
   )
 }
