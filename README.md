@@ -125,20 +125,21 @@ src/
   components/
     content/    briques de leçon : Term (popover glossaire), Callout, CodeBlock (Shiki),
                 Quiz, CompareTable, DecisionTree
-  content/      oauth2/ (11 leçons) + oidc/ (7 leçons), en lazy via registry.ts
+  content/      oauth2/ (11) + oidc/ (7) + oid4vci/ (7 leçons), en lazy via registry.ts
   routes/       TanStack Router file-based : / (dashboard), /$moduleId,
                 /$moduleId/$chapitre/$lecon, /glossaire, /labo-crypto
-  data/         curriculum.ts (navigation), glossary.ts (60 entrées),
-                fixtures/oidc.ts (ID Token/JWKS signés — GÉNÉRÉS, cf. scripts/)
+  data/         curriculum.ts (navigation + versions de référence des specs),
+                glossary.ts (77 entrées), fixtures/ (OIDC + OID4VCI — GÉNÉRÉES, cf. scripts/)
   db/           Dexie + hooks TanStack Query, export/import/reset de la progression
   lib/          jwt.ts (décodage base64url à la main), crypto.ts (WebCrypto : PKCE, ES256,
                 at_hash, vérif. JWS), actors.ts (code couleur)
-scripts/        gen-oidc-fixtures.mjs (jose, dev) → src/data/fixtures/oidc.ts
+scripts/        gen-oidc-fixtures.mjs · gen-oid4vci-fixtures.mjs (jose, dev) → src/data/fixtures/
 public/
-  scenarios/    oauth2/ (8) + oidc/ (5) scénarios JSON (l'API de contribution ci-dessus)
+  scenarios/    oauth2/ (8) + oidc/ (5) + oid4vci/ (5) scénarios JSON (l'API de contribution)
 ```
 
-Régénérer les fixtures OIDC (clés jetables, timestamps fixes) : `node scripts/gen-oidc-fixtures.mjs`.
+Régénérer les fixtures (clés jetables, timestamps/salts fixes) : `node scripts/gen-oidc-fixtures.mjs`,
+`node scripts/gen-oid4vci-fixtures.mjs`.
 
 ## État d'avancement
 
@@ -152,7 +153,14 @@ Régénérer les fixtures OIDC (clés jetables, timestamps fixes) : `node script
       nonce/at_hash/c_hash, OIDC vs SAML. 5 scénarios, Crypto Lab « Valider un ID Token » (vérif.
       ES256 réelle + altération + at_hash), glossaire +16 entrées. Points normatifs vérifiés sur
       OIDC Core 1.0 et Discovery 1.0.
-- [ ] Phase 3 — OID4VCI · Phase 4 — OID4VP
+- [x] **Phase 3 — OID4VCI complète** : 7 chapitres (0–6) — paradigme « phone home » vs
+      triangle, Credential Offer & pre-authorized code (tx_code), authorization code
+      (authorization_details), proof of possession (c_nonce/jwt proof), formats SD-JWT VC &
+      mdoc/mDL, key attestation, eIDAS 2.0/EUDI. 5 scénarios, fixture SD-JWT VC signée avec
+      VRAIS hachages salés (testés contre _sd), Crypto Lab « Proof of possession » (défi-réponse
+      jouable, rejeu détecté), glossaire +18. Versions de référence AFFICHÉES par module
+      (OID4VCI 1.0 Final · draft sd-jwt-vc-13 · ISO 18013-5).
+- [ ] Phase 4 — OID4VP
 
 Chaque affirmation normative cite sa section (OIDC Core / Discovery) ; les fixtures signées rendent
 `at_hash` et la vérification de signature reproductibles et testés (41 tests au total).

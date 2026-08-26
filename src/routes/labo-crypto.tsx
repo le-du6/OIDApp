@@ -43,6 +43,7 @@ function CryptoLabPage() {
       <PkceSection />
       <SignSection />
       <IdTokenSection />
+      <PopSection />
       <JwtSection />
     </div>
   )
@@ -348,6 +349,157 @@ function IdTokenSection() {
           c'est ce qui rend un JWT infalsifiable sans la clé privée de l'OP.
         </p>
       </Callout>
+    </Section>
+  )
+}
+
+/* ---------------------------------------- OID4VCI : proof of possession */
+function PopSection() {
+  const [keys, setKeys] = useState<CryptoKeyPair | null>(null)
+  const [jwk, setJwk] = useState<JsonWebKey | null>(null)
+  const [cNonce, setCNonce] = useState<string | null>(null)
+  const [proof, setProof] = useState<string | null>(null)
+  const [proofNonce, setProofNonce] = useState<string | null>(null)
+  const [verdict, setVerdict] = useState<{ sig: boolean; nonce: boolean } | null>(null)
+
+  // Rôle Issuer : émettre un c_nonce imprévisible (Nonce Endpoint, §7).
+  const issueNonce = () => {
+    const bytes = crypto.getRandomValues(new Uint8Array(12))
+    setCNonce('cn-' + bytesToBase64Url(bytes))
+    setVerdict(null)
+  }
+
+  // Rôle Wallet : générer la paire de clés (la privée ne « sort » jamais d'ici).
+  const genKeys = async () => {
+    const kp = await generateES256KeyPair()
+    setKeys(kp)
+    setJwk(await exportPublicJwk(kp.publicKey))
+    setProof(null)
+    setVerdict(null)
+  }
+
+  // Rôle Wallet : construire et signer le jwt proof (App. F.1).
+  const buildProof = async () => {
+    if (!keys || !jwk || !cNonce) return
+    const header = {
+      alg: 'ES256',
+      typ: 'openid4vci-proof+jwt',
+      jwk: { kty: jwk.kty, crv: jwk.crv, x: jwk.x, y: jwk.y },
+    }
+    const payload = {
+      aud: 'https://issuer.example',
+      iat: Math.floor(Date.now() / 1000),
+      nonce: cNonce,
+    }
+    const enc = (obj: object) => bytesToBase64Url(new TextEncoder().encode(JSON.stringify(obj)))
+    const signingInput = `${enc(header)}.${enc(payload)}`
+    const sig = bytesToBase64Url(await signES256(keys.privateKey, signingInput))
+    setProof(`${signingInput}.${sig}`)
+    setProofNonce(cNonce)
+    setVerdict(null)
+  }
+
+  // Rôle Issuer : vérifier signature (avec la jwk du header) ET nonce courant.
+  const verify = async (againstNonce: string) => {
+    if (!proof) return
+    const [h, p, s] = proof.split('.') as [string, string, string]
+    const header = JSON.parse(new TextDecoder().decode(base64UrlToBytes(h))) as {
+      jwk: JsonWebKey
+    }
+    const sig = await verifyCompactJwsES256(`${h}.${p}.${s}`, header.jwk)
+    const claims = JSON.parse(new TextDecoder().decode(base64UrlToBytes(p))) as { nonce: string }
+    setVerdict({ sig, nonce: claims.nonce === againstNonce })
+  }
+
+  // Rejeu RÉALISTE : le proof (signature intacte) est représenté alors que
+  // l'Issuer a déjà émis un nouveau c_nonce — fraîcheur perdue, rejet.
+  const replay = async () => {
+    const bytes = crypto.getRandomValues(new Uint8Array(12))
+    const fresh = 'cn-' + bytesToBase64Url(bytes)
+    setCNonce(fresh)
+    await verify(fresh)
+  }
+
+  return (
+    <Section
+      title="🎫 Proof of possession — le jwt proof d'OID4VCI"
+      intro="Jouez les deux rôles de l'émission : l'Issuer émet un c_nonce, le Wallet signe un proof (typ openid4vci-proof+jwt) avec sa clé jetable, l'Issuer vérifie signature ET nonce — puis simulez un rejeu pour voir le rejet."
+    >
+      <div className="flex flex-wrap gap-2">
+        <button type="button" onClick={issueNonce} className={btnCls}>
+          1. (Issuer) Émettre un c_nonce
+        </button>
+        <button type="button" onClick={() => void genKeys()} className={btnCls}>
+          2. (Wallet) Générer la clé
+        </button>
+        <button
+          type="button"
+          onClick={() => void buildProof()}
+          disabled={!keys || !cNonce}
+          className={`${btnCls} disabled:opacity-40`}
+        >
+          3. (Wallet) Signer le proof
+        </button>
+        <button
+          type="button"
+          onClick={() => void (cNonce && verify(cNonce))}
+          disabled={!proof}
+          className={`${btnCls} disabled:opacity-40`}
+        >
+          4. (Issuer) Vérifier
+        </button>
+        <button
+          type="button"
+          onClick={() => void replay()}
+          disabled={!proof}
+          className={`${btnCls} disabled:opacity-40`}
+        >
+          🧨 Rejouer le proof plus tard (nouveau c_nonce)
+        </button>
+      </div>
+
+      {cNonce && (
+        <output className={outCls}>
+          c_nonce émis : <span className="text-accent">{cNonce}</span>
+        </output>
+      )}
+      {jwk && (
+        <output className={outCls}>
+          Clé publique du wallet (la privée ne quitte pas cette page) :{' '}
+          {`{"kty":"${jwk.kty}","crv":"${jwk.crv}","x":"${String(jwk.x).slice(0, 16)}…"}`}
+        </output>
+      )}
+      {proof && (
+        <div className="mt-3">
+          <JwtInspector
+            label="jwt proof signé"
+            jwt={proof}
+            note={
+              proofNonce === cNonce
+                ? 'Décodez : typ openid4vci-proof+jwt, jwk dans le header, nonce = le c_nonce courant.'
+                : 'Attention : un nouveau c_nonce a été émis depuis — ce proof est périmé, la vérification du nonce échouera.'
+            }
+          />
+        </div>
+      )}
+      {verdict && (
+        <p
+          className={`mt-3 rounded-md border p-2.5 text-sm font-medium ${
+            verdict.sig && verdict.nonce
+              ? 'border-ok bg-ok-soft text-ok'
+              : 'border-danger bg-danger-soft text-danger'
+          }`}
+          aria-live="polite"
+        >
+          Signature : {verdict.sig ? '✔ valide' : '✘ invalide'} · nonce :{' '}
+          {verdict.nonce ? '✔ correspond au c_nonce émis' : '✘ ne correspond pas'} —{' '}
+          {verdict.sig && verdict.nonce
+            ? "l'Issuer accepte : le credential sera lié à cette clé (cnf.jwk)."
+            : verdict.sig
+              ? 'signature intacte mais nonce étranger : rejeu détecté, émission refusée.'
+              : 'payload altéré après signature : rejet immédiat.'}
+        </p>
+      )}
     </Section>
   )
 }
