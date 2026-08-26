@@ -90,8 +90,22 @@ body {
   background: var(--accent-soft);
 }
 
-/* Prose des leçons : textes courts et découpés, jamais de pavés. */
-.lesson-prose {
+/*
+ * Prose des leçons : textes courts et découpés, jamais de pavés.
+ * Le CONTENEUR n'est PAS borné en largeur — seuls les éléments de lecture
+ * (paragraphes, titres, listes, encadrés, code, quiz) le sont, pour garder
+ * des lignes lisibles. Les blocs larges et interactifs (diagrammes de
+ * séquence, tableaux comparatifs, arbre de décision — rendus dans des <div>,
+ * souvent en .not-prose) reprennent ainsi toute la largeur disponible.
+ */
+.lesson-prose > p,
+.lesson-prose > h2,
+.lesson-prose > h3,
+.lesson-prose > ul,
+.lesson-prose > ol,
+.lesson-prose > aside,
+.lesson-prose > figure,
+.lesson-prose > section {
   max-width: 72ch;
 }
 .lesson-prose > p {

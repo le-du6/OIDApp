@@ -36,8 +36,8 @@ export function SequenceDiagram({ scenario }: { scenario: Scenario }) {
   const selectedStep: Step | null = scenario.steps[state.stepIndex] ?? null
 
   return (
-    <div className="grid gap-4 xl:grid-cols-[minmax(0,1fr)_380px]">
-      <div className="rounded-xl border border-line bg-surface">
+    <div className="grid gap-4 2xl:grid-cols-[minmax(0,1fr)_360px]">
+      <div className="min-w-0 rounded-xl border border-line bg-surface">
         <DiagramControls state={state} dispatch={dispatch} />
         <div
           className="overflow-x-auto p-2"
@@ -46,13 +46,17 @@ export function SequenceDiagram({ scenario }: { scenario: Scenario }) {
         >
           {/*
            * SVG adaptatif : le viewBox porte la géométrie, la largeur suit le
-           * conteneur (100 %). En dessous de min-w, on retombe sur le défilement
-           * horizontal plutôt que de rendre le texte illisible.
+           * conteneur (width:100%, height:auto) — le texte étant vectoriel, la
+           * mise à l'échelle reste nette à toute taille. maxWidth borne la
+           * taille naturelle (pas d'agrandissement démesuré sur écran large) ;
+           * minWidth ne déclenche le défilement horizontal que sur les très
+           * petites largeurs (mobile), pour éviter un texte illisible.
            */}
           <svg
             viewBox={`0 0 ${layout.width} ${layout.height}`}
-            className="mx-auto block h-auto w-full min-w-[640px]"
-            style={{ maxWidth: layout.width }}
+            preserveAspectRatio="xMidYMid meet"
+            className="mx-auto block h-auto w-full"
+            style={{ minWidth: Math.min(layout.width, 540), maxWidth: layout.width }}
           >
             {/* Lifelines */}
             {scenario.actors.map((actor) => (
