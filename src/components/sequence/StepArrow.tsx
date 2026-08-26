@@ -41,10 +41,13 @@ export function StepArrow({
   onSelect: () => void
 }) {
   const style = kindStyle[step.kind]
+  const isSelf = x1 === x2
   const dir = x2 >= x1 ? 1 : -1
   const headX = x2 - dir * 10
-  const midX = (x1 + x2) / 2
+  const midX = isSelf ? x1 + 40 : (x1 + x2) / 2
   const opacity = isCurrent || isSelected ? 1 : 0.55
+  /** Self-message : petite boucle à droite de la lifeline. */
+  const selfPath = `M ${x1 + 9} ${y - 6} H ${x1 + 34} Q ${x1 + 40} ${y - 6} ${x1 + 40} ${y} Q ${x1 + 40} ${y + 6} ${x1 + 34} ${y + 6} H ${x1 + 12}`
 
   return (
     <g
@@ -63,27 +66,44 @@ export function StepArrow({
     >
       {/* Zone de clic généreuse */}
       <rect
-        x={Math.min(x1, x2)}
+        x={Math.min(x1, x2) - 10}
         y={y - 26}
-        width={Math.abs(x2 - x1) || 40}
+        width={(Math.abs(x2 - x1) || 320) + 20}
         height={36}
         fill="transparent"
       />
-      <motion.line
-        x1={x1}
-        y1={y}
-        x2={x2}
-        y2={y}
-        stroke={style.stroke}
-        strokeWidth={isSelected ? 2.5 : 1.8}
-        strokeDasharray={style.dash}
-        initial={animate ? { pathLength: 0 } : false}
-        animate={{ pathLength: 1 }}
-        transition={{ duration: animate ? 0.45 : 0, ease: 'easeOut' }}
-      />
+      {isSelf ? (
+        <motion.path
+          d={selfPath}
+          fill="none"
+          stroke={style.stroke}
+          strokeWidth={isSelected ? 2.5 : 1.8}
+          strokeDasharray={style.dash}
+          initial={animate ? { pathLength: 0 } : false}
+          animate={{ pathLength: 1 }}
+          transition={{ duration: animate ? 0.45 : 0, ease: 'easeOut' }}
+        />
+      ) : (
+        <motion.line
+          x1={x1}
+          y1={y}
+          x2={x2}
+          y2={y}
+          stroke={style.stroke}
+          strokeWidth={isSelected ? 2.5 : 1.8}
+          strokeDasharray={style.dash}
+          initial={animate ? { pathLength: 0 } : false}
+          animate={{ pathLength: 1 }}
+          transition={{ duration: animate ? 0.45 : 0, ease: 'easeOut' }}
+        />
+      )}
       {/* Tête de flèche */}
       <motion.path
-        d={`M ${x2} ${y} L ${headX} ${y - 5} L ${headX} ${y + 5} Z`}
+        d={
+          isSelf
+            ? `M ${x1 + 10} ${y + 6} L ${x1 + 20} ${y + 1} L ${x1 + 20} ${y + 11} Z`
+            : `M ${x2} ${y} L ${headX} ${y - 5} L ${headX} ${y + 5} Z`
+        }
         fill={style.stroke}
         initial={animate ? { opacity: 0 } : false}
         animate={{ opacity: 1 }}
@@ -96,9 +116,9 @@ export function StepArrow({
       </text>
       {/* Libellé */}
       <text
-        x={midX}
-        y={y - 9}
-        textAnchor="middle"
+        x={isSelf ? x1 + 50 : midX}
+        y={isSelf ? y + 3.5 : y - 9}
+        textAnchor={isSelf ? 'start' : 'middle'}
         fontSize={11.5}
         fontFamily="var(--font-mono)"
         className={style.labelClass}
@@ -109,8 +129,8 @@ export function StepArrow({
       {/* Pastille sécurité */}
       {step.security && (
         <circle
-          cx={midX + measureOffset(step.label)}
-          cy={y - 13}
+          cx={isSelf ? x1 + 56 + measureOffset(step.label) : midX + measureOffset(step.label)}
+          cy={isSelf ? y - 8 : y - 13}
           r={4}
           fill={securityDot[step.security.level]}
         >
