@@ -1,10 +1,15 @@
 /**
  * Jauge de progression circulaire — SVG maison (pas de lib de charts).
+ *
+ * `shrink-0` est ESSENTIEL : la jauge vit dans un conteneur flex à côté d'un
+ * texte de longueur variable. Sans lui, flexbox écrase le SVG sur les cartes
+ * à description longue (les attributs width/height ne sont pas une taille
+ * minimale pour un flex item).
  */
 export function ProgressRing({
   ratio,
-  size = 64,
-  stroke = 6,
+  size = 76,
+  stroke = 7,
   label,
 }: {
   ratio: number
@@ -20,6 +25,8 @@ export function ProgressRing({
       width={size}
       height={size}
       viewBox={`0 0 ${size} ${size}`}
+      className="shrink-0"
+      style={{ width: size, height: size }}
       role="img"
       aria-label={label ?? `Progression : ${Math.round(clamped * 100)} %`}
     >
@@ -49,9 +56,9 @@ export function ProgressRing({
         y="50%"
         dominantBaseline="central"
         textAnchor="middle"
-        fontSize={size / 4.5}
+        fontSize={size / 3.6}
         fontWeight={700}
-        fill="var(--ink)"
+        fill={clamped >= 1 ? 'var(--ok)' : 'var(--ink)'}
       >
         {Math.round(clamped * 100)}%
       </text>

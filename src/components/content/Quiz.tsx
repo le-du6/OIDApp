@@ -4,7 +4,12 @@ import { db } from '../../db/db'
 
 /**
  * QCM de fin de leçon : chaque réponse (bonne ou mauvaise) a son explication.
- * Score persisté (IndexedDB) ; ≥ 80 % = badge du chapitre.
+ * Score persisté (IndexedDB) ; ≥ 80 % = badge + leçon marquée TERMINÉE.
+ *
+ * Invariant : `quizId` est exactement le lessonKey de la leçon
+ * (moduleId/chapterId/lessonId) — c'est ce qui permet de compléter la leçon
+ * automatiquement quand le quiz est réussi. Un test le vérifie pour les 32
+ * leçons (src/content/registry.test.ts).
  */
 export type QuizQuestion = {
   id: string
@@ -34,12 +39,18 @@ export function Quiz({ quizId, questions }: { quizId: string; questions: QuizQue
       })
       if (score / questions.length >= QUIZ_PASS_RATIO) {
         await db.badges.put({ id: `quiz:${quizId}`, earnedAt: Date.now() })
+        // Réussir le quiz TERMINE la leçon : c'est l'achèvement « naturel »,
+        // sans obliger l'utilisateur à cliquer « Marquer comme terminée ».
+        await db.lessonProgress.put({
+          id: quizId,
+          moduleId: quizId.split('/')[0] ?? '',
+          status: 'done',
+          updatedAt: Date.now(),
+        })
       }
     },
-    onSuccess: () => {
-      void queryClient.invalidateQueries({ queryKey: ['quiz-score', quizId] })
-      void queryClient.invalidateQueries({ queryKey: ['badges'] })
-    },
+    // Invalidation globale : score, badges, progression du module, sidebar.
+    onSuccess: () => void queryClient.invalidateQueries(),
   })
 
   const score = questions.filter((q) => {
@@ -131,7 +142,7 @@ export function Quiz({ quizId, questions }: { quizId: string; questions: QuizQue
           <>
             <p className={`text-sm font-semibold ${passed ? 'text-ok' : 'text-warning'}`}>
               {score}/{questions.length} —{' '}
-              {passed ? 'chapitre validé, badge gagné 🏅' : 'relisez et retentez !'}
+              {passed ? 'leçon validée, badge gagné 🏅' : 'relisez et retentez !'}
             </p>
             <button
               type="button"

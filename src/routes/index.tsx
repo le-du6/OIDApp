@@ -54,7 +54,11 @@ function Dashboard() {
               />
               <div className="min-w-0">
                 <h2 className="font-semibold">{module.shortTitle}</h2>
-                <p className="mt-0.5 line-clamp-3 text-xs text-muted">{module.description}</p>
+                <p className="text-xs font-medium text-muted">
+                  <span className={done > 0 ? 'text-accent' : undefined}>{done}</span>/{total}{' '}
+                  leçons
+                </p>
+                <p className="mt-0.5 line-clamp-2 text-xs text-muted">{module.description}</p>
                 {!module.available && (
                   <p className="mt-1 text-[11px] font-medium text-accent">
                     Phase {module.phase} — à venir
