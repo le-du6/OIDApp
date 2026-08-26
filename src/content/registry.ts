@@ -31,4 +31,17 @@ export const lessonComponents: Record<string, LazyExoticComponent<ComponentType>
   [lessonKey('oauth2', 'etat-de-l-art', 'bcp-oauth21')]: lazy(
     () => import('./oauth2/ch7-etat-de-l-art'),
   ),
+
+  // — OIDC (Phase 2) —
+  [lessonKey('oidc', 'pourquoi-oidc', 'anti-pattern-login')]: lazy(
+    () => import('./oidc/ch0-pourquoi-oidc'),
+  ),
+  [lessonKey('oidc', 'id-token', 'anatomie-id-token')]: lazy(() => import('./oidc/ch1-id-token')),
+  [lessonKey('oidc', 'flow-complet', 'flow-pas-a-pas')]: lazy(
+    () => import('./oidc/ch2-flow-complet'),
+  ),
+  [lessonKey('oidc', 'validation', 'jwks-kid-verify')]: lazy(() => import('./oidc/ch3-validation')),
+  [lessonKey('oidc', 'discovery', 'well-known')]: lazy(() => import('./oidc/ch4-discovery')),
+  [lessonKey('oidc', 'nonce-at-hash', 'liaisons')]: lazy(() => import('./oidc/ch5-nonce-at-hash')),
+  [lessonKey('oidc', 'oidc-vs-saml', 'comparaison')]: lazy(() => import('./oidc/ch6-oidc-vs-saml')),
 }

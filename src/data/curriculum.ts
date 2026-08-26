@@ -129,10 +129,82 @@ export const curriculum: ModuleMeta[] = [
     id: 'oidc',
     title: 'OpenID Connect — l’authentification',
     shortTitle: 'OIDC',
-    description: 'ID Token, validation de signature, Discovery, JWKS, nonce.',
-    available: false,
+    description:
+      'La couche d’identité au-dessus d’OAuth2 : ID Token, validation de signature, Discovery, JWKS, nonce — et pourquoi « login avec un access token » est une faille.',
+    available: true,
     phase: 2,
-    chapters: [],
+    chapters: [
+      {
+        id: 'pourquoi-oidc',
+        number: 0,
+        title: 'Pourquoi OIDC : délégation ≠ authentification',
+        lessons: [
+          {
+            id: 'anti-pattern-login',
+            title: 'L’anti-pattern « login avec un access token »',
+            scenarioId: 'oidc/login-antipattern-broken',
+            ready: true,
+          },
+        ],
+      },
+      {
+        id: 'id-token',
+        number: 1,
+        title: 'L’ID Token : JWT, JWS (et JWE en aperçu)',
+        lessons: [{ id: 'anatomie-id-token', title: 'Anatomie de l’ID Token', ready: true }],
+      },
+      {
+        id: 'flow-complet',
+        number: 2,
+        title: 'Le flow OIDC complet',
+        lessons: [
+          {
+            id: 'flow-pas-a-pas',
+            title: 'Authorization Code + openid, pas à pas',
+            scenarioId: 'oidc/authorization-code',
+            ready: true,
+          },
+        ],
+      },
+      {
+        id: 'validation',
+        number: 3,
+        title: 'Valider un ID Token',
+        lessons: [
+          {
+            id: 'jwks-kid-verify',
+            title: 'JWKS → kid → clé → verify',
+            scenarioId: 'oidc/idtoken-validation',
+            ready: true,
+          },
+        ],
+      },
+      {
+        id: 'discovery',
+        number: 4,
+        title: 'Discovery & JWKS',
+        lessons: [
+          {
+            id: 'well-known',
+            title: 'Configurer un RP par Discovery',
+            scenarioId: 'oidc/discovery',
+            ready: true,
+          },
+        ],
+      },
+      {
+        id: 'nonce-at-hash',
+        number: 5,
+        title: 'nonce vs state, at_hash/c_hash',
+        lessons: [{ id: 'liaisons', title: 'Trois liaisons contre le rejeu', ready: true }],
+      },
+      {
+        id: 'oidc-vs-saml',
+        number: 6,
+        title: 'OIDC vs SAML',
+        lessons: [{ id: 'comparaison', title: 'Deux façons de fédérer l’identité', ready: true }],
+      },
+    ],
   },
   {
     id: 'oid4vci',

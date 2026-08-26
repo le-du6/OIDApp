@@ -354,6 +354,128 @@ export const glossary: GlossaryEntry[] = [
       'Secret statique identifiant un appelant auprès d’une API. Comparée à OAuth2 : pas de périmètre fin, pas d’expiration native, pas d’identité utilisateur, révocation = rotation manuelle. Acceptable entre machines de confiance, inadaptée à la délégation.',
     specRef: '(pratique d’industrie, hors spec)',
   },
+
+  {
+    id: 'oidc',
+    term: 'OpenID Connect (OIDC)',
+    definition:
+      'Couche d’identité au-dessus d’OAuth 2.0 : elle réutilise l’Authorization Code Flow et ajoute un jeton d’identité (l’ID Token), un endpoint UserInfo et la Discovery. Là où OAuth2 délègue l’ACCÈS, OIDC prouve l’IDENTITÉ.',
+    specRef: 'OIDC Core 1.0 §1',
+  },
+  {
+    id: 'id-token',
+    term: 'ID Token',
+    definition:
+      'JWT signé émis par l’OpenID Provider qui atteste d’un événement d’authentification. Claims obligatoires : iss, sub, aud, exp, iat. Son audience (aud) est le RP lui-même — ce n’est pas un laissez-passer pour une API.',
+    specRef: 'OIDC Core 1.0 §2',
+    naming:
+      'Bien nommé, pour une fois : c’est un jeton (Token) d’identité (ID). À ne pas confondre avec l’access token, qui n’atteste d’aucune identité.',
+  },
+  {
+    id: 'openid-provider',
+    term: 'OpenID Provider (OP)',
+    definition:
+      'L’Authorization Server OAuth2 quand il parle OIDC : il authentifie l’utilisateur et émet l’ID Token. Google, Microsoft Entra ID, Keycloak… jouent ce rôle.',
+    specRef: 'OIDC Core 1.0 §1.2',
+    actorRole: 'authorization-server',
+  },
+  {
+    id: 'relying-party',
+    term: 'Relying Party (RP)',
+    definition:
+      'Le Client OAuth2 quand il consomme des identités OIDC : il « s’appuie » (relies) sur l’OP pour authentifier l’utilisateur, puis valide l’ID Token reçu.',
+    specRef: 'OIDC Core 1.0 §1.2',
+    actorRole: 'client',
+    naming:
+      '« Relying Party » vient du monde de la fédération (SAML). Concrètement, c’est votre application — le même acteur que le « Client » OAuth2.',
+  },
+  {
+    id: 'nonce',
+    term: 'nonce',
+    expansion: 'number used once',
+    definition:
+      'Valeur imprévisible générée par le RP au début du flow et liée à sa session ; l’OP la recopie dans l’ID Token, et le RP vérifie qu’elle correspond. Empêche le rejeu et l’injection d’un ID Token. OPTIONAL en code flow, REQUIRED en implicit.',
+    specRef: 'OIDC Core 1.0 §3.1.2.1',
+    naming:
+      'Cousin du state, mais cible différente : state protège le callback (le code), nonce protège l’ID Token. Même besoin — imprévisibilité — deux emplacements.',
+  },
+  {
+    id: 'userinfo',
+    term: 'UserInfo Endpoint',
+    definition:
+      'Ressource OAuth2 protégée qui renvoie des claims sur l’utilisateur, appelée avec l’ACCESS token (Bearer). Sa réponse contient un sub que le RP DOIT comparer à celui de l’ID Token, sous peine de rejet.',
+    specRef: 'OIDC Core 1.0 §5.3',
+  },
+  {
+    id: 'jwks',
+    term: 'JWKS',
+    expansion: 'JSON Web Key Set',
+    definition:
+      'Ensemble de clés publiques publié par l’OP (à l’URL jwks_uri), servant à vérifier la signature des ID Tokens. Chaque clé porte un kid ; la rotation consiste à publier la nouvelle clé à côté de l’ancienne.',
+    specRef: 'RFC 7517',
+  },
+  {
+    id: 'kid',
+    term: 'kid',
+    expansion: 'key ID',
+    definition:
+      'Identifiant de clé, présent dans le header JWS et dans chaque clé du JWKS. Il permet au RP de choisir LA bonne clé publique pour vérifier, et rend la rotation gérable. Il n’apporte aucune confiance par lui-même.',
+    specRef: 'RFC 7515 §4.1.4',
+  },
+  {
+    id: 'discovery',
+    term: 'OpenID Provider Discovery',
+    definition:
+      'Mécanisme par lequel un RP récupère la configuration de l’OP (endpoints, algorithmes, jwks_uri) à l’URL /.well-known/openid-configuration dérivée de l’issuer — au lieu de tout coder en dur.',
+    specRef: 'OIDC Discovery 1.0 §4',
+  },
+  {
+    id: 'issuer',
+    term: 'issuer (iss)',
+    definition:
+      'Identifiant de l’OP, sous forme d’URL https. Il ancre la confiance : il doit être identique dans le document de Discovery, dans le claim iss des ID Tokens, et à l’URL utilisée pour la Discovery.',
+    specRef: 'OIDC Core 1.0 §2',
+  },
+  {
+    id: 'sub',
+    term: 'sub (subject)',
+    definition:
+      'Identifiant de l’utilisateur, localement unique chez l’OP et jamais réattribué, ≤ 255 caractères ASCII. La clé d’identité robuste est le COUPLE (iss, sub) : sub seul n’est unique qu’au sein d’un OP donné.',
+    specRef: 'OIDC Core 1.0 §2',
+  },
+  {
+    id: 'at-hash',
+    term: 'at_hash',
+    expansion: 'access token hash',
+    definition:
+      'Claim de l’ID Token = base64url de la MOITIÉ GAUCHE de SHA-256(access_token). Il lie l’ID Token à l’access token de la même réponse, empêchant d’apparier un ID Token à un access token d’une autre provenance.',
+    specRef: 'OIDC Core 1.0 §3.1.3.6',
+  },
+  {
+    id: 'jws',
+    term: 'JWS',
+    expansion: 'JSON Web Signature',
+    definition:
+      'La brique de SIGNATURE des JWT : header.payload.signature en base64url. Un ID Token est un JWS. La signature ES256 est le concaténé brut r‖s (64 octets), vérifié sur les octets ASCII de « header.payload ».',
+    specRef: 'RFC 7515',
+  },
+  {
+    id: 'jwe',
+    term: 'JWE',
+    expansion: 'JSON Web Encryption',
+    definition:
+      'La brique de CHIFFREMENT des JWT (cinq segments), pour rendre un jeton illisible sauf au destinataire. Rare pour les ID Tokens en pratique : la signature (JWS) suffit à la plupart des besoins. À distinguer strictement de la signature.',
+    specRef: 'RFC 7516',
+    naming:
+      'JWS signe (intégrité + origine), JWE chiffre (confidentialité). Signer ≠ chiffrer : confusion classique. Un JWT « normal » est signé, pas chiffré — donc lisible par tous.',
+  },
+  {
+    id: 'saml',
+    term: 'SAML 2.0',
+    definition:
+      'Standard de fédération d’identité antérieur (2005), fondé sur des assertions XML signées et le navigateur comme relais (POST binding). Toujours répandu en entreprise. OIDC vise le même objectif avec du JSON/JWT, pensé pour les API, le mobile et les SPA.',
+    specRef: 'OASIS SAML 2.0',
+  },
 ]
 
 export const glossaryById = new Map(glossary.map((e) => [e.id, e]))
