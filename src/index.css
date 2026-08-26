@@ -90,6 +90,66 @@ body {
   background: var(--accent-soft);
 }
 
+/* Prose des leçons : textes courts et découpés, jamais de pavés. */
+.lesson-prose {
+  max-width: 72ch;
+}
+.lesson-prose > p {
+  margin-block: 0.9rem;
+  font-size: 0.925rem;
+  line-height: 1.7;
+  text-wrap: pretty;
+}
+.lesson-prose > h2 {
+  margin-top: 2.2rem;
+  margin-bottom: 0.6rem;
+  font-size: 1.15rem;
+  font-weight: 700;
+}
+.lesson-prose > h3 {
+  margin-top: 1.6rem;
+  margin-bottom: 0.4rem;
+  font-size: 1rem;
+  font-weight: 600;
+}
+.lesson-prose > ul,
+.lesson-prose > ol {
+  margin-block: 0.9rem;
+  padding-left: 1.4rem;
+  font-size: 0.925rem;
+  line-height: 1.65;
+}
+.lesson-prose > ul {
+  list-style: disc;
+}
+.lesson-prose > ol {
+  list-style: decimal;
+}
+.lesson-prose li {
+  margin-block: 0.35rem;
+}
+.lesson-prose code {
+  font-family: var(--font-mono);
+  font-size: 0.85em;
+  background: var(--surface-2);
+  border: 1px solid var(--line);
+  border-radius: 4px;
+  padding: 0.1em 0.35em;
+}
+.lesson-prose strong {
+  color: var(--accent);
+  font-weight: 600;
+}
+
+/* Shiki : bascule des couleurs sur le thème sombre (variables --shiki-dark). */
+.code-shiki {
+  background-color: var(--surface);
+}
+[data-theme='dark'] .code-shiki .shiki,
+[data-theme='dark'] .code-shiki .shiki span {
+  color: var(--shiki-dark) !important;
+}
+
 /*
  * Têtes d'acteurs du SequenceDiagram (rendues en foreignObject pour bénéficier
  * du retour à la ligne CSS, impossible en <text> SVG).

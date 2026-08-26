@@ -45,7 +45,7 @@ export const curriculum: ModuleMeta[] = [
         id: 'vocabulaire',
         number: 0,
         title: 'Le vocabulaire inutilement compliqué',
-        lessons: [{ id: 'decodage', title: 'Tableau de décodage des termes', ready: false }],
+        lessons: [{ id: 'decodage', title: 'Tableau de décodage des termes', ready: true }],
       },
       {
         id: 'probleme-origine',
@@ -55,7 +55,7 @@ export const curriculum: ModuleMeta[] = [
           {
             id: 'partage-mot-de-passe',
             title: 'Mot de passe partagé, API keys, délégation',
-            ready: false,
+            ready: true,
           },
         ],
       },
@@ -64,7 +64,7 @@ export const curriculum: ModuleMeta[] = [
         number: 2,
         title: 'Les 4 rôles et les 2 canaux',
         lessons: [
-          { id: 'front-back-channel', title: 'Front channel vs back channel', ready: false },
+          { id: 'front-back-channel', title: 'Front channel vs back channel', ready: true },
         ],
       },
       {
@@ -85,7 +85,7 @@ export const curriculum: ModuleMeta[] = [
         number: 4,
         title: 'Tokens : access, refresh, bearer',
         lessons: [
-          { id: 'anatomie-tokens', title: 'Anatomie et cycle de vie des tokens', ready: false },
+          { id: 'anatomie-tokens', title: 'Anatomie et cycle de vie des tokens', ready: true },
         ],
       },
       {
@@ -93,9 +93,10 @@ export const curriculum: ModuleMeta[] = [
         number: 5,
         title: 'Attaques et contre-mesures',
         lessons: [
-          { id: 'csrf-state', title: 'CSRF sur le callback → state', ready: false },
-          { id: 'interception-pkce', title: 'Interception du code → PKCE', ready: false },
-          { id: 'bearer-dpop', title: 'Vol de bearer token → DPoP / mTLS', ready: false },
+          { id: 'csrf-state', title: 'CSRF sur le callback → state', ready: true },
+          { id: 'interception-pkce', title: 'Interception du code → PKCE', ready: true },
+          { id: 'implicit-ropc', title: 'Pourquoi Implicit et ROPC sont morts', ready: true },
+          { id: 'bearer-dpop', title: 'Vol de bearer token → DPoP / mTLS', ready: true },
         ],
       },
       {
@@ -106,7 +107,7 @@ export const curriculum: ModuleMeta[] = [
           {
             id: 'client-credentials-device',
             title: 'Client Credentials & Device Grant',
-            ready: false,
+            ready: true,
           },
         ],
       },
@@ -118,7 +119,7 @@ export const curriculum: ModuleMeta[] = [
           {
             id: 'bcp-oauth21',
             title: 'Security BCP (RFC 9700), OAuth 2.1, PAR/JAR/RAR',
-            ready: false,
+            ready: true,
           },
         ],
       },

@@ -84,11 +84,27 @@ export function Sidebar() {
 
       <div className="mt-auto border-t border-line pt-3">
         <p className="mb-1 text-xs font-semibold text-muted">Transversal</p>
-        <ul className="space-y-0.5 text-xs text-muted/70">
-          <li>Glossaire (bientôt)</li>
-          <li>Crypto Lab (bientôt)</li>
-          <li>Carte des specs (bientôt)</li>
-          <li>Comparateur (bientôt)</li>
+        <ul className="space-y-1 text-xs">
+          <li>
+            <Link
+              to="/glossaire"
+              className="text-ink/85 transition-colors hover:text-accent"
+              activeProps={{ className: 'text-accent' }}
+            >
+              📖 Glossaire
+            </Link>
+          </li>
+          <li>
+            <Link
+              to="/labo-crypto"
+              className="text-ink/85 transition-colors hover:text-accent"
+              activeProps={{ className: 'text-accent' }}
+            >
+              🧪 Crypto Lab
+            </Link>
+          </li>
+          <li className="text-muted/70">Carte des specs (bientôt)</li>
+          <li className="text-muted/70">Comparateur (bientôt)</li>
         </ul>
       </div>
     </nav>

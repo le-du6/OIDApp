@@ -1,9 +1,9 @@
-import { useEffect } from 'react'
+import { Suspense, useEffect } from 'react'
 import { createFileRoute, Link, notFound } from '@tanstack/react-router'
 import { getLesson, getModule, lessonKey } from '../../data/curriculum'
 import { useAllProgress, useSetLessonStatus } from '../../db/hooks'
-import { useScenario } from '../../engine/useScenario'
-import { SequenceDiagram } from '../../components/sequence/SequenceDiagram'
+import { ScenarioLoader } from '../../components/sequence/AttackScenario'
+import { lessonComponents } from '../../content/registry'
 
 export const Route = createFileRoute('/$moduleId/$chapitre/$lecon')({
   loader: ({ params }) => {
@@ -71,17 +71,7 @@ function LessonPage() {
         )}
       </div>
 
-      {lesson.ready && lesson.scenarioId ? (
-        <ScenarioSection scenarioId={lesson.scenarioId} />
-      ) : (
-        <div className="rounded-xl border border-dashed border-line bg-surface p-8 text-center text-sm text-muted">
-          <p className="text-2xl">🚧</p>
-          <p className="mt-2">
-            Leçon en construction — elle arrive avec la suite de la Phase 1 (contenu rédigé, quiz,
-            scénarios).
-          </p>
-        </div>
-      )}
+      <LessonBody lessonId={key} scenarioId={lesson.scenarioId} ready={lesson.ready} />
 
       <nav
         className="flex justify-between border-t border-line pt-4 text-sm"
@@ -114,18 +104,34 @@ function LessonPage() {
   )
 }
 
-function ScenarioSection({ scenarioId }: { scenarioId: string }) {
-  const { data: scenario, isLoading, error } = useScenario(scenarioId)
-  if (isLoading) {
-    return <p className="text-sm text-muted">Chargement du scénario…</p>
-  }
-  if (error || !scenario) {
+/** Corps de la leçon : contenu rédigé si présent, sinon scénario seul, sinon 🚧. */
+function LessonBody({
+  lessonId,
+  scenarioId,
+  ready,
+}: {
+  lessonId: string
+  scenarioId?: string
+  ready: boolean
+}) {
+  const Content = lessonComponents[lessonId]
+  if (Content) {
     return (
-      <div className="rounded-xl border border-danger bg-danger-soft p-4 text-sm">
-        <p className="font-semibold">Scénario invalide ou introuvable</p>
-        <pre className="mt-2 overflow-x-auto text-xs">{String(error)}</pre>
-      </div>
+      <Suspense fallback={<p className="text-sm text-muted">Chargement de la leçon…</p>}>
+        <Content />
+      </Suspense>
     )
   }
-  return <SequenceDiagram scenario={scenario} />
+  if (ready && scenarioId) {
+    return <ScenarioLoader scenarioId={scenarioId} />
+  }
+  return (
+    <div className="rounded-xl border border-dashed border-line bg-surface p-8 text-center text-sm text-muted">
+      <p className="text-2xl">🚧</p>
+      <p className="mt-2">
+        Leçon en construction — elle arrive avec la suite de la Phase 1 (contenu rédigé, quiz,
+        scénarios).
+      </p>
+    </div>
+  )
 }
