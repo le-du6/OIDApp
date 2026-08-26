@@ -30,8 +30,8 @@ export type LayoutConfig = {
 export const defaultLayoutConfig: LayoutConfig = {
   laneGap: 190,
   marginX: 110,
-  actorBoxWidth: 172,
-  actorBoxHeight: 56,
+  actorBoxWidth: 176,
+  actorBoxHeight: 66,
   headerGap: 34,
   stepGap: 64,
   footerGap: 24,

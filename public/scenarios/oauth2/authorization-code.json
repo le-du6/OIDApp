@@ -26,7 +26,7 @@
       "id": "as",
       "name": "Authorization Server",
       "role": "authorization-server",
-      "alias": "= « login avec… » + émission des tokens"
+      "alias": "= Keycloak, Auth0… (émet les tokens)"
     },
     {
       "id": "rs",

@@ -44,11 +44,15 @@ export function SequenceDiagram({ scenario }: { scenario: Scenario }) {
           role="region"
           aria-label={`Diagramme : ${scenario.title}`}
         >
+          {/*
+           * SVG adaptatif : le viewBox porte la géométrie, la largeur suit le
+           * conteneur (100 %). En dessous de min-w, on retombe sur le défilement
+           * horizontal plutôt que de rendre le texte illisible.
+           */}
           <svg
             viewBox={`0 0 ${layout.width} ${layout.height}`}
-            width={layout.width}
-            height={layout.height}
-            className="mx-auto block max-w-none"
+            className="mx-auto block h-auto w-full min-w-[640px]"
+            style={{ maxWidth: layout.width }}
           >
             {/* Lifelines */}
             {scenario.actors.map((actor) => (
@@ -79,27 +83,25 @@ export function SequenceDiagram({ scenario }: { scenario: Scenario }) {
                     stroke={color}
                     strokeWidth={1.5}
                   />
-                  <text
-                    x={cx}
-                    y={layout.actorBox.y + 24}
-                    textAnchor="middle"
-                    fill={color}
-                    fontSize={13}
-                    fontWeight={700}
+                  {/*
+                   * foreignObject : le texte SVG ne sait pas passer à la ligne ;
+                   * on rend nom + alias en HTML avec text-wrap balance/pretty
+                   * (amélioration progressive : retour à la ligne standard sinon).
+                   */}
+                  <foreignObject
+                    x={cx - layout.actorBox.width / 2}
+                    y={layout.actorBox.y}
+                    width={layout.actorBox.width}
+                    height={layout.actorBox.height}
+                    style={{ pointerEvents: 'none' }}
                   >
-                    {actor.name}
-                  </text>
-                  {actor.alias && (
-                    <text
-                      x={cx}
-                      y={layout.actorBox.y + 42}
-                      textAnchor="middle"
-                      fill="var(--muted)"
-                      fontSize={10.5}
-                    >
-                      {actor.alias}
-                    </text>
-                  )}
+                    <div className="sd-actor-head">
+                      <p className="sd-actor-name" style={{ color }}>
+                        {actor.name}
+                      </p>
+                      {actor.alias && <p className="sd-actor-alias">{actor.alias}</p>}
+                    </div>
+                  </foreignObject>
                 </g>
               )
             })}
