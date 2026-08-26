@@ -125,23 +125,34 @@ src/
   components/
     content/    briques de leçon : Term (popover glossaire), Callout, CodeBlock (Shiki),
                 Quiz, CompareTable, DecisionTree
-  content/      oauth2/ : les 11 leçons rédigées (TSX), chargées en lazy via registry.ts
+  content/      oauth2/ (11 leçons) + oidc/ (7 leçons), en lazy via registry.ts
   routes/       TanStack Router file-based : / (dashboard), /$moduleId,
                 /$moduleId/$chapitre/$lecon, /glossaire, /labo-crypto
-  data/         curriculum.ts (navigation), glossary.ts (40 entrées)
-  db/           Dexie + hooks TanStack Query, export/import JSON de la progression
-  lib/          jwt.ts (décodage base64url à la main), crypto.ts (WebCrypto : PKCE, ES256…),
-                actors.ts (code couleur)
+  data/         curriculum.ts (navigation), glossary.ts (60 entrées),
+                fixtures/oidc.ts (ID Token/JWKS signés — GÉNÉRÉS, cf. scripts/)
+  db/           Dexie + hooks TanStack Query, export/import/reset de la progression
+  lib/          jwt.ts (décodage base64url à la main), crypto.ts (WebCrypto : PKCE, ES256,
+                at_hash, vérif. JWS), actors.ts (code couleur)
+scripts/        gen-oidc-fixtures.mjs (jose, dev) → src/data/fixtures/oidc.ts
 public/
-  scenarios/    les 8 scénarios JSON (l'API de contribution ci-dessus)
+  scenarios/    oauth2/ (8) + oidc/ (5) scénarios JSON (l'API de contribution ci-dessus)
 ```
+
+Régénérer les fixtures OIDC (clés jetables, timestamps fixes) : `node scripts/gen-oidc-fixtures.mjs`.
 
 ## État d'avancement
 
 - [x] Squelette : layout dashboard/menu, thème bleu nuit (dark/light), Dexie, CI
 - [x] Moteur `SequenceDiagram` (SVG animé, self-messages, adaptatif), tests Vitest
 - [x] **Phase 1 — OAuth2 complète** : 8 chapitres (0–7) rédigés, 8 scénarios `SequenceDiagram`
-      (dont attaques jouables attaqué/protégé), glossaire de 40 entrées, Crypto Lab (SHA-256,
-      PKCE, ES256, JWT), quiz + badges par chapitre, export de progression. 34 tests, build
-      statique, smoke tests Playwright.
-- [ ] Phase 2 — OIDC · Phase 3 — OID4VCI · Phase 4 — OID4VP
+      (dont attaques jouables attaqué/protégé), glossaire, Crypto Lab (SHA-256, PKCE, ES256, JWT),
+      quiz + badges par chapitre, export/reset de progression.
+- [x] **Phase 2 — OIDC complète** : 7 chapitres (0–6) — anti-pattern « login avec un access
+      token », ID Token (JWS/JWE), flow complet, validation §3.1.3.7 (JWKS→kid→verify), Discovery,
+      nonce/at_hash/c_hash, OIDC vs SAML. 5 scénarios, Crypto Lab « Valider un ID Token » (vérif.
+      ES256 réelle + altération + at_hash), glossaire +16 entrées. Points normatifs vérifiés sur
+      OIDC Core 1.0 et Discovery 1.0.
+- [ ] Phase 3 — OID4VCI · Phase 4 — OID4VP
+
+Chaque affirmation normative cite sa section (OIDC Core / Discovery) ; les fixtures signées rendent
+`at_hash` et la vérification de signature reproductibles et testés (41 tests au total).

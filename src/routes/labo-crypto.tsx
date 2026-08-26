@@ -3,16 +3,19 @@ import { createFileRoute } from '@tanstack/react-router'
 import {
   base64UrlToBytes,
   bytesToBase64Url,
+  computeAtHash,
   computeCodeChallenge,
   exportPublicJwk,
   generateCodeVerifier,
   generateES256KeyPair,
   sha256Hex,
   signES256,
+  verifyCompactJwsES256,
   verifyES256,
 } from '../lib/crypto'
 import { JwtInspector } from '../components/jwt/JwtInspector'
 import { Callout } from '../components/content/Callout'
+import { OIDC_ACCESS_TOKEN, OIDC_AT_HASH, OIDC_ID_TOKEN, OIDC_JWKS } from '../data/fixtures/oidc'
 
 export const Route = createFileRoute('/labo-crypto')({
   component: CryptoLabPage,
@@ -39,6 +42,7 @@ function CryptoLabPage() {
       <HashSection />
       <PkceSection />
       <SignSection />
+      <IdTokenSection />
       <JwtSection />
     </div>
   )
@@ -229,6 +233,121 @@ function SignSection() {
               } — c'est exactement ce qui protège un JWT falsifié.`}
         </p>
       )}
+    </Section>
+  )
+}
+
+/* -------------------------------------------------- OIDC : valider un ID Token */
+function IdTokenSection() {
+  // Type littéral (as const) : conserve kid/alg/use, assignable à JsonWebKey.
+  const jwk = OIDC_JWKS.keys[0]
+  const [tampered, setTampered] = useState(false)
+  const [sigVerdict, setSigVerdict] = useState<boolean | null>(null)
+  const [atHash, setAtHash] = useState<string | null>(null)
+
+  // ID Token affiché : l'original, ou une version au sub altéré (payload réécrit).
+  const [header, payload, signature] = OIDC_ID_TOKEN.split('.') as [string, string, string]
+  let shownToken = OIDC_ID_TOKEN
+  if (tampered) {
+    const claims = JSON.parse(new TextDecoder().decode(base64UrlToBytes(payload)))
+    claims.sub = 'attacker-injected'
+    const forged = bytesToBase64Url(new TextEncoder().encode(JSON.stringify(claims)))
+    shownToken = `${header}.${forged}.${signature}`
+  }
+
+  const verifySig = async () => {
+    setSigVerdict(await verifyCompactJwsES256(shownToken, jwk))
+  }
+  const checkAtHash = async () => {
+    setAtHash(await computeAtHash(OIDC_ACCESS_TOKEN))
+  }
+
+  return (
+    <Section
+      title="🪪 Valider un ID Token — JWKS → kid → clé → verify"
+      intro="La séquence du chapitre « validation » d'OIDC, en vrai. On vérifie la signature d'un ID Token réel avec la clé du JWKS, puis on ALTÈRE un claim pour voir la vérification échouer. Enfin on recalcule at_hash."
+    >
+      <div className="rounded-md bg-surface-2 p-2.5 text-xs">
+        <p className="text-muted">
+          JWKS de l'OP (kid <span className="font-mono text-ink">{jwk.kid}</span>, {jwk.crv}) — clé{' '}
+          <strong>publique</strong>, elle ne sert qu'à vérifier :
+        </p>
+        <code className="mt-1 block break-all font-mono text-[11px] text-ink/90">
+          {`{"kty":"${jwk.kty}","crv":"${jwk.crv}","kid":"${jwk.kid}","x":"${jwk.x}","y":"${jwk.y}"}`}
+        </code>
+      </div>
+
+      <label className="mt-3 flex items-center gap-2 text-sm">
+        <input
+          type="checkbox"
+          checked={tampered}
+          onChange={(e) => {
+            setTampered(e.target.checked)
+            setSigVerdict(null)
+          }}
+          className="accent-[var(--danger)]"
+        />
+        Altérer le payload (réécrire <code className="font-mono text-xs">sub</code> →{' '}
+        <span className="font-mono text-xs text-danger">attacker-injected</span>)
+      </label>
+
+      <div className="mt-3">
+        <JwtInspector
+          label={tampered ? 'ID Token ALTÉRÉ' : 'ID Token (fixture OP)'}
+          jwt={shownToken}
+          note={
+            tampered
+              ? 'Le payload a été réécrit : la signature ne couvre plus ce contenu. Vérifiez-la ci-dessous.'
+              : 'ID Token authentique, signé par la clé du JWKS ci-dessus.'
+          }
+        />
+      </div>
+
+      <div className="mt-3 flex flex-wrap gap-2">
+        <button type="button" onClick={() => void verifySig()} className={btnCls}>
+          🔎 Vérifier la signature (clé du JWKS)
+        </button>
+        <button type="button" onClick={() => void checkAtHash()} className={btnCls}>
+          🔗 Recalculer at_hash
+        </button>
+      </div>
+
+      {sigVerdict !== null && (
+        <p
+          className={`mt-3 rounded-md border p-2.5 text-sm font-medium ${
+            sigVerdict ? 'border-ok bg-ok-soft text-ok' : 'border-danger bg-danger-soft text-danger'
+          }`}
+          aria-live="polite"
+        >
+          {sigVerdict
+            ? '✔ Signature valide : le jeton vient bien de l’OP et n’a pas été modifié. (Restent iss, aud, exp, nonce à vérifier — la signature ne suffit jamais.)'
+            : '✘ Signature invalide : le payload altéré ne correspond plus à la signature. Un ID Token injecté est rejeté ici même.'}
+        </p>
+      )}
+
+      {atHash && (
+        <output className={outCls}>
+          <span className="text-muted">access_token</span> = {OIDC_ACCESS_TOKEN}
+          <br />
+          at_hash recalculé = <span className="text-accent">{atHash}</span>
+          <br />
+          at_hash dans l’ID Token = <span className="text-accent">{OIDC_AT_HASH}</span>{' '}
+          {atHash === OIDC_AT_HASH ? (
+            <span className="text-ok">✔ concordent</span>
+          ) : (
+            <span className="text-danger">✘ divergent</span>
+          )}
+        </output>
+      )}
+
+      <Callout kind="note" title="Ce que vous venez de faire">
+        <p>
+          Exactement les étapes 6 à 8 de la validation (§3.1.3.7) : sélection de la clé par{' '}
+          <code>kid</code>, vérification ES256 sur « header.payload », et le contrôle{' '}
+          <code>at_hash</code> (§3.1.3.6). Altérer un seul caractère du payload casse la signature :
+          c'est ce qui rend un JWT infalsifiable sans la clé privée de l'OP.
+        </p>
+      </Callout>
     </Section>
   )
 }
