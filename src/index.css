@@ -188,6 +188,19 @@ body {
   text-wrap: balance;
 }
 
+/*
+ * Libellés d'auto-message du SequenceDiagram : rendus en foreignObject pour
+ * bénéficier du retour à la ligne (impossible en <text> SVG). Mono comme le
+ * reste du diagramme ; la boîte est dimensionnée par engine/label-layout.ts.
+ */
+.sd-step-label {
+  font-family: var(--font-mono);
+  font-size: 11.5px;
+  line-height: 1.15;
+  white-space: pre-line;
+  overflow: hidden;
+}
+
 .sd-actor-alias {
   font-size: 10px;
   line-height: 1.25;

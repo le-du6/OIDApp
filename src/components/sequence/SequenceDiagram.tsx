@@ -119,6 +119,7 @@ export function SequenceDiagram({ scenario }: { scenario: Scenario }) {
                   x1={layout.laneX[step.from] ?? 0}
                   x2={layout.laneX[step.to] ?? 0}
                   y={layout.stepY[i] ?? 0}
+                  viewWidth={layout.width}
                   index={i}
                   isCurrent={i === state.stepIndex}
                   isSelected={i === state.stepIndex}
