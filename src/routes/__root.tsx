@@ -1,7 +1,6 @@
 import { createRootRoute, Outlet } from '@tanstack/react-router'
 import { Sidebar } from '../components/layout/Sidebar'
-import { ThemeToggle } from '../components/layout/ThemeToggle'
-import { ProgressMenu } from '../components/layout/ProgressMenu'
+import { TopNav } from '../components/layout/TopNav'
 
 export const Route = createRootRoute({
   component: RootLayout,
@@ -20,14 +19,14 @@ function RootLayout() {
         <Sidebar />
       </aside>
       <div className="min-w-0 flex-1">
-        <header className="sticky top-0 z-10 flex items-center justify-between border-b border-line bg-bg/80 px-6 py-3 backdrop-blur">
-          <p className="text-sm text-muted">
-            Comprendre <span className="font-mono text-ink">OAuth2 · OIDC · OID4VCI · OID4VP</span>{' '}
-            — sécurité et crypto en fil rouge
-          </p>
-          <div className="flex items-center gap-2">
-            <ProgressMenu />
-            <ThemeToggle />
+        <header className="sticky top-0 z-10 border-b border-line bg-bg/85 px-4 py-3 backdrop-blur-xl md:px-6">
+          <div className="flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between">
+            <p className="text-sm text-muted">
+              Comprendre{' '}
+              <span className="font-mono text-ink">OAuth2 · OIDC · OID4VCI · OID4VP</span> —
+              sécurité et crypto en fil rouge
+            </p>
+            <TopNav />
           </div>
         </header>
         <main className="p-6">

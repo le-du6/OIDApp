@@ -82,7 +82,7 @@ function Dashboard() {
         <p className="mt-1 text-xs text-muted">
           Votre progression ne quitte jamais ce navigateur (IndexedDB). Exportez-la en JSON pour la
           transférer ou la conserver. Import et réinitialisation sont dans le menu{' '}
-          <span className="font-medium text-ink">📊 Progression</span> (en haut à droite).
+          <span className="font-medium text-ink">Progression</span>, en bas de la barre latérale.
         </p>
         <button
           type="button"

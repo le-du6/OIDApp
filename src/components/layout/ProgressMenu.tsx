@@ -9,7 +9,11 @@ import { buildProgressExport, downloadProgressExport } from '../../db/progress-i
  * (pas de dialog natif). Menu accessible : fermeture au clic extérieur et à
  * la touche Échap.
  */
-export function ProgressMenu() {
+type ProgressMenuProps = {
+  placement?: 'topbar' | 'sidebar'
+}
+
+export function ProgressMenu({ placement = 'topbar' }: ProgressMenuProps) {
   const [open, setOpen] = useState(false)
   const [confirmingReset, setConfirmingReset] = useState(false)
   const [feedback, setFeedback] = useState<string | null>(null)
@@ -72,18 +76,30 @@ export function ProgressMenu() {
   }
 
   const itemClass =
-    'flex w-full items-center gap-2 rounded-md px-2.5 py-1.5 text-left text-sm text-ink transition-colors hover:bg-surface-2'
+    'flex w-full items-center gap-2 rounded-lg px-3 py-2 text-left text-sm text-ink transition-colors hover:bg-surface-2'
+  const triggerClass =
+    placement === 'sidebar'
+      ? 'flex w-full items-center justify-between rounded-xl border border-line bg-surface-2 px-3 py-2 text-sm text-ink transition-colors hover:border-accent'
+      : 'flex items-center gap-1.5 rounded-md border border-line bg-surface-2 px-3 py-1.5 text-sm text-ink transition-colors hover:border-accent'
+  const menuPositionClass =
+    placement === 'sidebar'
+      ? 'absolute bottom-full left-0 z-20 mb-2 w-full rounded-2xl border border-line bg-surface p-1.5 shadow-xl'
+      : 'absolute right-0 z-20 mt-2 w-64 rounded-xl border border-line bg-surface p-1.5 shadow-lg'
+  const feedbackPositionClass =
+    placement === 'sidebar'
+      ? 'absolute bottom-full left-0 mb-2 w-full rounded-lg border border-line bg-surface px-3 py-2 text-xs text-muted shadow-lg'
+      : 'absolute right-0 top-full mt-2 w-64 rounded-md border border-line bg-surface px-3 py-2 text-xs text-muted shadow-lg'
 
   return (
-    <div className="relative" ref={containerRef}>
+    <div className="relative w-full" ref={containerRef}>
       <button
         type="button"
         onClick={() => (open ? close() : setOpen(true))}
-        className="flex items-center gap-1.5 rounded-md border border-line bg-surface-2 px-3 py-1.5 text-sm text-ink transition-colors hover:border-accent"
+        className={triggerClass}
         aria-haspopup="menu"
         aria-expanded={open}
       >
-        📊 Progression
+        <span>Progression</span>
         <span
           aria-hidden
           className={`text-[10px] transition-transform ${open ? 'rotate-180' : ''}`}
@@ -93,18 +109,17 @@ export function ProgressMenu() {
       </button>
 
       {open && (
-        <div
-          role="menu"
-          aria-label="Actions sur la progression"
-          className="absolute right-0 z-20 mt-2 w-64 rounded-xl border border-line bg-surface p-1.5 shadow-lg"
-        >
+        <div role="menu" aria-label="Actions sur la progression" className={menuPositionClass}>
+          <p className="px-3 pb-1.5 pt-2 text-[11px] font-semibold uppercase tracking-[0.16em] text-muted">
+            Données locales
+          </p>
           <button
             type="button"
             role="menuitem"
             className={itemClass}
             onClick={() => void handleExport()}
           >
-            ⬇ Exporter (sauvegarde JSON)
+            Exporter en JSON
           </button>
           <button
             type="button"
@@ -112,7 +127,7 @@ export function ProgressMenu() {
             className={itemClass}
             onClick={() => fileInputRef.current?.click()}
           >
-            ⬆ Importer une sauvegarde
+            Importer une sauvegarde
           </button>
 
           <div className="my-1.5 border-t border-line" />
@@ -124,7 +139,7 @@ export function ProgressMenu() {
               className={`${itemClass} text-danger hover:bg-danger-soft`}
               onClick={() => setConfirmingReset(true)}
             >
-              ♻ Réinitialiser la progression
+              Réinitialiser la progression
             </button>
           ) : (
             <div className="rounded-md bg-danger-soft p-2.5">
@@ -168,10 +183,7 @@ export function ProgressMenu() {
       />
 
       {feedback && (
-        <p
-          role="status"
-          className="absolute right-0 top-full mt-2 w-64 rounded-md border border-line bg-surface px-3 py-2 text-xs text-muted shadow-lg"
-        >
+        <p role="status" className={feedbackPositionClass}>
           {feedback}
         </p>
       )}
