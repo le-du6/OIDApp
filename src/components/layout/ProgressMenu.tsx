@@ -83,8 +83,8 @@ export function ProgressMenu({ placement = 'topbar' }: ProgressMenuProps) {
       : 'flex items-center gap-1.5 rounded-md border border-line bg-surface-2 px-3 py-1.5 text-sm text-ink transition-colors hover:border-accent'
   const menuPositionClass =
     placement === 'sidebar'
-      ? 'absolute bottom-full left-0 z-20 mb-2 w-full rounded-2xl border border-line bg-surface p-1.5 shadow-xl'
-      : 'absolute right-0 z-20 mt-2 w-64 rounded-xl border border-line bg-surface p-1.5 shadow-lg'
+      ? 'progress-menu absolute bottom-full left-0 z-20 mb-2 w-full rounded-2xl border p-1.5'
+      : 'progress-menu absolute right-0 z-20 mt-2 w-64 rounded-xl border p-1.5'
   const feedbackPositionClass =
     placement === 'sidebar'
       ? 'absolute bottom-full left-0 mb-2 w-full rounded-lg border border-line bg-surface px-3 py-2 text-xs text-muted shadow-lg'
@@ -100,12 +100,21 @@ export function ProgressMenu({ placement = 'topbar' }: ProgressMenuProps) {
         aria-expanded={open}
       >
         <span>Progression</span>
-        <span
-          aria-hidden
-          className={`text-[10px] transition-transform ${open ? 'rotate-180' : ''}`}
+        <svg
+          aria-hidden="true"
+          focusable="false"
+          width="20"
+          height="20"
+          viewBox="0 0 24 24"
+          fill="none"
+          stroke="currentColor"
+          strokeWidth="2.5"
+          strokeLinecap="round"
+          strokeLinejoin="round"
+          className={`size-5 shrink-0 transition-transform duration-200 motion-reduce:transition-none ${open ? 'rotate-180' : ''}`}
         >
-          ▾
-        </span>
+          <path d="m6 9 6 6 6-6" />
+        </svg>
       </button>
 
       {open && (
