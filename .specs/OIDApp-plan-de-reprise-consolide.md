@@ -4,7 +4,7 @@ Document de travail du 5 septembre 2026 — version 1.
 
 Dépôt analysé : `/Users/bob/codes/OIDApp` ; commit de référence : `9ea321509293b4d2b2c804df6c1002e3375f7a3d`. L'arbre Git était propre lors du relevé.
 
-Ce document consolide l'audit initial et les notes d'Hector transmises par Bob. Il prépare les modifications ultérieures ; aucune modification de l'application n'a été effectuée pour le produire. Les commentaires des documents et du code sont des éléments examinés, pas des instructions de mise en œuvre.
+Ce document consolide l'audit initial et les notes d'Hector transmises par Benoit. Il prépare les modifications ultérieures ; aucune modification de l'application n'a été effectuée pour le produire. Les commentaires des documents et du code sont des éléments examinés, pas des instructions de mise en œuvre.
 
 ## Utilisation et portée
 
@@ -20,29 +20,29 @@ Les signatures des fixtures OIDC/VCI/VP, les digests VCI, le `sd_hash` VP et les
 
 ## Arbitrage explicite des notes d'Hector
 
-| Note | Remarque reformulée | Qualification et traitement | Reprises |
-|---|---|---|---|
-| H01 | La longueur indique la bonne réponse au quiz. | Confirmé et quantifié ; le placement constitue aussi un indice. | R08 |
-| H02 | Les rôles des claims JWT sont insuffisamment et inégalement décrits. | Confirmé : le dictionnaire commun ne couvre pas de nombreux champs des fixtures. | R04, R07, R15 |
-| H03 | Des notions sont expliquées après leur utilisation. | Pédagogique ; établir les prérequis plutôt que déplacer isolément des paragraphes. | R03 |
-| H04 | Le terme « phase » perturbe le repérage. | Confirmé dans le curriculum, des interfaces et les leçons. | R02 |
-| H05 | Le Client OAuth n'est pas surtout un serveur par définition. | Retenu : rôle logique et forme de déploiement doivent être séparés. | R09, R12 |
-| H06 | OAuth suppose une authentification sans en définir la méthode. | Retenu avec portée : préciser le grant et qui est authentifié ; éviter « authentification utilisateur obligatoire dans tous les grants ». | R09 |
-| H07 | L'authentification du client n'est pas mentionnée. | À nuancer : elle apparaît déjà, notamment dans les en-têtes Basic des scénarios. Elle n'est pas suffisamment structurée comme notion. | R10 |
-| H08 | Digest et Kerberos existaient avant OAuth. | Retenu comme correction du récit historique ; Kerberos n'est pas limité au local et l'authentification ne se confond pas avec la délégation OAuth. | R11 |
-| H09 | L'access token peut traverser le navigateur en Implicit. | Retenu ; Implicit est déjà traité au chapitre 5, pas seulement au 7. Le problème est surtout l'interdiction générale enseignée auparavant. | R12, R13 |
-| H10 | Il manque `acr`, `amr`, `azp` et l'extensibilité de l'ID Token. | Retenu avec conditions propres à chaque claim et version de Core explicitée. | R15, R17 |
-| H11 | Il manque le passage navigateur → callback RP avant `/token`. | Confirmé dans le scénario OIDC : le dessin passe du 302 à l'appel du RP. | R16 |
-| H12 | Les treize étapes de validation sont annoncées mais non détaillées. | Confirmé ; les conditions d'applicabilité comptent autant que la liste. | R17 |
-| H13 | Le tableau OIDC/SAML est cassé. | Confirmé dans la structure du code ; problème potentiellement partagé par d'autres tableaux. | R05 |
-| H14 | SD-JWT VC paraît être le format officiel unique. | À nuancer : mdoc est bien décrit au chapitre 4 ; le déséquilibre des exemples initiaux entretient cette impression. | R19 |
-| H15 | « Back channel » n'a pas de sens en VCI/VP. | Ne pas retenir comme interdiction terminologique universelle. Le véritable problème est l'assimilation automatique à deux serveurs et à une authentification du client. | R12 |
-| H16 | OID4VCI peut transporter tout type de donnée. | Ne pas reprendre littéralement : agnosticisme de format ne signifie pas API de transfert arbitraire. | R19 |
-| H17 | Le key binding manque dans les formats. | Retenu comme manque d'articulation ; `cnf` et KB-JWT existent déjà dans le cours. | R23–R26 |
-| H18 | Ancien `vc+sd-jwt`, nouveau `dc+sd-jwt`, double acceptation recommandée. | Le sens du changement est déjà correct dans le dépôt. Clarifier la recommandation transitoire, sans inverser les valeurs. | R22 |
-| H19 | L'ancien `client_id_scheme` devrait être contextualisé plus tôt. | Retenu comme problème de transition ; commencer par un ancien draft n'est pas une nécessité pédagogique. | R03, R27 |
-| H20 | Ajouter `intent_to_retain` à DCQL. | Retenu avec précision essentielle : paramètre optionnel des Claims Queries mdoc dans la version examinée. | R28 |
-| H21 | Les timestamps et autres valeurs singulières permettent la corrélation. | Retenu ; étendre l'analyse aux combinaisons de valeurs, pas uniquement aux identifiants explicites. | R31 |
+| Note | Remarque reformulée                                                      | Qualification et traitement                                                                                                                                             | Reprises      |
+| ---- | ------------------------------------------------------------------------ | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------- |
+| H01  | La longueur indique la bonne réponse au quiz.                            | Confirmé et quantifié ; le placement constitue aussi un indice.                                                                                                         | R08           |
+| H02  | Les rôles des claims JWT sont insuffisamment et inégalement décrits.     | Confirmé : le dictionnaire commun ne couvre pas de nombreux champs des fixtures.                                                                                        | R04, R07, R15 |
+| H03  | Des notions sont expliquées après leur utilisation.                      | Pédagogique ; établir les prérequis plutôt que déplacer isolément des paragraphes.                                                                                      | R03           |
+| H04  | Le terme « phase » perturbe le repérage.                                 | Confirmé dans le curriculum, des interfaces et les leçons.                                                                                                              | R02           |
+| H05  | Le Client OAuth n'est pas surtout un serveur par définition.             | Retenu : rôle logique et forme de déploiement doivent être séparés.                                                                                                     | R09, R12      |
+| H06  | OAuth suppose une authentification sans en définir la méthode.           | Retenu avec portée : préciser le grant et qui est authentifié ; éviter « authentification utilisateur obligatoire dans tous les grants ».                               | R09           |
+| H07  | L'authentification du client n'est pas mentionnée.                       | À nuancer : elle apparaît déjà, notamment dans les en-têtes Basic des scénarios. Elle n'est pas suffisamment structurée comme notion.                                   | R10           |
+| H08  | Digest et Kerberos existaient avant OAuth.                               | Retenu comme correction du récit historique ; Kerberos n'est pas limité au local et l'authentification ne se confond pas avec la délégation OAuth.                      | R11           |
+| H09  | L'access token peut traverser le navigateur en Implicit.                 | Retenu ; Implicit est déjà traité au chapitre 5, pas seulement au 7. Le problème est surtout l'interdiction générale enseignée auparavant.                              | R12, R13      |
+| H10  | Il manque `acr`, `amr`, `azp` et l'extensibilité de l'ID Token.          | Retenu avec conditions propres à chaque claim et version de Core explicitée.                                                                                            | R15, R17      |
+| H11  | Il manque le passage navigateur → callback RP avant `/token`.            | Confirmé dans le scénario OIDC : le dessin passe du 302 à l'appel du RP.                                                                                                | R16           |
+| H12  | Les treize étapes de validation sont annoncées mais non détaillées.      | Confirmé ; les conditions d'applicabilité comptent autant que la liste.                                                                                                 | R17           |
+| H13  | Le tableau OIDC/SAML est cassé.                                          | Confirmé dans la structure du code ; problème potentiellement partagé par d'autres tableaux.                                                                            | R05           |
+| H14  | SD-JWT VC paraît être le format officiel unique.                         | À nuancer : mdoc est bien décrit au chapitre 4 ; le déséquilibre des exemples initiaux entretient cette impression.                                                     | R19           |
+| H15  | « Back channel » n'a pas de sens en VCI/VP.                              | Ne pas retenir comme interdiction terminologique universelle. Le véritable problème est l'assimilation automatique à deux serveurs et à une authentification du client. | R12           |
+| H16  | OID4VCI peut transporter tout type de donnée.                            | Ne pas reprendre littéralement : agnosticisme de format ne signifie pas API de transfert arbitraire.                                                                    | R19           |
+| H17  | Le key binding manque dans les formats.                                  | Retenu comme manque d'articulation ; `cnf` et KB-JWT existent déjà dans le cours.                                                                                       | R23–R26       |
+| H18  | Ancien `vc+sd-jwt`, nouveau `dc+sd-jwt`, double acceptation recommandée. | Le sens du changement est déjà correct dans le dépôt. Clarifier la recommandation transitoire, sans inverser les valeurs.                                               | R22           |
+| H19  | L'ancien `client_id_scheme` devrait être contextualisé plus tôt.         | Retenu comme problème de transition ; commencer par un ancien draft n'est pas une nécessité pédagogique.                                                                | R03, R27      |
+| H20  | Ajouter `intent_to_retain` à DCQL.                                       | Retenu avec précision essentielle : paramètre optionnel des Claims Queries mdoc dans la version examinée.                                                               | R28           |
+| H21  | Les timestamps et autres valeurs singulières permettent la corrélation.  | Retenu ; étendre l'analyse aux combinaisons de valeurs, pas uniquement aux identifiants explicites.                                                                     | R31           |
 
 ## Étape 1 — Fixer le référentiel et les repères du cours
 
@@ -340,22 +340,22 @@ Les signatures des fixtures OIDC/VCI/VP, les digests VCI, le `sd_hash` VP et les
 
 ## Traçabilité de l'audit initial
 
-| Constat de la première revue | Reprises associées |
-|---|---|
-| Front/back channel assimilé à navigateur/serveur | R09, R12 |
-| Identification du client omise dans deux token requests | R10 |
-| MUST/SHOULD et CSRF/PKCE généralisés | R01, R13 |
-| Révocation des tokens trop automatique | R14 |
-| Contradiction `at_hash`, portée limitée du Lab OIDC | R17, R18, R34 |
-| PoP VCI présenté comme universel | R20, R23, R26 |
-| `c_nonce` assimilé à une transaction et à l'usage unique | R20, R25 |
-| Request Object VP incomplet, nom de Verifier incohérent | R27 |
-| `direct_post.jwt` mal défini ; acceptation DCQL peu visible | R28, R29 |
-| Vie privée absolue, clés de lots et granularité OIDC | R30, R31, R32 |
-| Fixtures émission/présentation autonomes | R24 |
-| Inspecteur JWT générique et KB-JWT non construit dans le Lab | R07, R25 |
-| Champs HTTP peu expliqués, corps brut masqué | R04, R06 |
-| Manques de couverture et limites des tests existants | R33, R34 |
+| Constat de la première revue                                 | Reprises associées |
+| ------------------------------------------------------------ | ------------------ |
+| Front/back channel assimilé à navigateur/serveur             | R09, R12           |
+| Identification du client omise dans deux token requests      | R10                |
+| MUST/SHOULD et CSRF/PKCE généralisés                         | R01, R13           |
+| Révocation des tokens trop automatique                       | R14                |
+| Contradiction `at_hash`, portée limitée du Lab OIDC          | R17, R18, R34      |
+| PoP VCI présenté comme universel                             | R20, R23, R26      |
+| `c_nonce` assimilé à une transaction et à l'usage unique     | R20, R25           |
+| Request Object VP incomplet, nom de Verifier incohérent      | R27                |
+| `direct_post.jwt` mal défini ; acceptation DCQL peu visible  | R28, R29           |
+| Vie privée absolue, clés de lots et granularité OIDC         | R30, R31, R32      |
+| Fixtures émission/présentation autonomes                     | R24                |
+| Inspecteur JWT générique et KB-JWT non construit dans le Lab | R07, R25           |
+| Champs HTTP peu expliqués, corps brut masqué                 | R04, R06           |
+| Manques de couverture et limites des tests existants         | R33, R34           |
 
 ## Séquence de travail suggérée
 
