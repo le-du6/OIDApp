@@ -1,6 +1,10 @@
 import { useQuery } from '@tanstack/react-query'
 import { parseScenario, type Scenario } from './scenario'
 
+export function scenarioUrl(scenarioId: string, baseUrl = import.meta.env.BASE_URL) {
+  return `${baseUrl.replace(/\/?$/, '/')}scenarios/${scenarioId}.json`
+}
+
 /**
  * Charge un scénario JSON statique (public/scenarios/<id>.json) via TanStack
  * Query, puis le valide avec Zod : un scénario mal formé échoue bruyamment
@@ -11,7 +15,7 @@ export function useScenario(scenarioId: string) {
     queryKey: ['scenario', scenarioId],
     staleTime: Infinity,
     queryFn: async () => {
-      const url = `${import.meta.env.BASE_URL}scenarios/${scenarioId}.json`
+      const url = scenarioUrl(scenarioId)
       const res = await fetch(url)
       if (!res.ok) {
         throw new Error(`Scénario introuvable : ${url} (HTTP ${res.status})`)

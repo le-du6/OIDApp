@@ -2,6 +2,7 @@ import { readdirSync, readFileSync } from 'node:fs'
 import { join } from 'node:path'
 import { describe, expect, it } from 'vitest'
 import { parseScenario } from './scenario'
+import { scenarioUrl } from './useScenario'
 
 const validScenario = {
   id: 'test/minimal',
@@ -14,6 +15,15 @@ const validScenario = {
 }
 
 describe('parseScenario', () => {
+  it('construit une URL de scénario valide avec ou sans slash final', () => {
+    expect(scenarioUrl('oidc/authorization-code', '/OIDApp')).toBe(
+      '/OIDApp/scenarios/oidc/authorization-code.json',
+    )
+    expect(scenarioUrl('oidc/authorization-code', '/OIDApp/')).toBe(
+      '/OIDApp/scenarios/oidc/authorization-code.json',
+    )
+  })
+
   it('accepte un scénario minimal valide', () => {
     expect(parseScenario(validScenario).id).toBe('test/minimal')
   })
