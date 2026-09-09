@@ -1,9 +1,8 @@
 # Déploiement GitHub Pages du build statique.
 #
-# Aucune action manuelle requise : `actions/configure-pages` avec
-# `enablement: true` ACTIVE Pages en mode « GitHub Actions » si ce n'est pas
-# déjà fait. Sans cette étape, deploy-pages échoue avec
-# « Get Pages site failed » tant que le réglage n'a pas été fait à la main.
+# Prérequis : Settings > Pages > Build and deployment > Source doit être
+# configuré sur « GitHub Actions ». Cette activation requiert un droit
+# d'administration et ne peut pas être effectuée par GITHUB_TOKEN.
 name: Deploy Pages
 
 on:
@@ -29,11 +28,9 @@ jobs:
         with:
           node-version-file: .nvmrc
           cache: npm
-      - name: Activer et configurer Pages
+      - name: Configurer Pages
         id: pages
         uses: actions/configure-pages@v5
-        with:
-          enablement: true
       - run: npm ci
       - run: npm run build
         env:
