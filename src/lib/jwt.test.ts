@@ -1,4 +1,4 @@
-import { describe, expect, it } from 'vitest'
+import { describe, expect, it } from 'vite-plus/test'
 import { base64UrlDecode, decodeJwt, formatEpochClaim, JwtDecodeError } from './jwt'
 
 // Fixture générée avec jose (ES256) — la même que dans le scénario auth code.

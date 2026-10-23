@@ -1,7 +1,7 @@
 {
   "id": "oid4vp/verifier-identification",
   "title": "Qui me demande ça ? Identifier le Verifier",
-  "description": "Dans le monde wallet, la question de confiance s'inverse : ce n'est plus seulement le service qui vérifie l'utilisateur, c'est le WALLET qui doit vérifier le service. Un Verifier frauduleux qui collecte des attestations d'identité est LE scénario d'abus du modèle. Les Client Identifier Prefixes structurent la réponse.",
+  "description": "Dans le monde wallet, la question de confiance s'inverse : ce n'est plus seulement le service qui vérifie l'utilisateur, c'est le WALLET qui doit vérifier le service. Un Verifier frauduleux qui collecte des attestations d'identité est LE scénario d'abus du modèle. Les Client Identifier Prefixes structurent la réponse. Démonstration datée du 1er janvier 2026 : données fictives, validation à l’horloge du scénario.",
   "specRefs": ["OID4VP 1.0 §5.9 (Client Identifier)", "OID4VP 1.0 §5.10 (request_uri)"],
   "actors": [
     {
@@ -37,17 +37,23 @@
       "to": "verifier",
       "kind": "http",
       "label": "GET request_uri → Request Object signé + chaîne x5c",
-      "summary": "Le Request Object (un JWT, mécanique JAR de la Phase 1) arrive signé, avec la chaîne de certificats du Verifier dans son header x5c. Tout ce qu'affirme la requête est désormais adossé à cette signature.",
+      "summary": "Le Request Object (un JWT, mécanique JAR du module OAuth 2.0) arrive signé, avec la chaîne de certificats du Verifier dans son header x5c. Tout ce qu'affirme la requête est désormais adossé à cette signature.",
       "request": {
         "channel": "back",
-        "request": { "method": "GET", "url": "https://verifier.example/request/8djeu2" },
+        "request": {
+          "method": "GET",
+          "url": "https://verifier.example/request/8djeu2"
+        },
         "response": {
           "status": 200,
           "statusText": "OK",
-          "headers": { "Content-Type": "application/oauth-authz-req+jwt" },
+          "headers": {
+            "Content-Type": "application/oauth-authz-req+jwt"
+          },
           "body": {
             "type": "text",
-            "content": "eyJhbGciOiJFUzI1NiIsIng1YyI6WyJNSUlDLi4uKGNlcnQgZHUgdmVyaWZpZXIpIl19.eyJjbGllbnRfaWQiOiJ4NTA5X3Nhbl9kbnM6dmVyaWZpZXIuZXhhbXBsZSIsIm5vbmNlIjoi4oCmIn0.…"
+            "content": "eyJhbGciOiJFUzI1NiIsIng1YyI6WyJNSUlDLi4uKGNlcnQgZHUgdmVyaWZpZXIpIl19.eyJjbGllbnRfaWQiOiJ4NTA5X3Nhbl9kbnM6dmVyaWZpZXIuZXhhbXBsZSIsIm5vbmNlIjoi4oCmIn0.…",
+            "representation": "excerpt"
           }
         }
       }
@@ -94,7 +100,7 @@
       "from": "wallet",
       "to": "wallet",
       "kind": "internal",
-      "label": "Affiche : « location.example demande : prénom, date de naissance »",
+      "label": "Affiche : « verifier.example demande : prénom, date de naissance »",
       "summary": "Le nom présenté à l'utilisateur vient de l'identité VÉRIFIÉE, jamais d'un champ déclaratif de la requête. Un Verifier non authentifié ou hors cadre → le wallet refuse d'aller plus loin, avant tout consentement.",
       "security": {
         "level": "danger",

@@ -4,14 +4,24 @@
   "description": "Le flow « à deux appareils » : une TV, une CLI ou un objet connecté n'a ni clavier confortable ni navigateur. L'appareil affiche un code court, l'utilisateur autorise depuis son téléphone, l'appareil interroge le token endpoint en attendant. Valeurs d'exemple de la RFC 8628.",
   "specRefs": ["RFC 8628"],
   "actors": [
-    { "id": "device", "name": "Client (Device)", "role": "client", "alias": "= la TV, la CLI…" },
+    {
+      "id": "device",
+      "name": "Client (Device)",
+      "role": "client",
+      "alias": "= la TV, la CLI…"
+    },
     {
       "id": "as",
       "name": "Authorization Server",
       "role": "authorization-server",
       "alias": "= Keycloak, Auth0…"
     },
-    { "id": "user", "name": "Resource Owner", "role": "user", "alias": "= vous" },
+    {
+      "id": "user",
+      "name": "Resource Owner",
+      "role": "user",
+      "alias": "= vous"
+    },
     {
       "id": "phone",
       "name": "User-Agent",
@@ -32,23 +42,38 @@
         "request": {
           "method": "POST",
           "url": "https://as.example/device_authorization",
-          "headers": { "Content-Type": "application/x-www-form-urlencoded" },
+          "headers": {
+            "Content-Type": "application/x-www-form-urlencoded"
+          },
           "body": {
             "type": "form",
             "content": "client_id=tv-app&scope=photos.read",
             "params": [
-              { "name": "client_id", "value": "tv-app", "specRef": "RFC 8628 §3.1" },
-              { "name": "scope", "value": "photos.read", "specRef": "RFC 8628 §3.1" }
-            ]
+              {
+                "name": "client_id",
+                "value": "tv-app",
+                "specRef": "RFC 8628 §3.1"
+              },
+              {
+                "name": "scope",
+                "value": "photos.read",
+                "specRef": "RFC 8628 §3.1"
+              }
+            ],
+            "representation": "wire"
           }
         },
         "response": {
           "status": 200,
           "statusText": "OK",
-          "headers": { "Content-Type": "application/json", "Cache-Control": "no-store" },
+          "headers": {
+            "Content-Type": "application/json",
+            "Cache-Control": "no-store"
+          },
           "body": {
             "type": "json",
-            "content": "{\n  \"device_code\": \"GmRhmhcxhwAzkoEqiMEg_DnyEysNkuNhszIySk9eS\",\n  \"user_code\": \"WDJB-MJHT\",\n  \"verification_uri\": \"https://as.example/device\",\n  \"verification_uri_complete\": \"https://as.example/device?user_code=WDJB-MJHT\",\n  \"expires_in\": 1800,\n  \"interval\": 5\n}"
+            "content": "{\n  \"device_code\": \"GmRhmhcxhwAzkoEqiMEg_DnyEysNkuNhszIySk9eS\",\n  \"user_code\": \"WDJB-MJHT\",\n  \"verification_uri\": \"https://as.example/device\",\n  \"verification_uri_complete\": \"https://as.example/device?user_code=WDJB-MJHT\",\n  \"expires_in\": 1800,\n  \"interval\": 5\n}",
+            "representation": "wire"
           }
         }
       },
@@ -94,10 +119,12 @@
         "request": {
           "method": "POST",
           "url": "https://as.example/token",
-          "headers": { "Content-Type": "application/x-www-form-urlencoded" },
+          "headers": {
+            "Content-Type": "application/x-www-form-urlencoded"
+          },
           "body": {
             "type": "form",
-            "content": "grant_type=urn:ietf:params:oauth:grant-type:device_code&device_code=GmRhmhcxhwAzkoEqiMEg_DnyEysNkuNhszIySk9eS&client_id=tv-app",
+            "content": "grant_type=urn%3Aietf%3Aparams%3Aoauth%3Agrant-type%3Adevice_code&device_code=GmRhmhcxhwAzkoEqiMEg_%E2%80%A6&client_id=tv-app",
             "params": [
               {
                 "name": "grant_type",
@@ -110,17 +137,25 @@
                 "value": "GmRhmhcxhwAzkoEqiMEg_…",
                 "specRef": "RFC 8628 §3.4"
               },
-              { "name": "client_id", "value": "tv-app", "specRef": "RFC 8628 §3.4" }
-            ]
+              {
+                "name": "client_id",
+                "value": "tv-app",
+                "specRef": "RFC 8628 §3.4"
+              }
+            ],
+            "representation": "wire"
           }
         },
         "response": {
           "status": 400,
           "statusText": "Bad Request",
-          "headers": { "Content-Type": "application/json" },
+          "headers": {
+            "Content-Type": "application/json"
+          },
           "body": {
             "type": "json",
-            "content": "{ \"error\": \"authorization_pending\" }"
+            "content": "{ \"error\": \"authorization_pending\" }",
+            "representation": "wire"
           }
         }
       },
@@ -150,9 +185,19 @@
         "request": {
           "method": "POST",
           "url": "https://as.example/device",
-          "body": { "type": "form", "content": "user_code=WDJB-MJHT" }
+          "body": {
+            "type": "form",
+            "content": "user_code=WDJB-MJHT",
+            "representation": "wire"
+          },
+          "headers": {
+            "Content-Type": "application/x-www-form-urlencoded"
+          }
         },
-        "response": { "status": 200, "statusText": "OK" }
+        "response": {
+          "status": 200,
+          "statusText": "OK"
+        }
       }
     },
     {
@@ -177,22 +222,30 @@
           "url": "https://as.example/token",
           "body": {
             "type": "form",
-            "content": "grant_type=urn:ietf:params:oauth:grant-type:device_code&device_code=GmRhmhcxhwAzkoEqiMEg_DnyEysNkuNhszIySk9eS&client_id=tv-app"
+            "content": "grant_type=urn:ietf:params:oauth:grant-type:device_code&device_code=GmRhmhcxhwAzkoEqiMEg_DnyEysNkuNhszIySk9eS&client_id=tv-app",
+            "representation": "wire"
+          },
+          "headers": {
+            "Content-Type": "application/x-www-form-urlencoded"
           }
         },
         "response": {
           "status": 200,
           "statusText": "OK",
-          "headers": { "Content-Type": "application/json", "Cache-Control": "no-store" },
+          "headers": {
+            "Content-Type": "application/json",
+            "Cache-Control": "no-store"
+          },
           "body": {
             "type": "json",
-            "content": "{\n  \"access_token\": \"eyJhbGciOiJFUzI1NiIsInR5cCI6ImF0K2p3dCIsImtpZCI6ImFzLTIwMjYtMDEifQ.…\",\n  \"token_type\": \"Bearer\",\n  \"expires_in\": 3600,\n  \"refresh_token\": \"hJ2ReXk41q\",\n  \"scope\": \"photos.read\"\n}"
+            "content": "{\n  \"access_token\": \"eyJhbGciOiJFUzI1NiIsInR5cCI6ImF0K2p3dCIsImtpZCI6ImFzLTIwMjYtMDEifQ.…\",\n  \"token_type\": \"Bearer\",\n  \"expires_in\": 3600,\n  \"refresh_token\": \"hJ2ReXk41q\",\n  \"scope\": \"photos.read\"\n}",
+            "representation": "excerpt"
           }
         }
       },
       "security": {
         "level": "info",
-        "note": "Notez la séparation des canaux : le user_code (humain) ne donne aucun token, le device_code (machine) n'est jamais montré. L'un sans l'autre ne vaut rien.",
+        "note": "Le user_code sert à autoriser l’appareil ; le device_code secret sert à interroger le token endpoint. Après autorisation, détenir le device_code peut suffire à obtenir les tokens si aucune autre protection ne s’applique.",
         "specRef": "RFC 8628 §1"
       }
     }

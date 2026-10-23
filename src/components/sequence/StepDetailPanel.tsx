@@ -1,14 +1,47 @@
 import type { Scenario, SecurityNote, Step } from '../../engine/scenario'
 import { HttpRequestView } from '../http/HttpRequestView'
 import { JwtInspector } from '../jwt/JwtInspector'
+import type { IconDefinition } from '@fortawesome/fontawesome-svg-core'
+import {
+  faBookBookmark,
+  faBomb,
+  faCircleInfo,
+  faPlay,
+  faShieldHalved,
+} from '@fortawesome/free-solid-svg-icons'
+import { AppIcon } from '../ui/AppIcon'
 
 const securityStyles: Record<
   SecurityNote['level'],
-  { border: string; bg: string; icon: string; title: string }
+  {
+    border: string
+    bg: string
+    icon: IconDefinition
+    tone: 'ok' | 'warning' | 'danger'
+    title: string
+  }
 > = {
-  info: { border: 'border-ok', bg: 'bg-ok-soft', icon: '🛈', title: 'Sécurité' },
-  warning: { border: 'border-warning', bg: 'bg-warning-soft', icon: '⚠', title: 'Attention' },
-  danger: { border: 'border-danger', bg: 'bg-danger-soft', icon: '🧨', title: 'Danger' },
+  info: {
+    border: 'border-ok',
+    bg: 'bg-ok-soft',
+    icon: faCircleInfo,
+    tone: 'ok',
+    title: 'Sécurité',
+  },
+  warning: {
+    border: 'border-warning',
+    bg: 'bg-warning-soft',
+    icon: faShieldHalved,
+    tone: 'warning',
+    title: 'Attention',
+  },
+  danger: {
+    border: 'border-danger',
+    bg: 'bg-danger-soft',
+    icon: faBomb,
+    tone: 'danger',
+    title: 'Danger',
+  },
 }
 
 /**
@@ -22,11 +55,14 @@ export function StepDetailPanel({ scenario, step }: { scenario: Scenario; step: 
         <h3 className="mb-2 text-base font-semibold text-ink">{scenario.title}</h3>
         <p>{scenario.description}</p>
         {scenario.specRefs && (
-          <p className="mt-3 font-mono text-xs">📜 {scenario.specRefs.join(' · ')}</p>
+          <p className="mt-3 flex items-start gap-2 font-mono text-xs">
+            <AppIcon icon={faBookBookmark} className="mt-0.5 size-3" />
+            {scenario.specRefs.join(' · ')}
+          </p>
         )}
         <p className="mt-4">
-          Lancez la lecture ▶ ou cliquez sur une flèche du diagramme pour afficher ici le détail de
-          chaque étape.
+          Lancez la lecture <AppIcon icon={faPlay} tone="accent" className="mx-1 inline size-3" />{' '}
+          ou cliquez sur une flèche du diagramme pour afficher ici le détail de chaque étape.
         </p>
       </aside>
     )
@@ -35,7 +71,10 @@ export function StepDetailPanel({ scenario, step }: { scenario: Scenario; step: 
   const security = step.security ? securityStyles[step.security.level] : null
 
   return (
-    <aside className="space-y-4 rounded-xl border border-line bg-surface p-5" aria-live="polite">
+    <aside
+      className="min-w-0 space-y-4 rounded-xl border border-line bg-surface p-5"
+      aria-live="polite"
+    >
       <div>
         <p className="font-mono text-xs text-muted">
           {step.from} → {step.to}
@@ -45,16 +84,28 @@ export function StepDetailPanel({ scenario, step }: { scenario: Scenario; step: 
       {step.summary && <p className="text-sm leading-relaxed text-ink/90">{step.summary}</p>}
       {step.security && security && (
         <div className={`rounded-lg border ${security.border} ${security.bg} p-3 text-sm`}>
-          <p className="font-semibold">
-            {security.icon} {security.title}
+          <p className="flex items-center gap-2 font-semibold">
+            <AppIcon icon={security.icon} tone={security.tone} className="size-4" />{' '}
+            {security.title}
           </p>
           <p className="mt-1 leading-relaxed">{step.security.note}</p>
           {step.security.specRef && (
-            <p className="mt-2 font-mono text-xs text-muted">📜 {step.security.specRef}</p>
+            <p className="mt-2 flex items-start gap-2 font-mono text-xs text-muted">
+              <AppIcon icon={faBookBookmark} className="mt-0.5 size-3" />
+              {step.security.specRef}
+            </p>
           )}
         </div>
       )}
-      {step.request && <HttpRequestView exchange={step.request} />}
+      {step.request && (
+        <HttpRequestView
+          exchange={step.request}
+          actors={{
+            from: scenario.actors.find((a) => a.id === step.from)?.name ?? step.from,
+            to: scenario.actors.find((a) => a.id === step.to)?.name ?? step.to,
+          }}
+        />
+      )}
       {step.tokens?.map((token) =>
         token.format === 'jwt' ? (
           <JwtInspector key={token.id} label={token.label} jwt={token.value} note={token.note} />

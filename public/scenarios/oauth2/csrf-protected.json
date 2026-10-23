@@ -4,7 +4,12 @@
   "description": "Rejouons exactement la même attaque contre un Client qui applique la RFC : un state imprévisible, lié à la session du navigateur, vérifié au callback. L'attaque meurt à l'étape 4.",
   "specRefs": ["RFC 6749 §10.12", "RFC 9700 §4.7"],
   "actors": [
-    { "id": "attacker", "name": "Attacker", "role": "attacker", "alias": "= même mode opératoire" },
+    {
+      "id": "attacker",
+      "name": "Attacker",
+      "role": "attacker",
+      "alias": "= même mode opératoire"
+    },
     {
       "id": "victim",
       "name": "Resource Owner",
@@ -17,7 +22,12 @@
       "role": "browser",
       "alias": "= le navigateur de la victime"
     },
-    { "id": "client", "name": "Client", "role": "client", "alias": "= PhotoPrint (state vérifié)" },
+    {
+      "id": "client",
+      "name": "Client",
+      "role": "client",
+      "alias": "= PhotoPrint (state vérifié)"
+    },
     {
       "id": "as",
       "name": "Authorization Server",
@@ -69,7 +79,10 @@
           "method": "GET",
           "url": "https://photoprint.example/callback",
           "params": [
-            { "name": "code", "value": "AttackerC0deXYZ" },
+            {
+              "name": "code",
+              "value": "AttackerC0deXYZ"
+            },
             {
               "name": "state",
               "value": "zzz-mauvaise-valeur",

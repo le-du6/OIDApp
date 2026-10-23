@@ -1,7 +1,7 @@
 {
   "id": "oid4vci/jwt-proof",
   "title": "Proof of possession : c_nonce + jwt proof",
-  "description": "Zoom sur LE mécanisme crypto de l'émission : comment l'Issuer s'assure que le wallet CONTRÔLE la clé à laquelle le credential sera lié. Un nonce imprévisible, une signature, et une clé publique déclarée — trois ingrédients, aucun secret partagé.",
+  "description": "Zoom sur LE mécanisme crypto de l'émission : comment l'Issuer s'assure que le wallet CONTRÔLE la clé à laquelle le credential sera lié. Un nonce imprévisible, une signature, et une clé publique déclarée — trois ingrédients, aucun secret partagé. Démonstration datée du 1er janvier 2026 : données fictives, validation à l’horloge du scénario.",
   "specRefs": ["OID4VCI 1.0 §7 (Nonce Endpoint)", "OID4VCI 1.0 §8.2 + App. F.1 (jwt proof)"],
   "actors": [
     {
@@ -24,7 +24,7 @@
       "to": "issuer",
       "kind": "http",
       "label": "POST /nonce → { c_nonce }",
-      "summary": "Le wallet demande un c_nonce au Nonce Endpoint (dédié dans la 1.0 finale). Cette valeur imprévisible, à courte durée de vie, est ce qui rendra la preuve FRAÎCHE : impossible de resservir une vieille signature.",
+      "summary": "Le Nonce Endpoint fournit c_nonce. L’Issuer décide de sa durée d’acceptation et vérifie la fraîcheur de la preuve ; le nonce n’est pas intrinsèquement unique à chaque transaction.",
       "request": {
         "channel": "back",
         "request": {
@@ -40,7 +40,8 @@
           },
           "body": {
             "type": "json",
-            "content": "{ \"c_nonce\": \"cn-7f3b9d24aa\" }"
+            "content": "{ \"c_nonce\": \"cn-7f3b9d24aa\" }",
+            "representation": "wire"
           }
         }
       },
@@ -74,7 +75,7 @@
           "id": "proof",
           "label": "jwt proof",
           "format": "jwt",
-          "value": "eyJhbGciOiJFUzI1NiIsInR5cCI6Im9wZW5pZDR2Y2ktcHJvb2Yrand0IiwiandrIjp7Imt0eSI6IkVDIiwieCI6IjVMTTJyaEhEeUZGNWRSOGxvc1N2dmpDbmRwMlFKbEZBenZWVHRlOXZ6WEEiLCJ5Ijoib2tNeGp5VnhfVURpUXVTdjF5b1R1d2pvX0tfLUVHNHJZa2Y5Z0dXLWdGQSIsImNydiI6IlAtMjU2In19.eyJub25jZSI6ImNuLTdmM2I5ZDI0YWEiLCJhdWQiOiJodHRwczovL2lzc3Vlci5leGFtcGxlIiwiaWF0IjoxNzY3MjI1NjAwfQ.bYlD28QgkkWrtpO5wzJWeehrRe75AjCchBCHUzVdGi7bmUuGbjfrWhh_iApbZyRdtE6-asrsm1HGFFxhDOi7kg",
+          "value": "eyJhbGciOiJFUzI1NiIsInR5cCI6Im9wZW5pZDR2Y2ktcHJvb2Yrand0IiwiandrIjp7Imt0eSI6IkVDIiwieCI6IkJkcXJ0OERUWDRTTVBtNGp2LW02YVNfNGlhYjBxWkJMMk1mdTk2VXdnSkUiLCJ5IjoiNkFiZVU2ZGZUQVNjNTF1WF9oS0l3dVVsSlkzM19BZHhqMGpVZFd4RENJQSIsImNydiI6IlAtMjU2In19.eyJub25jZSI6ImNuLTdmM2I5ZDI0YWEiLCJhdWQiOiJodHRwczovL2lzc3Vlci5leGFtcGxlIiwiaWF0IjoxNzY3MjI1NjAwfQ.3XBhu4JDzSaE_6Avxx7XpS_ZICpZWIG9Mf1cUlcbUdH6ptzwokbcGXZTmlTr4K_DIG4wK6WJfL7lY6B1_8iq1Q",
           "note": "typ dédié (openid4vci-proof+jwt) : un proof ne peut pas être confondu avec un autre JWT ni réutilisé ailleurs. aud : ce proof ne vaut QUE pour cet Issuer. nonce : QUE pour ce flow. jwk : la clé dont on prouve le contrôle."
         }
       ],
@@ -97,11 +98,13 @@
           "method": "POST",
           "url": "https://issuer.example/credential",
           "headers": {
-            "Authorization": "Bearer vci-at-91kD2p"
+            "Authorization": "Bearer vci-at-91kD2p",
+            "Content-Type": "application/json"
           },
           "body": {
             "type": "json",
-            "content": "{\n  \"credential_configuration_id\": \"identity_credential\",\n  \"proofs\": { \"jwt\": [\"eyJhbGciOiJFUzI1NiIsInR5cCI6Im9wZW5pZDR2Y2ktcHJvb2Yrand0Iiwiandr…\"] }\n}"
+            "content": "{\n  \"credential_configuration_id\": \"identity_credential\",\n  \"proofs\": {\n    \"jwt\": [\n      \"eyJhbGciOiJFUzI1NiIsInR5cCI6Im9wZW5pZDR2Y2ktcHJvb2Yrand0IiwiandrIjp7Imt0eSI6IkVDIiwieCI6IkJkcXJ0OERUWDRTTVBtNGp2LW02YVNfNGlhYjBxWkJMMk1mdTk2VXdnSkUiLCJ5IjoiNkFiZVU2ZGZUQVNjNTF1WF9oS0l3dVVsSlkzM19BZHhqMGpVZFd4RENJQSIsImNydiI6IlAtMjU2In19.eyJub25jZSI6ImNuLTdmM2I5ZDI0YWEiLCJhdWQiOiJodHRwczovL2lzc3Vlci5leGFtcGxlIiwiaWF0IjoxNzY3MjI1NjAwfQ.3XBhu4JDzSaE_6Avxx7XpS_ZICpZWIG9Mf1cUlcbUdH6ptzwokbcGXZTmlTr4K_DIG4wK6WJfL7lY6B1_8iq1Q\"\n    ]\n  }\n}",
+            "representation": "wire"
           }
         }
       }
@@ -112,7 +115,7 @@
       "to": "issuer",
       "kind": "internal",
       "label": "Vérifie : signature ✓ nonce ✓ aud ✓ fraîcheur ✓",
-      "summary": "L'Issuer vérifie la signature avec la jwk du header (la clé se prouve elle-même), que nonce est un c_nonce émis par lui et non consommé, que aud le désigne, et que iat est récent. Quatre contrôles, quatre rejets possibles.",
+      "summary": "L’Issuer vérifie signature, audience, fraîcheur et nonce selon sa politique, puis l’autorisation d’émission. La preuve seule ne donne pas le droit d’obtenir un credential.",
       "security": {
         "level": "info",
         "note": "La signature valide ≠ preuve suffisante — exactement la leçon de la validation d'ID Token. Ici aussi : signature (contrôle de la clé) + nonce (fraîcheur) + aud (destinataire). Le motif se répète parce que les menaces se répètent.",
@@ -130,24 +133,30 @@
         "channel": "back",
         "request": {
           "method": "POST",
-          "url": "https://issuer.example/credential (réponse)"
+          "url": "https://issuer.example/credential"
         },
         "response": {
           "status": 200,
           "statusText": "OK",
           "body": {
             "type": "json",
-            "content": "{ \"credentials\": [ { \"credential\": \"<SD-JWT VC avec cnf.jwk>\" } ] }"
+            "content": "{\n  \"credentials\": [\n    {\n      \"credential\": \"eyJhbGciOiJFUzI1NiIsInR5cCI6ImRjK3NkLWp3dCIsImtpZCI6InZjaS1pc3N1ZXItMjAyNi0wMSJ9.eyJ2Y3QiOiJodHRwczovL2NyZWRlbnRpYWxzLmV4YW1wbGUvaWRlbnRpdHlfY3JlZGVudGlhbCIsIl9zZCI6WyJQRzZubmJ3OThvNGdPbkNic2hXU1d5LWRqZ0dWaFRLcXZFM2RHWmpPdjlzIiwiWnB5cjk3a051UU9KVnR5ampLcTRQLUFsajV1U1lNN3pUN1ZJQkZUa21OWSIsImZuSHlfd29NeGg0M3E4TGoyemN5M0lhNUlyeGdVNzk3Um9uQXgwbDFFNTAiXSwiX3NkX2FsZyI6InNoYS0yNTYiLCJjbmYiOnsiandrIjp7Imt0eSI6IkVDIiwieCI6IkJkcXJ0OERUWDRTTVBtNGp2LW02YVNfNGlhYjBxWkJMMk1mdTk2VXdnSkUiLCJ5IjoiNkFiZVU2ZGZUQVNjNTF1WF9oS0l3dVVsSlkzM19BZHhqMGpVZFd4RENJQSIsImNydiI6IlAtMjU2In19LCJpc3MiOiJodHRwczovL2lzc3Vlci5leGFtcGxlIiwiaWF0IjoxNzY3MjI1NjAwLCJleHAiOjE3OTg3NjE2MDB9.WVemA8UjWdRMXZ2kX5qF_7zEzLKjEmOXhK71MHdEw2v00m_lgOjIjonhkzElmO2zDGJ-mMXe6-969YdV6fqH5w~WyJDeXVrMGVEbDVWQWdZaDhBUGJBaDRRIiwiZ2l2ZW5fbmFtZSIsIkNhbWlsbGUiXQ~WyJNU2ZiS09WMjMzd0pvaDBBanVZQWV3IiwiZmFtaWx5X25hbWUiLCJNYXJ0aW4iXQ~WyI2YlRrVWF0VFFCbTBsYTR3WHZKaTZ3IiwiYmlydGhkYXRlIiwiMTk5MC0wMS0wMSJd~\"\n    }\n  ]\n}",
+            "representation": "wire"
+          },
+          "headers": {
+            "Content-Type": "application/json"
           }
-        }
+        },
+        "responseOnly": true,
+        "note": "Réponse du serveur à une requête précédente ; la flèche montre ici uniquement le retour."
       },
       "tokens": [
         {
           "id": "sdjwt",
           "label": "SD-JWT VC émis — regardez cnf.jwk",
           "format": "jwt",
-          "value": "eyJhbGciOiJFUzI1NiIsInR5cCI6ImRjK3NkLWp3dCIsImtpZCI6InZjaS1pc3N1ZXItMjAyNi0wMSJ9.eyJ2Y3QiOiJodHRwczovL2NyZWRlbnRpYWxzLmV4YW1wbGUvaWRlbnRpdHlfY3JlZGVudGlhbCIsIl9zZCI6WyJNUHhraGJHN2tsTm13SXlvbndIRWRMTDJ5Nk5TbEIwNE5yZ3dpcXpZaE9ZIiwiWmlOUDRGMmNRcTdURVhxd0hKSVZjUVZyTGlCakNDVVhqTzJETHphTk9tdyIsIjQzTmxHZm1EcTBTTjBoNGEyVkdvODNNSy1OQnY1aktsMXVDcDhzOWd0OU0iXSwiX3NkX2FsZyI6InNoYS0yNTYiLCJjbmYiOnsiandrIjp7Imt0eSI6IkVDIiwieCI6IjVMTTJyaEhEeUZGNWRSOGxvc1N2dmpDbmRwMlFKbEZBenZWVHRlOXZ6WEEiLCJ5Ijoib2tNeGp5VnhfVURpUXVTdjF5b1R1d2pvX0tfLUVHNHJZa2Y5Z0dXLWdGQSIsImNydiI6IlAtMjU2In19LCJpc3MiOiJodHRwczovL2lzc3Vlci5leGFtcGxlIiwiaWF0IjoxNzY3MjI1NjAwLCJleHAiOjE3OTg3NjE2MDB9.Xti8UVrKg1vz_wi95SBs0b73955qG_fhSqzAr0qfY072fAUx8IZQUBy49vHhCyiKneCAvyJcDl39AhhAYYOv0g",
-          "note": "cnf.jwk contient exactement la clé du proof. En Phase 4, présenter ce credential exigera une signature fraîche de cette clé (Key Binding JWT) : un credential volé, sans la clé privée, est un fichier mort."
+          "value": "eyJhbGciOiJFUzI1NiIsInR5cCI6ImRjK3NkLWp3dCIsImtpZCI6InZjaS1pc3N1ZXItMjAyNi0wMSJ9.eyJ2Y3QiOiJodHRwczovL2NyZWRlbnRpYWxzLmV4YW1wbGUvaWRlbnRpdHlfY3JlZGVudGlhbCIsIl9zZCI6WyJQRzZubmJ3OThvNGdPbkNic2hXU1d5LWRqZ0dWaFRLcXZFM2RHWmpPdjlzIiwiWnB5cjk3a051UU9KVnR5ampLcTRQLUFsajV1U1lNN3pUN1ZJQkZUa21OWSIsImZuSHlfd29NeGg0M3E4TGoyemN5M0lhNUlyeGdVNzk3Um9uQXgwbDFFNTAiXSwiX3NkX2FsZyI6InNoYS0yNTYiLCJjbmYiOnsiandrIjp7Imt0eSI6IkVDIiwieCI6IkJkcXJ0OERUWDRTTVBtNGp2LW02YVNfNGlhYjBxWkJMMk1mdTk2VXdnSkUiLCJ5IjoiNkFiZVU2ZGZUQVNjNTF1WF9oS0l3dVVsSlkzM19BZHhqMGpVZFd4RENJQSIsImNydiI6IlAtMjU2In19LCJpc3MiOiJodHRwczovL2lzc3Vlci5leGFtcGxlIiwiaWF0IjoxNzY3MjI1NjAwLCJleHAiOjE3OTg3NjE2MDB9.WVemA8UjWdRMXZ2kX5qF_7zEzLKjEmOXhK71MHdEw2v00m_lgOjIjonhkzElmO2zDGJ-mMXe6-969YdV6fqH5w",
+          "note": "cnf.jwk contient exactement la clé du proof. Dans le module OID4VP, présenter ce credential exigera une signature fraîche de cette clé (Key Binding JWT) : un credential volé, sans la clé privée, est un objet dont la preuve de présentation ne peut être renouvelée sans la clé, mais dont les données restent sensibles."
         }
       ],
       "security": {

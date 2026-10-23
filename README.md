@@ -10,38 +10,40 @@ persistée localement (IndexedDB) et exportable en JSON.
 
 ## Démarrage
 
+La migration du projet utilise **Vite+ et pnpm** (versions fixées dans `package.json` et `pnpm-workspace.yaml`).
+
 ```bash
-npm install
-npm run dev        # serveur de développement
-npm run test       # tests Vitest (moteur de scénarios, séquenceur, layout, JWT)
-npm run build      # tsc -b + vite build → dist/ autonome
-npm run lint       # oxlint
-npm run format     # prettier
+vp install
+vp dev
+vp check          # format, lint et types
+vp test run       # tests de scénarios, contenu et cryptographie
+vp run build      # build et tsc -b → dist/
+vp preview
 ```
 
-Déploiement : `dist/` se sert tel quel (Netlify, GitHub Pages…). Pour un sous-chemin
-(GitHub Pages de projet), builder avec `VITE_BASE=/OIDApp/ npm run build` — le workflow
-`.github/workflows/pages.yml` le fait automatiquement à chaque push sur `main`
-(activer Pages → Source « GitHub Actions » dans les réglages du repo).
+Pour un sous-chemin : `VITE_BASE=/OIDApp/ vp run build`. `dist/` se sert statiquement ; le serveur doit renvoyer `index.html` pour les routes applicatives.
 
-## Stack
+## Stack et limites
 
-Vite + React 19 + TypeScript strict · TanStack Router (file-based, SPA) · TanStack Query ·
-Tailwind CSS v4 (dark par défaut, bascule light) · Motion · Dexie (IndexedDB) · Zod · Shiki ·
-WebCrypto natif pour le futur Crypto Lab (aucune lib crypto tierce, c'est un argument
-pédagogique) · Vitest.
+React 19, TypeScript strict, TanStack Router/Query, Tailwind CSS, Motion, Dexie, Zod et Shiki. Vite+ pilote la compilation et les vérifications ; pnpm gère les dépendances. Les primitives interactives utilisent WebCrypto. `jose` sert uniquement aux générateurs de fixtures, Playwright aux contrôles navigateur.
 
-Justification des dépendances hors liste initiale (cf. garde-fous du projet) :
+Les scénarios représentent les échanges : ils n’effectuent aucun appel vers les domaines fictifs `.example`. Le laboratoire calcule réellement certaines signatures et empreintes, mais ne constitue pas un serveur OAuth, un wallet ou un validateur universel.
 
-- **oxlint** remplace ESLint : linter par défaut du template Vite 8, plus rapide, mêmes règles
-  utiles ici (rules-of-hooks…), zéro config supplémentaire.
-- **jose** (dev uniquement) : génération de fixtures JWT réalistes (signées ES256) intégrées aux
-  scénarios — jamais embarquée dans le bundle.
-- **playwright** (dev uniquement) : smoke test du parcours OAuth2 sur le build de production.
+## Référentiel et parcours
 
-Persistance : **Dexie exposé via TanStack Query** plutôt que TanStack DB — les besoins sont des
-lectures simples avec invalidation par clé, sans requêtes relationnelles ni sync ; TanStack DB
-ajouterait un concept sans bénéfice ici (`src/db/hooks.ts`).
+Les 32 leçons annoncent leurs versions : RFC 6749 et Security BCP RFC 9700 ; OIDC Core/Discovery 1.0 errata set 2 ; OID4VCI 1.0 Final ; OID4VP 1.0 Final ; SD-JWT RFC 9901 et SD-JWT VC draft 19. OAuth 2.1 draft 16 reste un draft. HAIP 1.0 est Final depuis le 24 décembre 2025.
+
+Chaque leçon offre des repères et prérequis ; les pages de module exposent leur matrice de couverture. Les explications HTTP/JWT partagent une convention, tout en distinguant leurs profils. Le cours sépare exigences, recommandations, options et politiques de démonstration.
+
+- [Réexamen et arbitrages des 35 reprises](.specs/OIDApp-reexamen-2026-10-22.md)
+- [Plan consolidé et suivi de réalisation](.specs/OIDApp-plan-de-reprise-consolide.md)
+- [Conventions, prérequis et couverture](.specs/OIDApp-conventions-pedagogiques.md)
+
+## Le fil key binding
+
+Le même credential et la même clé publique relient les fixtures VCI et VP. Dans `/labo-crypto#binding`, une émission jetable mène à une présentation réellement signée : sélectionner les disclosures, signer, vérifier, puis essayer mauvaise clé/audience/nonce, ancienneté, sélection modifiée et seconde soumission.
+
+Le laboratoire annonce son horloge fixe et sa politique de transaction. Il distingue liaison signée par l’Issuer, contrôle de clé, contexte de présentation et protection du stockage. Son profil reste limité : ES256, SHA-256, cnf.jwk, disclosures simples, type attendu et claim requis. Statut, X.509, matériel sécurisé, mdoc, JWE et DCQL général sont expliqués mais non exécutés.
 
 ## Le modèle de scénario — l'API de contribution du contenu
 
@@ -72,8 +74,8 @@ Un scénario mal formé échoue bruyamment au chargement, jamais silencieusement
       "label": "POST /token", // porté par la flèche (monospace)
       "summary": "…", // explication pédagogique (panneau latéral)
       "request": {
-        // échange HTTP complet, affiché au clic
-        "channel": "back", // front (via navigateur) | back (serveur↔serveur)
+        // échange pédagogique, affiché au clic
+        "channel": "back", // front (via navigateur) | back (appel direct entre acteurs)
         "request": {
           "method": "POST",
           "url": "https://as.example/token",
@@ -119,7 +121,7 @@ src/
   engine/       moteur : schéma Zod des scénarios, séquenceur (reducer pur), layout SVG
   components/
     sequence/   SequenceDiagram (le cœur : SVG animé, contrôles, panneau de détail)
-    http/       HttpRequestView (échange HTTP annoté, badge front/back channel)
+    http/       HttpRequestView (échange HTTP annoté, canal et champs expliqués)
     jwt/        JwtInspector (3 zones colorées, claims annotés)
     layout/     Sidebar, ProgressRing (SVG maison), ThemeToggle
   components/
@@ -130,7 +132,7 @@ src/
                 /$moduleId/$chapitre/$lecon, /glossaire, /labo-crypto,
                 /carte-des-specs (@xyflow/react), /comparateur
   data/         curriculum.ts (navigation + versions de référence des specs),
-                glossary.ts (88 entrées), spec-map.ts (graphe des specs),
+                glossary.ts (termes et garanties contextualisés), spec-map.ts (graphe des specs),
                 fixtures/ (OIDC + OID4VCI + OID4VP — GÉNÉRÉES, cf. scripts/)
   db/           Dexie + hooks TanStack Query, export/import/reset de la progression
   lib/          jwt.ts (décodage base64url à la main), crypto.ts (WebCrypto : PKCE, ES256,
@@ -140,39 +142,12 @@ public/
   scenarios/    oauth2/ (8) + oidc/ (5) + oid4vci/ (5) + oid4vp/ (4) scénarios JSON
 ```
 
-Régénérer les fixtures (clés jetables, timestamps/salts fixes) : `node scripts/gen-oidc-fixtures.mjs`,
-`node scripts/gen-oid4vci-fixtures.mjs`, `node scripts/gen-oid4vp-fixtures.mjs`.
+## Fixtures et vérifications
 
-## État d'avancement
+`node scripts/gen-credential-chain.mjs` régénère **ensemble** VCI et VP, leurs preuves et les tokens dans les scénarios. Les anciens points d’entrée `gen-oid4vci-fixtures.mjs` et `gen-oid4vp-fixtures.mjs` appellent le même générateur. Les clés privées ne sont pas écrites, les sels sont aléatoires et les dates fixes sont documentées. OIDC dispose du générateur distinct `gen-oidc-fixtures.mjs`.
 
-- [x] Squelette : layout dashboard/menu, thème bleu nuit (dark/light), Dexie, CI
-- [x] Moteur `SequenceDiagram` (SVG animé, self-messages, adaptatif), tests Vitest
-- [x] **Phase 1 — OAuth2 complète** : 8 chapitres (0–7) rédigés, 8 scénarios `SequenceDiagram`
-      (dont attaques jouables attaqué/protégé), glossaire, Crypto Lab (SHA-256, PKCE, ES256, JWT),
-      quiz + badges par chapitre, export/reset de progression.
-- [x] **Phase 2 — OIDC complète** : 7 chapitres (0–6) — anti-pattern « login avec un access
-      token », ID Token (JWS/JWE), flow complet, validation §3.1.3.7 (JWKS→kid→verify), Discovery,
-      nonce/at_hash/c_hash, OIDC vs SAML. 5 scénarios, Crypto Lab « Valider un ID Token » (vérif.
-      ES256 réelle + altération + at_hash), glossaire +16 entrées. Points normatifs vérifiés sur
-      OIDC Core 1.0 et Discovery 1.0.
-- [x] **Phase 3 — OID4VCI complète** : 7 chapitres (0–6) — paradigme « phone home » vs
-      triangle, Credential Offer & pre-authorized code (tx_code), authorization code
-      (authorization_details), proof of possession (c_nonce/jwt proof), formats SD-JWT VC &
-      mdoc/mDL, key attestation, eIDAS 2.0/EUDI. 5 scénarios, fixture SD-JWT VC signée avec
-      VRAIS hachages salés (testés contre _sd), Crypto Lab « Proof of possession » (défi-réponse
-      jouable, rejeu détecté), glossaire +18. Versions de référence AFFICHÉES par module
-      (OID4VCI 1.0 Final · draft sd-jwt-vc-13 · ISO 18013-5).
-- [x] **Phase 4 — OID4VP complète** : 7 chapitres (0–6) — flow de présentation cross-device
-      (direct_post), identification du Verifier (Client Identifier Prefixes), DCQL, divulgation
-      sélective en pratique, Key Binding JWT (rejeu jouable attaqué/protégé), unlinkability +
-      comparateur final fédération vs wallet, ouverture DC API/HAIP. 4 scénarios, fixture de
-      présentation partielle + KB-JWT (sd_hash exact testé), Crypto Lab « Divulgation sélective »
-      (sélection de claims live). Vérifié sur OID4VP 1.0 (Final, 9 juil. 2025).
-- [x] **Transversal** : Carte des specs (/carte-des-specs — graphe @xyflow/react : étend /
-      profile / remplace / s'appuie sur, panneau de détail navigable) ; Comparateur
-      (/comparateur — les 3 duels sur 4 axes constants, animés). Le module « Fondations
-      crypto » du cahier des charges initial a été absorbé par le Crypto Lab (6 sections
-      alimentées au fil des phases) et retiré du curriculum pour éviter le doublon.
+`node scripts/audit-quizzes.mjs` mesure les indices de longueur et de position des 96 questions. Les tests contrôlent aussi la livraison du code au callback, les corps form, les URI d’invocation, la cohérence des artefacts affichés et les causes de rejet indépendantes du binding.
 
-Chaque affirmation normative cite sa section (OIDC Core / Discovery) ; les fixtures signées rendent
-`at_hash` et la vérification de signature reproductibles et testés (41 tests au total).
+Les animations et les contrôles de lecture des diagrammes sont conservés ; le nouveau laboratoire respecte la réduction des mouvements. Les 32 identifiants de leçons restent stables pour la progression locale. Les scores précédemment enregistrés ne sont pas effacés lors de la réécriture des quiz.
+
+Le suivi du plan décrit les preuves de validation et les limites de couverture. Un parcours rédigé ne signifie pas une implémentation exhaustive ou certifiée de toutes les extensions.

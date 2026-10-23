@@ -70,7 +70,7 @@ export const specNodes: SpecNode[] = [
     x: 60,
     y: 480,
     description:
-      'Lie le code au Client qui l’a demandé (verifier/challenge S256). Rendu obligatoire partout par le BCP et OAuth 2.1.',
+      'Lie le code au Client qui l’a demandé (verifier/challenge S256). RFC 9700 : obligatoire pour les clients publics, recommandé pour les confidentiels.',
   },
   {
     id: 'rfc8628',
@@ -114,12 +114,12 @@ export const specNodes: SpecNode[] = [
     x: 240,
     y: 240,
     description:
-      'Vingt ans de leçons actées : PKCE généralisé, fin d’implicit et de ROPC, exact matching, sender-constrained tokens.',
+      'Security BCP : niveaux distincts pour PKCE selon le client, Implicit déconseillé et ROPC interdit ; protections des redirections et des tokens.',
   },
   {
     id: 'oauth21',
     label: 'OAuth 2.1',
-    sub: 'draft',
+    sub: 'draft 16 · septembre 2026',
     family: 'oauth2',
     status: 'draft',
     x: 240,
@@ -153,10 +153,10 @@ export const specNodes: SpecNode[] = [
   },
   {
     id: 'sd-jwt',
-    label: 'draft IETF',
+    label: 'RFC 9901',
     sub: 'SD-JWT',
     family: 'jose',
-    status: 'draft',
+    status: 'final',
     x: 470,
     y: 480,
     description:
@@ -190,14 +190,14 @@ export const specNodes: SpecNode[] = [
   // — Colonne VC —
   {
     id: 'sd-jwt-vc',
-    label: 'draft IETF',
+    label: 'draft 19 · août 2026',
     sub: 'SD-JWT VC',
     family: 'vc',
     status: 'draft',
     x: 700,
     y: 480,
     description:
-      'Le profil credential de SD-JWT : typ dc+sd-jwt, vct, cnf. Format du PID de l’EUDI Wallet.',
+      'Le profil credential de SD-JWT : typ dc+sd-jwt, vct, cnf. Un des formats utilisés dans les profils de wallets.',
   },
   {
     id: 'oid4vci',
@@ -224,9 +224,9 @@ export const specNodes: SpecNode[] = [
   {
     id: 'haip',
     label: 'HAIP',
-    sub: 'profil interop',
+    sub: '1.0 Final · décembre 2025',
     family: 'vc',
-    status: 'draft',
+    status: 'final',
     x: 930,
     y: 600,
     description:
@@ -254,7 +254,7 @@ export const specNodes: SpecNode[] = [
     x: 1160,
     y: 360,
     description:
-      'Le texte qui impose l’EUDI Wallet à chaque État membre — et, en creux, la non-traçabilité par l’émetteur.',
+      'Cadre réglementaire européen de l’identité numérique. Les garanties de protection des données ne découlent pas du seul choix d’un protocole.',
   },
   {
     id: 'arf',

@@ -1,4 +1,6 @@
 import { useState } from 'react'
+import { faArrowRight, faCompass, faRotateRight } from '@fortawesome/free-solid-svg-icons'
+import { AppIcon } from '../ui/AppIcon'
 
 /**
  * Arbre de décision interactif (« quel flow pour quel cas ? ») :
@@ -23,7 +25,10 @@ export function DecisionTree({ nodes, rootId }: { nodes: DecisionNode[]; rootId:
 
   return (
     <div className="my-4 rounded-xl border border-line bg-surface p-4">
-      <p className="mb-3 text-xs font-semibold text-muted">🧭 Quel flow pour votre cas ?</p>
+      <p className="mb-3 flex items-center gap-2 text-xs font-semibold text-muted">
+        <AppIcon icon={faCompass} tone="accent" className="size-4" />
+        Quel flow pour votre cas ?
+      </p>
       {path
         .filter((s) => s.picked)
         .map((s, i) => {
@@ -54,7 +59,10 @@ export function DecisionTree({ nodes, rootId }: { nodes: DecisionNode[]; rootId:
       )}
       {current?.kind === 'answer' && (
         <div className="mt-2 rounded-lg border border-ok bg-ok-soft p-3">
-          <p className="text-sm font-semibold">→ {current.result}</p>
+          <p className="flex items-center gap-2 text-sm font-semibold">
+            <AppIcon icon={faArrowRight} tone="ok" className="size-3.5" />
+            {current.result}
+          </p>
           <p className="mt-1 text-xs leading-relaxed">{current.detail}</p>
         </div>
       )}
@@ -64,7 +72,8 @@ export function DecisionTree({ nodes, rootId }: { nodes: DecisionNode[]; rootId:
           onClick={() => setPath([{ nodeId: rootId }])}
           className="mt-3 text-xs text-muted underline-offset-2 hover:text-accent hover:underline"
         >
-          ↺ Recommencer
+          <AppIcon icon={faRotateRight} className="mr-1 inline size-3" />
+          Recommencer
         </button>
       )}
     </div>

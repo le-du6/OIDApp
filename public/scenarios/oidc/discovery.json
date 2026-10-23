@@ -4,7 +4,12 @@
   "description": "Avant même de connecter qui que ce soit, le Relying Party doit connaître les endpoints de l'OP (authorize, token, userinfo, jwks_uri) et ses capacités. La Discovery les publie à une URL standard, dérivée de l'issuer — plus rien n'est codé en dur.",
   "specRefs": ["OIDC Discovery 1.0 §4", "OIDC Discovery 1.0 §3", "OIDC Discovery 1.0 §4.3"],
   "actors": [
-    { "id": "rp", "name": "Relying Party", "role": "client", "alias": "= l'app à configurer" },
+    {
+      "id": "rp",
+      "name": "Relying Party",
+      "role": "client",
+      "alias": "= l'app à configurer"
+    },
     {
       "id": "op",
       "name": "OpenID Provider",
@@ -42,10 +47,13 @@
         "response": {
           "status": 200,
           "statusText": "OK",
-          "headers": { "Content-Type": "application/json" },
+          "headers": {
+            "Content-Type": "application/json"
+          },
           "body": {
             "type": "json",
-            "content": "{\n  \"issuer\": \"https://op.example\",\n  \"authorization_endpoint\": \"https://op.example/authorize\",\n  \"token_endpoint\": \"https://op.example/token\",\n  \"userinfo_endpoint\": \"https://op.example/userinfo\",\n  \"jwks_uri\": \"https://op.example/.well-known/jwks.json\",\n  \"response_types_supported\": [\"code\"],\n  \"subject_types_supported\": [\"public\"],\n  \"id_token_signing_alg_values_supported\": [\"ES256\", \"RS256\"],\n  \"scopes_supported\": [\"openid\", \"email\", \"profile\"],\n  \"claims_supported\": [\"sub\", \"iss\", \"aud\", \"exp\", \"iat\", \"email\", \"email_verified\"]\n}"
+            "content": "{\n  \"issuer\": \"https://op.example\",\n  \"authorization_endpoint\": \"https://op.example/authorize\",\n  \"token_endpoint\": \"https://op.example/token\",\n  \"userinfo_endpoint\": \"https://op.example/userinfo\",\n  \"jwks_uri\": \"https://op.example/.well-known/jwks.json\",\n  \"response_types_supported\": [\"code\"],\n  \"subject_types_supported\": [\"public\"],\n  \"id_token_signing_alg_values_supported\": [\"ES256\", \"RS256\"],\n  \"scopes_supported\": [\"openid\", \"email\", \"profile\"],\n  \"claims_supported\": [\"sub\", \"iss\", \"aud\", \"exp\", \"iat\", \"email\", \"email_verified\"]\n}",
+            "representation": "wire"
           }
         }
       },
@@ -77,13 +85,20 @@
       "summary": "Muni du jwks_uri découvert, le RP récupère et met en cache les clés publiques de l'OP. Il est désormais prêt à lancer des flows ET à valider les ID Tokens qui en reviendront.",
       "request": {
         "channel": "back",
-        "request": { "method": "GET", "url": "https://op.example/.well-known/jwks.json" },
+        "request": {
+          "method": "GET",
+          "url": "https://op.example/.well-known/jwks.json"
+        },
         "response": {
           "status": 200,
           "statusText": "OK",
           "body": {
             "type": "json",
-            "content": "{ \"keys\": [ { \"kty\": \"EC\", \"crv\": \"P-256\", \"kid\": \"op-2026-01\", \"use\": \"sig\", \"alg\": \"ES256\", \"x\": \"…\", \"y\": \"…\" } ] }"
+            "content": "{ \"keys\": [ { \"kty\": \"EC\", \"crv\": \"P-256\", \"kid\": \"op-2026-01\", \"use\": \"sig\", \"alg\": \"ES256\", \"x\": \"…\", \"y\": \"…\" } ] }",
+            "representation": "excerpt"
+          },
+          "headers": {
+            "Content-Type": "application/json"
           }
         }
       },

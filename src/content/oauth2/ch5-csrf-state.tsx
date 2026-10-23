@@ -1,3 +1,4 @@
+import { quizBank } from '../../data/quiz-bank'
 import { Term } from '../../components/content/Term'
 import { Callout } from '../../components/content/Callout'
 import { Quiz } from '../../components/content/Quiz'
@@ -46,96 +47,24 @@ export default function Ch5CsrfState() {
       </p>
       <Callout kind="spec" specRef="RFC 6749 §10.12" title="Dans la spec">
         <p>
-          Le Client DOIT implémenter une protection CSRF sur sa redirect_uri, typiquement via{' '}
-          <code>state</code>, dont la valeur DOIT être non devinable et liée à l'état de la session
-          de l'agent utilisateur. Notez le « DOIT » : ce paramètre optionnel en syntaxe est
-          obligatoire en sécurité.
+          La protection CSRF est obligatoire. state est un moyen classique : valeur imprévisible,
+          liée à la session et comparée au retour. RFC 9700 §2.1 permet aussi de s'appuyer sur PKCE
+          si son support par l'AS est assuré, ou sur nonce en OIDC avec les contrôles requis. Cela
+          ne rend pas state universellement obligatoire.
         </p>
       </Callout>
       <Callout kind="security" title="state, et après ?">
         <p>
-          Le Security BCP (<span className="font-mono text-xs">RFC 9700 §2.1</span>) note que{' '}
-          <Term id="pkce" /> couvre aussi ce cas : le <Term id="code-verifier" /> est lui-même lié à
-          la session qui a démarré le flow — un code étranger échouera à l'échange. Avec PKCE
-          généralisé, state redevient ce qu'il était aussi : un simple porteur d'état applicatif
-          (URL de retour…). Mais la leçon reste :{' '}
-          <strong>
-            toute réponse arrivant en front channel doit être liée à la requête qui l'a provoquée
-          </strong>
-          .
+          PKCE doit être lié à la transaction de ce navigateur et son support par l'AS vérifié. Avec
+          ces conditions, il peut fournir une protection CSRF. state peut toujours servir à la
+          corrélation et à retrouver un état applicatif stocké localement ; ne pas y placer
+          directement des secrets ou une URL de retour non contrôlée.
         </p>
       </Callout>
 
       <Quiz
         quizId="oauth2/attaques/csrf-state"
-        questions={[
-          {
-            id: 'q1',
-            question: 'Dans le CSRF du callback, quel code arrive chez le Client ?',
-            options: [
-              {
-                text: 'Un code volé à la victime',
-                explanation:
-                  'Non — rien n’est volé à la victime : c’est le code de l’ATTAQUANT, obtenu légitimement avec son propre compte.',
-              },
-              {
-                text: 'Le code de l’attaquant, émis pour SON compte, jamais consommé',
-                correct: true,
-                explanation:
-                  'Oui — toute l’astuce est là : faire consommer ce code par la session de la victime, pour lier son compte aux ressources de l’attaquant.',
-              },
-              {
-                text: 'Un code forgé, cryptographiquement invalide',
-                explanation:
-                  'Non — le code est parfaitement valide. Aucune crypto n’est cassée dans cette attaque : c’est le LIEN à la session qui manque.',
-              },
-            ],
-          },
-          {
-            id: 'q2',
-            question: 'Pourquoi l’attaquant ne peut-il pas fournir un state correct ?',
-            options: [
-              {
-                text: 'Parce que le state est chiffré par l’AS',
-                explanation:
-                  'Non — l’AS renvoie le state TEL QUEL, sans même le comprendre. Sa force est ailleurs.',
-              },
-              {
-                text: 'Parce qu’il est imprévisible ET lié à la session de la victime, stocké dans un cookie qu’il ne peut pas lire',
-                correct: true,
-                explanation:
-                  'Oui — deux propriétés conjointes : non devinable (CSPRNG) et non réutilisable (lié au cookie de session de l’autre navigateur).',
-              },
-              {
-                text: 'Parce que l’AS bloque les requêtes de son adresse IP',
-                explanation:
-                  'Non — l’AS ne voit rien d’anormal dans toute cette attaque. La défense est entièrement côté Client.',
-              },
-            ],
-          },
-          {
-            id: 'q3',
-            question: 'Où l’attaque échoue-t-elle exactement, avec state ?',
-            options: [
-              {
-                text: 'Au token endpoint : l’AS refuse l’échange',
-                explanation:
-                  'Non — on n’arrive jamais jusque-là : le Client rejette AVANT, donc le code n’est même pas présenté à l’AS.',
-              },
-              {
-                text: 'Au callback : state reçu ≠ state de la session, le Client rejette sans échanger',
-                correct: true,
-                explanation:
-                  'Oui — c’est une vérification purement locale au Client, avant tout appel réseau. Économique et décisive.',
-              },
-              {
-                text: 'Chez l’AS, à l’émission du code',
-                explanation:
-                  'Non — l’émission du code pour l’attaquant est légitime : c’est son compte, son consentement.',
-              },
-            ],
-          },
-        ]}
+        questions={quizBank['oauth2/attaques/csrf-state']!}
       />
     </div>
   )

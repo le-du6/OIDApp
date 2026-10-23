@@ -1,7 +1,7 @@
 {
   "id": "oid4vp/presentation-flow",
   "title": "OID4VP : présenter un credential, de bout en bout",
-  "description": "La seconde moitié du triangle : un Verifier (un site de location de voitures) veut une preuve d'identité. Flow cross-device : QR affiché, wallet qui récupère la requête, DCQL, consentement par claim, présentation avec Key Binding envoyée en direct_post — et l'Issuer n'apparaît nulle part. Version de référence : OID4VP 1.0 (Final, juillet 2025).",
+  "description": "La seconde moitié du triangle : un Verifier (un site de location de voitures) veut une preuve d'identité. Flow cross-device : QR affiché, wallet qui récupère la requête, DCQL, consentement par claim, présentation avec Key Binding envoyée en direct_post — et l'Issuer n'apparaît nulle part. Version de référence : OID4VP 1.0 (Final, juillet 2025). Démonstration datée du 1er janvier 2026 : données fictives, validation à l’horloge du scénario.",
   "specRefs": [
     "OID4VP 1.0 §5 (Authorization Request)",
     "OID4VP 1.0 §6 (DCQL)",
@@ -38,8 +38,8 @@
       "request": {
         "channel": "front",
         "request": {
-          "method": "GET",
-          "url": "openid4vp:// (encodé dans le QR)",
+          "method": "INVOKE",
+          "url": "openid4vp://",
           "params": [
             {
               "name": "client_id",
@@ -54,7 +54,8 @@
               "specRef": "OID4VP 1.0 §5.10"
             }
           ]
-        }
+        },
+        "note": "URI encodée dans le QR code et ouverte par le wallet ; aucun GET HTTP n’est envoyé à ce schéma."
       }
     },
     {
@@ -86,9 +87,11 @@
           },
           "body": {
             "type": "json",
-            "content": "// payload du Request Object (JWT signé par le Verifier)\n{\n  \"client_id\": \"x509_san_dns:verifier.example\",\n  \"response_type\": \"vp_token\",\n  \"response_mode\": \"direct_post\",\n  \"response_uri\": \"https://verifier.example/response\",\n  \"nonce\": \"vpn-4Kd82mQxaz\",\n  \"dcql_query\": {\n    \"credentials\": [{\n      \"id\": \"identite\",\n      \"format\": \"dc+sd-jwt\",\n      \"meta\": { \"vct_values\": [\"https://credentials.example/identity_credential\"] },\n      \"claims\": [\n        { \"path\": [\"given_name\"] },\n        { \"path\": [\"birthdate\"] }\n      ]\n    }]\n  }\n}"
+            "content": "{\n  \"header\": {\n    \"typ\": \"oauth-authz-req+jwt\",\n    \"alg\": \"ES256\",\n    \"x5c\": [\n      \"CERTIFICAT DE DÉMONSTRATION NON FOURNI\"\n    ]\n  },\n  \"payload\": {\n    \"client_id\": \"x509_san_dns:verifier.example\",\n    \"response_type\": \"vp_token\",\n    \"response_mode\": \"direct_post\",\n    \"response_uri\": \"https://verifier.example/response\",\n    \"nonce\": \"vpn-4Kd82mQxaz\",\n    \"dcql_query\": {\n      \"credentials\": [\n        {\n          \"id\": \"identite\",\n          \"format\": \"dc+sd-jwt\",\n          \"meta\": {\n            \"vct_values\": [\n              \"https://credentials.example/identity_credential\"\n            ]\n          },\n          \"claims\": [\n            {\n              \"path\": [\n                \"given_name\"\n              ]\n            },\n            {\n              \"path\": [\n                \"birthdate\"\n              ]\n            }\n          ]\n        }\n      ]\n    },\n    \"aud\": \"https://self-issued.me/v2\",\n    \"state\": \"vp-state-8djeu2\"\n  }\n}",
+            "representation": "decoded"
           }
-        }
+        },
+        "note": "Vue décodée et illustrative du Request Object ; la signature et la chaîne X.509 ne sont pas calculées dans ce scénario. Le corps réseau serait un JWS compact."
       },
       "security": {
         "level": "info",
@@ -133,13 +136,13 @@
           "id": "kb",
           "label": "Key Binding JWT (typ kb+jwt)",
           "format": "jwt",
-          "value": "eyJhbGciOiJFUzI1NiIsInR5cCI6ImtiK2p3dCJ9.eyJub25jZSI6InZwbi00S2Q4Mm1ReGF6Iiwic2RfaGFzaCI6InR3T3dVTmtrSlVlTWFmRnVZa3QwelBzaVJaV1lIQXRLbFVkXy1VOUlXZEUiLCJhdWQiOiJ4NTA5X3Nhbl9kbnM6dmVyaWZpZXIuZXhhbXBsZSIsImlhdCI6MTc2NzIyOTIwMH0.4d_ejumT1FiWg4yIj2cOKz0Uwx5ySI75HxFjTKvS0Zsu41XljXYD1LCyKEqb5zRqRkLOnOsqdqyVSBk5Riv5rw",
+          "value": "eyJhbGciOiJFUzI1NiIsInR5cCI6ImtiK2p3dCJ9.eyJub25jZSI6InZwbi00S2Q4Mm1ReGF6Iiwic2RfaGFzaCI6ImRFeF9DYmtPdW1xcTRkSHlxVkY1ZXc4cGJ6M1RfTWVLZ3JoTWM0a0ZzSm8iLCJhdWQiOiJ4NTA5X3Nhbl9kbnM6dmVyaWZpZXIuZXhhbXBsZSIsImlhdCI6MTc2NzIyOTIwMH0.5OHcX466mAKIEZPE6CzDiWYkz_gaJwyllxMYjwuJ9cYhpgLUPm1i8CpK2YUfV0f1SKO6oH642yZIuGiVTpOzIQ",
           "note": "Décodez : aud = le client_id préfixé du Verifier, nonce = celui de SA requête, sd_hash = l'empreinte de la présentation exacte. Trois liaisons, trois rejets possibles — anatomie au chapitre KB-JWT."
         }
       ],
       "security": {
         "level": "info",
-        "note": "La clé qui signe est celle du cnf gravé à l'émission (Phase 3). La boucle OID4VCI → OID4VP se referme ici : le key binding promis devient une signature vérifiable."
+        "note": "La clé qui signe est celle du cnf gravé à l'émission (OID4VCI). La boucle OID4VCI → OID4VP se referme ici : le key binding promis devient une signature vérifiable."
       }
     },
     {
@@ -159,15 +162,18 @@
           },
           "body": {
             "type": "form",
-            "content": "vp_token=%7B%22identite%22%3A%5B%22eyJ...~WyJzYWx0LWduLVZwODFLelRlIi...~WyJzYWx0LWJkLVhjMDlMbVB5Ii...~eyJ...kb%2Bjwt...%22%5D%7D&state=…",
+            "content": "vp_token=%7B%22identite%22%3A%5B%22eyJhbGciOiJFUzI1NiIsInR5cCI6ImRjK3NkLWp3dCIsImtpZCI6InZjaS1pc3N1ZXItMjAyNi0wMSJ9.eyJ2Y3QiOiJodHRwczovL2NyZWRlbnRpYWxzLmV4YW1wbGUvaWRlbnRpdHlfY3JlZGVudGlhbCIsIl9zZCI6WyJQRzZubmJ3OThvNGdPbkNic2hXU1d5LWRqZ0dWaFRLcXZFM2RHWmpPdjlzIiwiWnB5cjk3a051UU9KVnR5ampLcTRQLUFsajV1U1lNN3pUN1ZJQkZUa21OWSIsImZuSHlfd29NeGg0M3E4TGoyemN5M0lhNUlyeGdVNzk3Um9uQXgwbDFFNTAiXSwiX3NkX2FsZyI6InNoYS0yNTYiLCJjbmYiOnsiandrIjp7Imt0eSI6IkVDIiwieCI6IkJkcXJ0OERUWDRTTVBtNGp2LW02YVNfNGlhYjBxWkJMMk1mdTk2VXdnSkUiLCJ5IjoiNkFiZVU2ZGZUQVNjNTF1WF9oS0l3dVVsSlkzM19BZHhqMGpVZFd4RENJQSIsImNydiI6IlAtMjU2In19LCJpc3MiOiJodHRwczovL2lzc3Vlci5leGFtcGxlIiwiaWF0IjoxNzY3MjI1NjAwLCJleHAiOjE3OTg3NjE2MDB9.WVemA8UjWdRMXZ2kX5qF_7zEzLKjEmOXhK71MHdEw2v00m_lgOjIjonhkzElmO2zDGJ-mMXe6-969YdV6fqH5w%7EWyJDeXVrMGVEbDVWQWdZaDhBUGJBaDRRIiwiZ2l2ZW5fbmFtZSIsIkNhbWlsbGUiXQ%7EWyI2YlRrVWF0VFFCbTBsYTR3WHZKaTZ3IiwiYmlydGhkYXRlIiwiMTk5MC0wMS0wMSJd%7EeyJhbGciOiJFUzI1NiIsInR5cCI6ImtiK2p3dCJ9.eyJub25jZSI6InZwbi00S2Q4Mm1ReGF6Iiwic2RfaGFzaCI6ImRFeF9DYmtPdW1xcTRkSHlxVkY1ZXc4cGJ6M1RfTWVLZ3JoTWM0a0ZzSm8iLCJhdWQiOiJ4NTA5X3Nhbl9kbnM6dmVyaWZpZXIuZXhhbXBsZSIsImlhdCI6MTc2NzIyOTIwMH0.5OHcX466mAKIEZPE6CzDiWYkz_gaJwyllxMYjwuJ9cYhpgLUPm1i8CpK2YUfV0f1SKO6oH642yZIuGiVTpOzIQ%22%5D%7D&state=vp-state-8djeu2",
             "params": [
               {
                 "name": "vp_token",
-                "value": "{ \"identite\": [\"<jwt>~<d_given_name>~<d_birthdate>~<kb-jwt>\"] }",
-                "description": "Objet JSON : clé = l'id de la Credential Query DCQL (« identite »), valeur = tableau de présentations. Ici une présentation SD-JWT+KB.",
-                "specRef": "OID4VP 1.0 §8.1"
+                "value": "{\"identite\":[\"eyJhbGciOiJFUzI1NiIsInR5cCI6ImRjK3NkLWp3dCIsImtpZCI6InZjaS1pc3N1ZXItMjAyNi0wMSJ9.eyJ2Y3QiOiJodHRwczovL2NyZWRlbnRpYWxzLmV4YW1wbGUvaWRlbnRpdHlfY3JlZGVudGlhbCIsIl9zZCI6WyJQRzZubmJ3OThvNGdPbkNic2hXU1d5LWRqZ0dWaFRLcXZFM2RHWmpPdjlzIiwiWnB5cjk3a051UU9KVnR5ampLcTRQLUFsajV1U1lNN3pUN1ZJQkZUa21OWSIsImZuSHlfd29NeGg0M3E4TGoyemN5M0lhNUlyeGdVNzk3Um9uQXgwbDFFNTAiXSwiX3NkX2FsZyI6InNoYS0yNTYiLCJjbmYiOnsiandrIjp7Imt0eSI6IkVDIiwieCI6IkJkcXJ0OERUWDRTTVBtNGp2LW02YVNfNGlhYjBxWkJMMk1mdTk2VXdnSkUiLCJ5IjoiNkFiZVU2ZGZUQVNjNTF1WF9oS0l3dVVsSlkzM19BZHhqMGpVZFd4RENJQSIsImNydiI6IlAtMjU2In19LCJpc3MiOiJodHRwczovL2lzc3Vlci5leGFtcGxlIiwiaWF0IjoxNzY3MjI1NjAwLCJleHAiOjE3OTg3NjE2MDB9.WVemA8UjWdRMXZ2kX5qF_7zEzLKjEmOXhK71MHdEw2v00m_lgOjIjonhkzElmO2zDGJ-mMXe6-969YdV6fqH5w~WyJDeXVrMGVEbDVWQWdZaDhBUGJBaDRRIiwiZ2l2ZW5fbmFtZSIsIkNhbWlsbGUiXQ~WyI2YlRrVWF0VFFCbTBsYTR3WHZKaTZ3IiwiYmlydGhkYXRlIiwiMTk5MC0wMS0wMSJd~eyJhbGciOiJFUzI1NiIsInR5cCI6ImtiK2p3dCJ9.eyJub25jZSI6InZwbi00S2Q4Mm1ReGF6Iiwic2RfaGFzaCI6ImRFeF9DYmtPdW1xcTRkSHlxVkY1ZXc4cGJ6M1RfTWVLZ3JoTWM0a0ZzSm8iLCJhdWQiOiJ4NTA5X3Nhbl9kbnM6dmVyaWZpZXIuZXhhbXBsZSIsImlhdCI6MTc2NzIyOTIwMH0.5OHcX466mAKIEZPE6CzDiWYkz_gaJwyllxMYjwuJ9cYhpgLUPm1i8CpK2YUfV0f1SKO6oH642yZIuGiVTpOzIQ\"]}"
+              },
+              {
+                "name": "state",
+                "value": "vp-state-8djeu2"
               }
-            ]
+            ],
+            "representation": "wire"
           }
         },
         "response": {
@@ -175,13 +181,17 @@
           "statusText": "OK",
           "body": {
             "type": "json",
-            "content": "{ \"redirect_uri\": \"https://verifier.example/merci?code=…\" }"
+            "content": "{\n  \"redirect_uri\": \"https://verifier.example/merci?code=receipt-8djeu2\"\n}",
+            "representation": "wire"
+          },
+          "headers": {
+            "Content-Type": "application/json"
           }
         }
       },
       "security": {
         "level": "info",
-        "note": "Variante direct_post.jwt (§8.3) : la réponse entière devient un JWT signé et/ou CHIFFRÉ — utile quand les claims ne doivent pas transiter en clair jusqu'au endpoint du Verifier.",
+        "note": "Variante direct_post.jwt (§8.3) : la réponse entière devient un JWT chiffré — utile quand les claims ne doivent pas transiter en clair jusqu'au endpoint du Verifier.",
         "specRef": "OID4VP 1.0 §8.2-8.3"
       }
     },
@@ -190,8 +200,8 @@
       "from": "verifier",
       "to": "verifier",
       "kind": "internal",
-      "label": "Vérifie tout : Issuer ✓ disclosures ✓ KB ✓ nonce ✓",
-      "summary": "Le Verifier vérifie la signature de l'Issuer (clés publiques déjà connues), recalcule les digests des disclosures reçues (∈ _sd ?), vérifie le KB-JWT avec la clé du cnf (signature, aud = lui, nonce = le sien, sd_hash = l'empreinte de ce qu'il vient de recevoir). Quatre familles de contrôles.",
+      "label": "Valide signatures, contexte et demande DCQL",
+      "summary": "Le Verifier valide la confiance dans l’Issuer, la signature du credential, les dates, les disclosures, puis le KB-JWT avec cnf.jwk (signature, aud, nonce, iat, sd_hash). Il vérifie la correspondance à DCQL, le statut selon le profil et consomme la transaction acceptée.",
       "security": {
         "level": "danger",
         "note": "L'Issuer n'a PAS été contacté — et pourtant tout est vérifié cryptographiquement. C'est le tour de force du triangle : la confiance voyage dans les signatures, pas dans les appels réseau.",

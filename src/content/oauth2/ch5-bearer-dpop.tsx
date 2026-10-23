@@ -1,3 +1,4 @@
+import { quizBank } from '../../data/quiz-bank'
 import { Term } from '../../components/content/Term'
 import { Callout } from '../../components/content/Callout'
 import { Quiz } from '../../components/content/Quiz'
@@ -63,95 +64,7 @@ export default function Ch5BearerDpop() {
 
       <Quiz
         quizId="oauth2/attaques/bearer-dpop"
-        questions={[
-          {
-            id: 'q1',
-            question: 'Que contient le claim cnf.jkt d’un access token DPoP ?',
-            options: [
-              {
-                text: 'La clé privée du Client, chiffrée',
-                explanation:
-                  'Surtout pas — la clé privée ne quitte JAMAIS le Client. Le token ne porte qu’une empreinte de la clé PUBLIQUE.',
-              },
-              {
-                text: 'L’empreinte SHA-256 de la clé publique du Client (JWK thumbprint)',
-                correct: true,
-                explanation:
-                  'Oui (RFC 9449 §6.1) — signée par l’AS dans le token : c’est le cadenas que seul le détenteur de la clé privée peut ouvrir.',
-              },
-              {
-                text: 'Le hash de l’access token',
-                explanation:
-                  'Non — ça, c’est ath, dans le PROOF de chaque requête API : il lie le proof au token présenté.',
-              },
-            ],
-          },
-          {
-            id: 'q2',
-            question: 'Pourquoi un proof DPoP intercepté ne peut-il pas être rejoué ?',
-            options: [
-              {
-                text: 'Parce qu’il est chiffré pour le RS',
-                explanation: 'Non — un proof est signé, pas chiffré : il se lit comme tout JWT.',
-              },
-              {
-                text: 'jti à usage unique, iat frais, htm/htu liés à une seule requête : le proof est périssable et non transférable',
-                correct: true,
-                explanation:
-                  'Oui (RFC 9449 §4.3) — chaque requête exige un proof neuf. L’intercepté ne vaut que pour la requête déjà faite.',
-              },
-              {
-                text: 'Parce que le RS garde une copie de tous les tokens',
-                explanation:
-                  'Non — le RS vérifie tout localement par signatures ; il mémorise au plus les jti récents.',
-              },
-            ],
-          },
-          {
-            id: 'q3',
-            question: 'Quand préférer mTLS à DPoP ?',
-            options: [
-              {
-                text: 'Toujours : mTLS est strictement supérieur',
-                explanation:
-                  'Non — la robustesse de mTLS se paie en gestion de certificats clients, rédhibitoire pour du web/mobile grand public.',
-              },
-              {
-                text: 'Entre serveurs, ou dans des écosystèmes à forte exigence (banque/FAPI) où une PKI cliente existe déjà',
-                correct: true,
-                explanation:
-                  'Oui — la preuve au niveau TLS est imparable et sans code applicatif, si (et seulement si) on peut distribuer des certificats aux clients.',
-              },
-              {
-                text: 'Pour les SPA, qui ne peuvent pas faire de DPoP',
-                explanation:
-                  'L’inverse : une SPA fait du DPoP avec WebCrypto (clé non-extractible), mais ne peut pas gérer de certificat TLS client.',
-              },
-            ],
-          },
-          {
-            id: 'q4',
-            question: 'DPoP protège-t-il si l’attaquant vole la CLÉ en plus du token ?',
-            options: [
-              {
-                text: 'Oui, le cnf.jkt le détecte',
-                explanation:
-                  'Non — avec la clé privée, l’attaquant produit des proofs valides : il EST devenu le détenteur légitime aux yeux du protocole.',
-              },
-              {
-                text: 'Non : la preuve de possession vaut ce que vaut la protection de la clé — d’où les clés non-extractibles',
-                correct: true,
-                explanation:
-                  'Exactement — DPoP déplace la cible du token (copiable) vers la clé (protégeable : WebCrypto non-extractible, secure enclave…). Réduire la surface, pas la supprimer.',
-              },
-              {
-                text: 'Oui, car la clé expire avec le token',
-                explanation:
-                  'Non — la clé n’a pas d’expiration protocolaire ; c’est sa non-exportabilité qui fait le travail.',
-              },
-            ],
-          },
-        ]}
+        questions={quizBank['oauth2/attaques/bearer-dpop']!}
       />
     </div>
   )

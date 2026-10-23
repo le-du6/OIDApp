@@ -4,8 +4,18 @@
   "description": "Le flow historique des SPA (2012) : l'access token renvoyé DIRECTEMENT dans le fragment d'URL, sans passage par le token endpoint. Pratique — et structurellement exposé. Déprécié par le Security BCP (RFC 9700), retiré d'OAuth 2.1.",
   "specRefs": ["RFC 6749 §4.2", "RFC 9700 §2.1.2"],
   "actors": [
-    { "id": "user", "name": "Resource Owner", "role": "user", "alias": "= vous" },
-    { "id": "browser", "name": "User-Agent", "role": "browser", "alias": "= le navigateur" },
+    {
+      "id": "user",
+      "name": "Resource Owner",
+      "role": "user",
+      "alias": "= vous"
+    },
+    {
+      "id": "browser",
+      "name": "User-Agent",
+      "role": "browser",
+      "alias": "= le navigateur"
+    },
     {
       "id": "spa",
       "name": "Client (SPA)",
@@ -18,7 +28,12 @@
       "role": "authorization-server",
       "alias": "= Keycloak, Auth0…"
     },
-    { "id": "rs", "name": "Resource Server", "role": "resource-server", "alias": "= l'API photos" },
+    {
+      "id": "rs",
+      "name": "Resource Server",
+      "role": "resource-server",
+      "alias": "= l'API photos"
+    },
     {
       "id": "attacker",
       "name": "Attacker",
@@ -46,13 +61,21 @@
               "description": "Le grant implicit : l'access token sera renvoyé directement, en front channel.",
               "specRef": "RFC 6749 §4.2.1"
             },
-            { "name": "client_id", "value": "spa-app", "specRef": "RFC 6749 §2.2" },
+            {
+              "name": "client_id",
+              "value": "spa-app",
+              "specRef": "RFC 6749 §2.2"
+            },
             {
               "name": "redirect_uri",
               "value": "https://spa.example/callback",
               "specRef": "RFC 6749 §3.1.2"
             },
-            { "name": "scope", "value": "photos.read", "specRef": "RFC 6749 §3.3" }
+            {
+              "name": "scope",
+              "value": "photos.read",
+              "specRef": "RFC 6749 §3.3"
+            }
           ]
         }
       }
@@ -74,7 +97,10 @@
       "summary": "L'AS renvoie l'ACCESS TOKEN LUI-MÊME dans le fragment d'URL (#…). Le fragment n'est pas envoyé au serveur — seul le JS le lit — mais il traverse tout le front channel : barre d'adresse, historique, redirections.",
       "request": {
         "channel": "front",
-        "request": { "method": "POST", "url": "https://as.example/authorize/consent" },
+        "request": {
+          "method": "POST",
+          "url": "https://as.example/authorize/consent"
+        },
         "response": {
           "status": 302,
           "statusText": "Found",

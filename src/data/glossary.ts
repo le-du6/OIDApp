@@ -24,7 +24,7 @@ export const glossary: GlossaryEntry[] = [
     id: 'resource-owner',
     term: 'Resource Owner',
     definition:
-      'L’entité capable d’accorder l’accès à une ressource protégée. Quand c’est une personne physique, la spec dit « end-user » — dans 99 % des cas, c’est simplement l’utilisateur.',
+      'Entité capable d’accorder l’accès à une ressource protégée. Lorsqu’il s’agit d’une personne, OAuth parle d’end-user. Le propriétaire de ressource et le client peuvent aussi être la même entité.',
     specRef: 'RFC 6749 §1.1',
     naming:
       'Personne ne dit « propriétaire de ressource » pour dire « vous ». Le nom est exact du point de vue du modèle, mais opaque pour un débutant.',
@@ -34,7 +34,7 @@ export const glossary: GlossaryEntry[] = [
     id: 'client',
     term: 'Client',
     definition:
-      'L’application qui effectue des requêtes vers des ressources protégées au nom du Resource Owner et avec son autorisation. C’est souvent… un serveur web.',
+      'Rôle logiciel qui demande un accès : backend, application web, native, CLI ou appareil. Sa capacité à protéger ses moyens d’authentification détermine son type public ou confidentiel.',
     specRef: 'RFC 6749 §1.1',
     naming:
       '« Client » évoque le navigateur ou le poste de l’utilisateur ; ici c’est l’application qui consomme l’API — y compris un backend. Client au sens « client de l’AS », pas « client de l’humain ».',
@@ -44,7 +44,7 @@ export const glossary: GlossaryEntry[] = [
     id: 'authorization-server',
     term: 'Authorization Server',
     definition:
-      'Le serveur qui authentifie le Resource Owner, recueille son consentement et émet les tokens. Keycloak, Auth0, Entra ID… jouent ce rôle.',
+      'Serveur qui émet les tokens après validation du grant. Dans les flows concernés il authentifie l’utilisateur, sans qu’OAuth impose la méthode. L’authentification du client est distincte.',
     specRef: 'RFC 6749 §1.1',
     naming:
       'Il passe son temps à faire de l’authentification mais ne s’appelle pas comme ça — parce qu’OAuth2 ne normalise QUE la partie autorisation. L’authentification y est un moyen, pas un résultat.',
@@ -73,13 +73,13 @@ export const glossary: GlossaryEntry[] = [
       'La représentation de l’autorisation accordée par le Resource Owner, que le Client échange contre un access token. Quatre types dans la RFC : authorization code, implicit, resource owner password credentials, client credentials.',
     specRef: 'RFC 6749 §1.3',
     naming:
-      'Un mot abstrait pour « la preuve que l’utilisateur a dit oui ». Quatre « grants » pour des réalités très différentes (dont deux aujourd’hui dépréciés) n’aident pas.',
+      'Grant désigne une autorisation exploitable par le client, pas nécessairement un consentement utilisateur interactif. RFC 9700 déconseille Implicit et interdit ROPC.',
   },
   {
     id: 'access-token',
     term: 'Access token',
     definition:
-      'Le jeton présenté au Resource Server pour accéder aux ressources. Sa forme n’est PAS normalisée par la RFC 6749 : opaque (simple référence) ou structuré (JWT, profil RFC 9068). Durée de vie courte par conception.',
+      'Jeton présenté au Resource Server pour accéder aux ressources. RFC 6749 ne fixe pas sa forme : opaque ou structuré, par exemple JWT selon RFC 9068. Sa durée de vie relève du serveur ; une durée courte limite l’exposition.',
     specRef: 'RFC 6749 §1.4',
   },
   {
@@ -102,7 +102,7 @@ export const glossary: GlossaryEntry[] = [
     id: 'authorization-code',
     term: 'Authorization code',
     definition:
-      'Jeton intermédiaire, opaque, éphémère (durée recommandée ≤ 10 min, en pratique quelques secondes) et à usage unique, remis au Client via le front channel puis échangé contre les tokens au token endpoint. Il existe pour que l’access token, lui, ne transite jamais par le navigateur.',
+      'Code opaque pour le client, éphémère et à usage unique, remis via le navigateur puis échangé au token endpoint. Dans notre architecture avec backend, seul le code traverse le navigateur. Une SPA peut aussi appeler directement le token endpoint.',
     specRef: 'RFC 6749 §4.1.2',
   },
   {
@@ -116,7 +116,7 @@ export const glossary: GlossaryEntry[] = [
     id: 'redirect-uri',
     term: 'redirect_uri',
     definition:
-      'L’adresse où l’AS renvoie le navigateur (et le code) après la décision de l’utilisateur. Doit être pré-enregistrée et comparée en correspondance EXACTE — toute validation approximative (préfixe, wildcard) ouvre des attaques d’open redirect.',
+      'Destination enregistrée du retour navigateur. RFC 9700 exige une correspondance exacte, avec l’exception du port localhost des applications natives. Lorsqu’elle figure dans la demande de code, sa valeur est aussi vérifiée à l’échange du code.',
     specRef: 'RFC 6749 §3.1.2 · RFC 9700 §4.1',
   },
   {
@@ -130,7 +130,7 @@ export const glossary: GlossaryEntry[] = [
     id: 'client-secret',
     term: 'client_secret',
     definition:
-      'Secret partagé entre un Client confidentiel et l’AS, utilisé pour authentifier le Client au token endpoint. Un Client public (SPA, mobile) ne peut PAS en garder un — c’est ce qui motive PKCE.',
+      'Secret partagé utilisé pour authentifier un client capable de le protéger. Un secret distribué dans une SPA ou une application native ne prouve pas l’identité d’une instance. PKCE lie une transaction au code ; il ne remplace pas l’authentification client.',
     specRef: 'RFC 6749 §2.3.1',
   },
   {
@@ -144,7 +144,7 @@ export const glossary: GlossaryEntry[] = [
     id: 'state',
     term: 'state',
     definition:
-      'Valeur imprévisible générée par le Client, renvoyée telle quelle par l’AS au callback. Elle lie la réponse à la requête d’origine et à la session du navigateur : c’est la contre-mesure anti-CSRF du callback.',
+      'Valeur de corrélation liée à la session et comparée au retour. Protection CSRF classique ; PKCE ou nonce OIDC peuvent remplir ce rôle sous les conditions de RFC 9700. L’état applicatif peut être conservé localement derrière cette référence.',
     specRef: 'RFC 6749 §10.12 · RFC 9700 §2.1',
   },
   {
@@ -152,7 +152,7 @@ export const glossary: GlossaryEntry[] = [
     term: 'PKCE',
     expansion: 'Proof Key for Code Exchange (« pixy »)',
     definition:
-      'Extension qui lie l’authorization code au Client qui l’a demandé : le Client génère un code_verifier aléatoire, envoie son empreinte (code_challenge, S256) dans l’authorization request, puis prouve la possession du verifier au token endpoint. Un code volé devient inutilisable. Obligatoire pour tous les clients dans OAuth 2.1.',
+      'Liaison entre le code et un secret éphémère du client (verifier/challenge). RFC 9700 : requis pour les clients publics, recommandé pour les confidentiels. S256 est utilisé dans le cours. Ce mécanisme n’authentifie pas à lui seul un client enregistré.',
     specRef: 'RFC 7636 · RFC 9700 §2.1.1',
   },
   {
@@ -173,7 +173,7 @@ export const glossary: GlossaryEntry[] = [
     id: 'front-channel',
     term: 'Front channel',
     definition:
-      'Communication qui transite PAR le navigateur (redirections, URL, fragments) : observable dans l’historique, les logs, les referers, et manipulable par l’utilisateur ou un poste compromis. Tout ce qui y passe doit être considéré comme exposé.',
+      'Échange passant par l’agent utilisateur, par exemple une redirection. Les valeurs peuvent être exposées au navigateur. Implicit livre historiquement un access token dans le fragment ; le code flow livre un code.',
     specRef: 'RFC 6749 §1.5 (usage)',
     naming:
       'Terme d’usage, pas défini formellement dans la RFC 6749 — ce qui ne l’empêche pas d’être LA grille de lecture de tout le protocole.',
@@ -182,7 +182,7 @@ export const glossary: GlossaryEntry[] = [
     id: 'back-channel',
     term: 'Back channel',
     definition:
-      'Communication directe de serveur à serveur (Client → AS, Client → RS) : TLS, authentifiée, invisible du navigateur. C’est là que doivent circuler les secrets et les tokens.',
+      'Appel direct entre acteurs, par exemple au token endpoint. Le client peut être un backend, une SPA ou un wallet. TLS authentifie le serveur ; l’authentification du client dépend de son type et du protocole.',
     specRef: 'RFC 6749 §1.5 (usage)',
   },
   {
@@ -204,7 +204,7 @@ export const glossary: GlossaryEntry[] = [
     term: 'JWT',
     expansion: 'JSON Web Token',
     definition:
-      'Format de token structuré : trois segments base64url séparés par des points — header (métadonnées de signature), payload (claims), signature. Se LIT sans clé ; ne se VÉRIFIE qu’avec la clé publique de l’émetteur.',
+      'Conteneur JSON de claims, représenté par un JWS (signature ou MAC, trois segments en forme compacte) ou un JWE (chiffrement, cinq segments). Nos exemples JWS ES256 sont lisibles sans clé et vérifiés avec une clé publique de confiance.',
     specRef: 'RFC 7519',
   },
   {
@@ -218,7 +218,7 @@ export const glossary: GlossaryEntry[] = [
     id: 'opaque-token',
     term: 'Opaque token',
     definition:
-      'Token sans structure lisible : une simple référence aléatoire, que seul l’émetteur sait résoudre (lookup interne ou introspection). Avantage : révocation immédiate et aucune donnée exposée ; coût : un aller-retour vers l’AS pour valider.',
+      'Token dont le client ne doit pas interpréter la structure. Le RS peut utiliser un stockage ou l’introspection ; la fraîcheur de révocation dépend des caches et du déploiement.',
     specRef: 'RFC 7662 (introspection)',
   },
   {
@@ -232,7 +232,7 @@ export const glossary: GlossaryEntry[] = [
     id: 'revocation',
     term: 'Token revocation',
     definition:
-      'Endpoint où le Client notifie l’AS qu’un token (access ou refresh) n’est plus nécessaire — déconnexion, compromission. La révocation d’un refresh token doit entraîner celle des access tokens associés.',
+      'Invalidation d’un token auprès de l’AS (RFC 7009). Révoquer les access tokens associés à un refresh token est une recommandation conditionnelle ; la prise en compte par les ressources dépend de leurs contrôles.',
     specRef: 'RFC 7009',
   },
   {
@@ -255,7 +255,7 @@ export const glossary: GlossaryEntry[] = [
     id: 'client-credentials',
     term: 'Client Credentials grant',
     definition:
-      'Flow machine-à-machine : le Client s’authentifie au token endpoint et obtient un token en son nom propre, sans utilisateur ni consentement. Pas de refresh token — le Client peut se ré-authentifier quand il veut.',
+      'Grant réservé aux clients confidentiels, qui s’authentifient et agissent pour leur propre compte ou dans un cadre convenu. Pas d’interaction utilisateur dans ce flow. La réponse ne devrait pas inclure de refresh token (SHOULD NOT).',
     specRef: 'RFC 6749 §4.4',
   },
   {
@@ -270,14 +270,14 @@ export const glossary: GlossaryEntry[] = [
     term: 'DPoP',
     expansion: 'Demonstrating Proof of Possession',
     definition:
-      'Mécanisme applicatif liant les tokens à une paire de clés détenue par le Client : chaque requête porte un header DPoP, un JWT signé prouvant la possession de la clé privée (avec méthode, URI, horodatage, et hash de l’access token). Un token volé sans la clé est inerte.',
+      'Preuve signée liant l’usage d’un token à une clé du client. Elle couvre méthode, URI, date et identifiant ; ath lie l’access token lors de l’accès à une ressource. Voler le token seul ne suffit pas si tous les contrôles sont appliqués ; il reste lisible.',
     specRef: 'RFC 9449',
   },
   {
     id: 'mtls',
     term: 'mTLS (certificate-bound tokens)',
     definition:
-      'Alternative à DPoP au niveau transport : le token est lié au certificat TLS client (empreinte dans le claim cnf/x5t#S256). Robuste mais exige une PKI côté clients — DPoP est plus simple à déployer pour le web.',
+      'Les tokens liés à un certificat TLS client sont vérifiés en les rapprochant du certificat présenté sur la connexion. RFC 8705 distingue cette liaison de l’authentification du client ; une PKI publique n’est pas nécessaire dans tous les déploiements.',
     specRef: 'RFC 8705',
   },
   {
@@ -306,14 +306,14 @@ export const glossary: GlossaryEntry[] = [
     id: 'oauth21',
     term: 'OAuth 2.1',
     definition:
-      'Consolidation en cours de standardisation : OAuth 2.0 + les obligations du Security BCP, moins ce qui est déprécié. Retirés : implicit, ROPC, bearer en query string. Obligatoires : PKCE partout, redirect_uri en correspondance exacte.',
-    specRef: 'draft-ietf-oauth-v2-1',
+      'Consolidation encore en draft (version 16, septembre 2026) : code flow avec PKCE, retrait d’Implicit et de ROPC, durcissement des redirections et des tokens. À distinguer de RFC 9700, qui est déjà le Security BCP OAuth 2.0.',
+    specRef: 'draft-ietf-oauth-v2-1-16',
   },
   {
     id: 'security-bcp',
     term: 'OAuth 2.0 Security BCP',
     definition:
-      'Les meilleures pratiques de sécurité actuelles pour OAuth 2.0 : le document qui acte vingt ans de leçons — PKCE généralisé, fin d’implicit et de ROPC, exact matching, sender-constrained tokens recommandés.',
+      'Pratiques de sécurité OAuth 2.0 : PKCE requis pour les clients publics et recommandé pour les confidentiels ; Implicit déconseillé ; ROPC interdit. Les exigences précises dépendent du flow et des capacités du client.',
     specRef: 'RFC 9700',
   },
   {
@@ -321,7 +321,7 @@ export const glossary: GlossaryEntry[] = [
     term: 'PAR',
     expansion: 'Pushed Authorization Requests',
     definition:
-      'Le Client pousse les paramètres de l’authorization request directement à l’AS (back channel, authentifié) et reçoit une request_uri à usage unique : l’URL du front channel ne porte plus que cette référence. Répond aux manipulations de paramètres dans le navigateur.',
+      'Le client pousse sa demande à l’AS par un appel direct et reçoit une request_uri pour la redirection. L’authentification dépend du type et de l’enregistrement du client ; un client public peut utiliser PAR. La redirection contient notamment client_id et request_uri.',
     specRef: 'RFC 9126',
   },
   {
@@ -351,7 +351,7 @@ export const glossary: GlossaryEntry[] = [
     id: 'api-key',
     term: 'API key',
     definition:
-      'Secret statique identifiant un appelant auprès d’une API. Comparée à OAuth2 : pas de périmètre fin, pas d’expiration native, pas d’identité utilisateur, révocation = rotation manuelle. Acceptable entre machines de confiance, inadaptée à la délégation.',
+      'Clé d’accès propre à un service. Sa portée, sa durée et sa révocation dépendent de ce service. OAuth définit un cadre interopérable de délégation ; toutes les API keys ne sont pas illimitées.',
     specRef: '(pratique d’industrie, hors spec)',
   },
 
@@ -369,7 +369,7 @@ export const glossary: GlossaryEntry[] = [
       'JWT signé émis par l’OpenID Provider qui atteste d’un événement d’authentification. Claims obligatoires : iss, sub, aud, exp, iat. Son audience (aud) est le RP lui-même — ce n’est pas un laissez-passer pour une API.',
     specRef: 'OIDC Core 1.0 §2',
     naming:
-      'Bien nommé, pour une fois : c’est un jeton (Token) d’identité (ID). À ne pas confondre avec l’access token, qui n’atteste d’aucune identité.',
+      'Un ID Token fournit au RP un résultat d’authentification à valider. Un access token peut aussi contenir sub et aud, mais son contrat est l’accès à une ressource.',
   },
   {
     id: 'openid-provider',
@@ -411,7 +411,7 @@ export const glossary: GlossaryEntry[] = [
     term: 'JWKS',
     expansion: 'JSON Web Key Set',
     definition:
-      'Ensemble de clés publiques publié par l’OP (à l’URL jwks_uri), servant à vérifier la signature des ID Tokens. Chaque clé porte un kid ; la rotation consiste à publier la nouvelle clé à côté de l’ancienne.',
+      'Objet contenant un ensemble de clés JWK. Pour nos signatures asymétriques OIDC, les clés publiques viennent du jwks_uri d’un OP attendu. kid aide à la sélection et à la rotation ; il n’est pas une preuve de confiance.',
     specRef: 'RFC 7517',
   },
   {
@@ -419,7 +419,7 @@ export const glossary: GlossaryEntry[] = [
     term: 'kid',
     expansion: 'key ID',
     definition:
-      'Identifiant de clé, présent dans le header JWS et dans chaque clé du JWKS. Il permet au RP de choisir LA bonne clé publique pour vérifier, et rend la rotation gérable. Il n’apporte aucune confiance par lui-même.',
+      'Identifiant optionnel de clé dans JOSE, utilisé pour choisir parmi les clés acceptables. Il peut faciliter la rotation et doit être interprété dans le contexte du profil ; sa présence ne rend pas une clé fiable.',
     specRef: 'RFC 7515 §4.1.4',
   },
   {
@@ -448,7 +448,7 @@ export const glossary: GlossaryEntry[] = [
     term: 'at_hash',
     expansion: 'access token hash',
     definition:
-      'Claim de l’ID Token = base64url de la MOITIÉ GAUCHE de SHA-256(access_token). Il lie l’ID Token à l’access token de la même réponse, empêchant d’apparier un ID Token à un access token d’une autre provenance.',
+      'Empreinte de l’access token : moitié gauche du hash associé à alg, encodée en base64url. SHA-256 dans notre exemple ES256. Optionnel au token endpoint en code flow ; conditions différentes en Implicit/Hybrid.',
     specRef: 'OIDC Core 1.0 §3.1.3.6',
   },
   {
@@ -456,7 +456,7 @@ export const glossary: GlossaryEntry[] = [
     term: 'JWS',
     expansion: 'JSON Web Signature',
     definition:
-      'La brique de SIGNATURE des JWT : header.payload.signature en base64url. Un ID Token est un JWS. La signature ES256 est le concaténé brut r‖s (64 octets), vérifié sur les octets ASCII de « header.payload ».',
+      'Protection d’un contenu par signature ou MAC. La forme compacte a trois segments. Nos signatures ES256 portent sur header.payload et sont représentées par r‖s (64 octets). JWS ne chiffre pas le contenu.',
     specRef: 'RFC 7515',
   },
   {
@@ -497,7 +497,7 @@ export const glossary: GlossaryEntry[] = [
     id: 'credential-issuer',
     term: 'Credential Issuer',
     definition:
-      'L’entité qui émet des credentials signés : État, université, employeur, banque… Techniquement, un serveur OAuth2 augmenté d’un Credential Endpoint (et d’un Nonce Endpoint). Il n’est PAS contacté lors des présentations.',
+      'Rôle qui émet des credentials. Son Credential Endpoint est protégé par OAuth ; le ou les Authorization Servers peuvent être distincts. Le Nonce Endpoint dépend du service. Une présentation peut nécessiter d’autres accès pour les clés ou le statut.',
     specRef: 'OID4VCI 1.0 §3',
     actorRole: 'issuer',
   },
@@ -505,7 +505,7 @@ export const glossary: GlossaryEntry[] = [
     id: 'verifiable-credential',
     term: 'Verifiable Credential',
     definition:
-      'Un ensemble de claims sur le Holder, signé par l’Issuer, vérifiable cryptographiquement par quiconque possède les clés publiques de l’émetteur — sans le contacter. Formats principaux ici : SD-JWT VC et mdoc.',
+      'Claims sur un sujet, protégés selon un format vérifiable. Le sujet et le détenteur ne sont pas nécessairement identiques. Signature valide, confiance dans l’émetteur, statut et binding sont des contrôles distincts. Formats illustrés : SD-JWT VC et mdoc.',
     specRef: 'OID4VCI 1.0 §3',
   },
   {
@@ -519,7 +519,7 @@ export const glossary: GlossaryEntry[] = [
     id: 'pre-authorized-code',
     term: 'Pre-Authorized Code',
     definition:
-      'Grant OAuth2 dédié (urn:ietf:params:oauth:grant-type:pre-authorized_code) : l’Issuer, ayant DÉJÀ identifié l’utilisateur, remet un code que le wallet échange directement contre un access token — sans étape d’authentification pilotée par le wallet.',
+      'Code d’émission pour une autorisation obtenue en amont, échangé au token endpoint avec le grant urn:ietf:params:oauth:grant-type:pre-authorized_code. Il évite une redirection d’autorisation pendant cet échange ; l’identification préalable dépend du contexte.',
     specRef: 'OID4VCI 1.0 §4.1.1',
   },
   {
@@ -527,21 +527,21 @@ export const glossary: GlossaryEntry[] = [
     term: 'tx_code',
     expansion: 'Transaction Code',
     definition:
-      'Code court (souvent numérique) transmis au Holder par un canal SÉPARÉ (SMS, e-mail) et exigé au token endpoint avec le pre-authorized code. Défense contre l’interception de l’offer : photographier le QR ne suffit pas.',
+      'Code additionnel si l’offre l’exige, transmis par un canal convenu et saisi au token endpoint. Il réduit le risque lié au vol du seul pre-authorized code ; séparation des canaux et limitation des essais comptent.',
     specRef: 'OID4VCI 1.0 §4.1.1',
   },
   {
     id: 'c-nonce',
     term: 'c_nonce',
     definition:
-      'Nonce fourni par le Nonce Endpoint dédié de l’Issuer (nouveauté de la 1.0 finale), que le wallet inclut dans son proof. Lie la preuve de possession de clé à UN flow d’émission précis — anti-rejeu.',
+      'Nonce fourni par le Credential Issuer et repris dans la preuve d’émission. Son acceptation et sa durée relèvent de l’Issuer ; il n’est pas intrinsèquement unique par transaction ni à usage unique.',
     specRef: 'OID4VCI 1.0 §7',
   },
   {
     id: 'jwt-proof',
     term: 'jwt proof',
     definition:
-      'Preuve de possession de clé : un JWT au typ openid4vci-proof+jwt, signé par la clé privée du wallet, portant aud (l’Issuer), iat et nonce (le c_nonce), la clé publique voyageant dans le header jwk. L’Issuer liera le credential à cette clé.',
+      'Preuve jwt d’émission : typ openid4vci-proof+jwt, aud vers l’Issuer, iat, référence de clé et nonce si l’Issuer expose un Nonce Endpoint. Prouve le contrôle d’une clé, pas à elle seule le droit de recevoir un credential.',
     specRef: 'OID4VCI 1.0 App. F.1',
   },
   {
@@ -549,7 +549,7 @@ export const glossary: GlossaryEntry[] = [
     term: 'cnf',
     expansion: 'confirmation',
     definition:
-      'Claim du credential (hérité de RFC 7800) contenant la clé publique du wallet prouvée à l’émission. C’est l’ancrage du key binding : présenter le credential exigera de signer avec la clé privée correspondante.',
+      'Claim de confirmation qui lie un jeton à une clé ou une référence de clé. Notre credential contient cnf.jwk pour vérifier un KB-JWT ; un token DPoP peut porter cnf.jkt. La liaison signée doit être validée avant d’utiliser cette clé.',
     specRef: 'RFC 7800 · draft-ietf-oauth-sd-jwt-vc',
   },
   {
@@ -558,21 +558,21 @@ export const glossary: GlossaryEntry[] = [
     expansion: 'Selective Disclosure JWT',
     definition:
       'Extension du JWT pour la divulgation sélective : les claims cachables sont remplacés dans le jeton signé par des hachages salés (_sd, _sd_alg), et transmis à côté sous forme de disclosures que le Holder choisit de révéler… ou pas.',
-    specRef: 'draft-ietf-oauth-selective-disclosure-jwt',
+    specRef: 'RFC 9901',
   },
   {
     id: 'disclosure',
     term: 'Disclosure',
     definition:
-      'Le triplet [salt, nom, valeur] encodé en base64url, transmis hors du JWT signé. Son digest SHA-256 figure dans _sd : révéler la disclosure permet de vérifier le claim ; la retenir le garde secret sans casser la signature.',
-    specRef: 'draft-ietf-oauth-selective-disclosure-jwt',
+      'Donnée sélective encodée en base64url : [sel, nom, valeur] pour un membre d’objet, [sel, valeur] pour un élément de tableau. Son digest est protégé par le SD-JWT ; notre profil utilise SHA-256 et des membres simples.',
+    specRef: 'RFC 9901',
   },
   {
     id: 'sd-jwt-vc',
     term: 'SD-JWT VC',
     definition:
-      'Profil de credential fondé sur SD-JWT : typ dc+sd-jwt (renommé depuis vc+sd-jwt en nov. 2024), claim vct obligatoire (le type du credential), cnf pour le key binding. Format retenu pour le PID de l’EUDI Wallet.',
-    specRef: 'draft-ietf-oauth-sd-jwt-vc',
+      'Profil de credential fondé sur SD-JWT : typ dc+sd-jwt, vct pour le type et cnf en cas de binding cryptographique. vc+sd-jwt est historique ; le draft 19 a retiré la note transitoire de double acceptation. mdoc constitue un autre format.',
+    specRef: 'draft-ietf-oauth-sd-jwt-vc-19',
   },
   {
     id: 'vct',
@@ -580,7 +580,7 @@ export const glossary: GlossaryEntry[] = [
     expansion: 'verifiable credential type',
     definition:
       'Claim REQUIRED du SD-JWT VC : identifiant (résistant aux collisions, souvent une URL) du TYPE de credential — « attestation d’identité », « diplôme »… L’équivalent du doctype côté mdoc.',
-    specRef: 'draft-ietf-oauth-sd-jwt-vc',
+    specRef: 'draft-ietf-oauth-sd-jwt-vc-19',
   },
   {
     id: 'mdoc',
@@ -593,7 +593,7 @@ export const glossary: GlossaryEntry[] = [
     id: 'key-attestation',
     term: 'Key attestation',
     definition:
-      'Preuve, signée par une autorité de confiance (fabricant, wallet provider), que la clé du wallet réside dans un environnement sécurisé donné (Secure Enclave, WSCD…). OID4VCI 1.0 la porte via un proof type dédié « attestation ». Au-delà de « je contrôle la clé » : « ma clé est bien gardée ».',
+      'Attestation signée par un tiers reconnu sur une ou plusieurs clés et leurs propriétés. Le proof jwt peut l’inclure et signer avec une clé attestée ; le proof attestation peut fonctionner sans cette signature de possession.',
     specRef: 'OID4VCI 1.0 App. D & F.3',
   },
   {
@@ -601,14 +601,14 @@ export const glossary: GlossaryEntry[] = [
     term: 'EUDI Wallet',
     expansion: 'European Digital Identity Wallet',
     definition:
-      'Le portefeuille d’identité numérique que chaque État membre de l’UE doit proposer sous eIDAS 2.0 (règlement (UE) 2024/1183). Il transporte le PID et des attestations (QEAA/EAA) aux formats SD-JWT VC et mdoc, via OID4VCI/OID4VP — les protocoles de ce cours.',
+      'Portefeuille européen d’identité numérique dans le cadre eIDAS révisé. PID, attestations, protocoles, formats et certification relèvent de couches distinctes. Le cours présente les concepts, sans évaluer une conformité réglementaire.',
     specRef: 'Règlement (UE) 2024/1183 · ARF',
   },
   {
     id: 'phone-home',
     term: '« Phone home »',
     definition:
-      'Le défaut structurel du modèle fédéré : chaque connexion repasse par l’IdP, qui apprend où et quand vous vous connectez. Le triangle Issuer/Holder/Verifier le supprime par construction : l’émetteur n’est pas contacté lors des présentations.',
+      'Contact avec l’émetteur lors d’un usage, susceptible de révéler des métadonnées. Une nouvelle authentification OIDC contacte l’OP ; une session applicative ne le fait pas à chaque action. Le modèle wallet réduit ce besoin sans exclure statut ou collusion.',
     specRef: '(propriété d’architecture — motivation d’eIDAS 2.0)',
   },
 
@@ -616,7 +616,7 @@ export const glossary: GlossaryEntry[] = [
     id: 'verifier',
     term: 'Verifier',
     definition:
-      'L’entité qui demande et vérifie une présentation : un site, un guichet, un contrôle. Côté protocole, c’est un Client OAuth2 qui envoie une Authorization Request au wallet — et que le WALLET doit authentifier avant tout consentement.',
+      'Entité qui demande et vérifie une présentation. Les contrôles d’identification dépendent du préfixe et du parcours. Notre exemple x509_san_dns valide un certificat et un Request Object ; redirect_uri et certaines requêtes DC API ont d’autres règles.',
     specRef: 'OID4VP 1.0 §2',
     actorRole: 'verifier',
   },
@@ -639,7 +639,7 @@ export const glossary: GlossaryEntry[] = [
     id: 'client-identifier-prefix',
     term: 'Client Identifier Prefix',
     definition:
-      'Le mode d’identification du Verifier, porté en préfixe du client_id (« x509_san_dns:verifier.example ») : redirect_uri, openid_federation, decentralized_identifier, verifier_attestation, x509_san_dns, x509_hash — et origin (réservé DC API). Sans deux-points : client pré-enregistré.',
+      'Préfixe de client_id indiquant comment identifier le Verifier. origin: est réservé à l’audience de présentation via DC API et ne doit pas être accepté comme préfixe dans la requête. client_id_scheme appartient aux anciens drafts.',
     specRef: 'OID4VP 1.0 §5.9.3',
     naming:
       'A remplacé l’ancien paramètre séparé client_id_scheme (drafts) — attention aux articles antérieurs à 2025.',
@@ -648,35 +648,35 @@ export const glossary: GlossaryEntry[] = [
     id: 'kb-jwt',
     term: 'Key Binding JWT',
     definition:
-      'Le JWT (typ kb+jwt, obligatoire) qui clôt une présentation SD-JWT : signé par la clé du cnf du credential, il porte iat, aud (le Verifier), nonce (le défi de la transaction) et sd_hash (l’empreinte de la présentation exacte). C’est lui qui rend une présentation volée irrejouable.',
-    specRef: 'draft-ietf-oauth-selective-disclosure-jwt',
+      'Preuve de détenteur SD-JWT signée avec la clé liée dans cnf. typ kb+jwt et claims iat, aud, nonce, sd_hash lient cette présentation au contexte. Exigée dans le parcours du cours ; les contrôles et la consommation de transaction sont nécessaires contre le rejeu.',
+    specRef: 'RFC 9901',
   },
   {
     id: 'sd-hash',
     term: 'sd_hash',
     definition:
-      'Claim du KB-JWT : hachage (algorithme du _sd_alg, base64url) de la chaîne « <JWT signé>~<disclosures choisies>~ » — tilde final inclus. Il scelle EXACTEMENT ce qui est présenté : ajouter ou retirer une disclosure invalide le KB-JWT.',
-    specRef: 'draft-ietf-oauth-selective-disclosure-jwt',
+      'Hash des octets exacts de la partie <JWT>~<disclosures choisies>~, tilde final inclus. Modifier cette partie fait échouer la comparaison sd_hash même si la signature du KB-JWT reste valide.',
+    specRef: 'RFC 9901',
   },
   {
     id: 'direct-post',
     term: 'direct_post',
     definition:
-      'Response mode d’OID4VP : le wallet POSTe la réponse (vp_token…) directement à la response_uri du Verifier, sans charger une redirection navigateur d’artefacts volumineux. La variante direct_post.jwt emballe la réponse dans un JWT signé et/ou chiffré.',
+      'Réponse du wallet par POST form à response_uri. vp_token contient un objet JSON indexé par les identifiants DCQL. direct_post.jwt transporte la réponse chiffrée selon OID4VP §8.3.',
     specRef: 'OID4VP 1.0 §8.2-8.3',
   },
   {
     id: 'unlinkability',
     term: 'Unlinkability',
     definition:
-      'Propriété visée : deux présentations d’une même personne ne doivent pas être corrélables — ni par l’émetteur (qui ne voit rien), ni entre Verifiers. Les ennemis concrets : signature du credential réutilisée, mêmes digests salés, mêmes identifiants. Les parades : émission par lots de credentials à usage limité, rotation.',
+      'Impossibilité visée de corréler des présentations au-delà des attributs révélés. Signatures, digests, clés publiques, temps précis, statut et combinaisons de claims peuvent corréler ; les lots ne suffisent pas à eux seuls.',
     specRef: 'OID4VP 1.0 (considérations vie privée) · ARF',
   },
   {
     id: 'dc-api',
     term: 'Digital Credentials API (DC API)',
     definition:
-      'API du navigateur (W3C) par laquelle un site demande une présentation SANS QR ni deep link : le navigateur/OS route la requête vers les wallets installés. OID4VP la profile en annexe (client_id préfixé origin, fourni par le navigateur). L’avenir probable du flow same-device.',
+      'API du navigateur pour demander des credentials via l’environnement système. OID4VP annexe A utilise l’origine fournie par cet environnement pour l’audience origin: de présentation ; ce n’est pas un client_id origin: dans la requête.',
     specRef: 'OID4VP 1.0 App. A · W3C Digital Credentials',
   },
   {
@@ -684,15 +684,15 @@ export const glossary: GlossaryEntry[] = [
     term: 'HAIP',
     expansion: 'High Assurance Interoperability Profile',
     definition:
-      'Profil OpenID qui fige, parmi toutes les options d’OID4VCI/OID4VP, un sous-ensemble interopérable à haut niveau de garantie (formats, algorithmes, méthodes d’identification du Verifier…). C’est le genre de profil que les écosystèmes réels — dont l’EUDI — imposent par-dessus les specs de base.',
-    specRef: 'OpenID HAIP (draft)',
+      'Profil OpenID 1.0 Final (24 décembre 2025) sélectionnant des exigences d’interopérabilité pour OID4VCI, OID4VP, SD-JWT VC et mdoc. Sa mise en œuvre ne suffit pas, à elle seule, à établir la conformité eIDAS au niveau d’assurance élevé.',
+    specRef: 'OpenID4VC HAIP 1.0 Final §1 et §3',
   },
   {
     id: 'presentation',
     term: 'Presentation',
     definition:
-      'Ce que le wallet remet au Verifier : pour SD-JWT VC, la chaîne <credential signé>~<disclosures choisies>~<KB-JWT>. Elle prouve trois choses à la fois : l’authenticité (signature Issuer), le contenu choisi (disclosures), la possession ici-et-maintenant (KB-JWT).',
-    specRef: 'OID4VP 1.0 §2 · App. B.3',
+      'Ce que le wallet remet au Verifier. Pour notre SD-JWT VC lié à une clé : credential signé, disclosures choisies et KB-JWT. L’acceptation exige confiance, signatures, contexte et adéquation à la demande ; le format seul ne les garantit pas.',
+    specRef: 'OID4VP 1.0 §2 et annexe B.1',
   },
 ]
 

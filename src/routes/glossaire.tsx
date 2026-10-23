@@ -2,6 +2,8 @@ import { useState } from 'react'
 import { createFileRoute } from '@tanstack/react-router'
 import { glossary } from '../data/glossary'
 import { actorColor } from '../lib/actors'
+import { faBookBookmark, faMagnifyingGlass, faTag } from '@fortawesome/free-solid-svg-icons'
+import { AppIcon } from '../components/ui/AppIcon'
 
 export const Route = createFileRoute('/glossaire')({
   component: GlossaryPage,
@@ -30,16 +32,21 @@ function GlossaryPage() {
       <p className="mt-1 text-sm text-muted">
         {glossary.length} entrées. Les termes protocolaires restent en anglais officiel — on ne
         traduit pas une spec — mais chacun a son explication française, sa référence, et la critique
-        de son nom quand il la mérite 🏷️.
+        de son nom quand il la mérite.
       </p>
-      <label className="mt-4 block">
+      <label className="relative mt-4 block">
         <span className="sr-only">Filtrer le glossaire</span>
+        <AppIcon
+          icon={faMagnifyingGlass}
+          tone="muted"
+          className="pointer-events-none absolute left-3 top-3 size-3.5"
+        />
         <input
           type="search"
           value={filter}
           onChange={(e) => setFilter(e.target.value)}
           placeholder="Filtrer… (ex. token, PKCE, channel)"
-          className="w-full rounded-md border border-line bg-surface px-3 py-2 text-sm outline-none placeholder:text-muted focus:border-accent"
+          className="w-full rounded-md border border-line bg-surface py-2 pl-9 pr-3 text-sm outline-none placeholder:text-muted focus:border-accent"
         />
       </label>
       <ul className="mt-5 space-y-3">
@@ -56,10 +63,14 @@ function GlossaryPage() {
               <p className="mt-1.5 text-sm leading-relaxed text-ink/90">{e.definition}</p>
               {e.naming && (
                 <p className="mt-2 rounded border-l-2 border-warning bg-warning-soft py-1.5 pl-2.5 pr-2 text-xs leading-relaxed">
-                  🏷️ {e.naming}
+                  <AppIcon icon={faTag} tone="warning" className="mr-2 inline size-3" />
+                  {e.naming}
                 </p>
               )}
-              <p className="mt-2 font-mono text-xs text-muted">📜 {e.specRef}</p>
+              <p className="mt-2 flex items-start gap-2 font-mono text-xs text-muted">
+                <AppIcon icon={faBookBookmark} className="mt-0.5 size-3" />
+                {e.specRef}
+              </p>
             </li>
           )
         })}

@@ -1,6 +1,16 @@
+import { coverage } from '../../data/coverage'
+import { CompareTable } from '../../components/content/CompareTable'
 import { createFileRoute, Link, notFound } from '@tanstack/react-router'
 import { getModule, lessonKey } from '../../data/curriculum'
 import { useAllProgress } from '../../db/hooks'
+import {
+  faBookBookmark,
+  faCheck,
+  faCircleHalfStroke,
+  faCirclePlay,
+  faHammer,
+} from '@fortawesome/free-solid-svg-icons'
+import { AppIcon } from '../../components/ui/AppIcon'
 
 export const Route = createFileRoute('/$moduleId/')({
   loader: ({ params }) => {
@@ -24,10 +34,25 @@ function ModulePage() {
         <p className="mt-1 text-sm text-muted">{module.description}</p>
         {module.specVersions && (
           <p className="mt-2 font-mono text-xs text-muted">
-            📜 Version de référence : {module.specVersions.join(' · ')}
+            <AppIcon icon={faBookBookmark} className="mr-2 inline size-3" />
+            Version de référence : {module.specVersions.join(' · ')}
           </p>
         )}
       </div>
+      <details className="rounded-xl border border-line bg-surface p-4 text-sm">
+        <summary className="cursor-pointer font-semibold text-accent">
+          Ce que ce module démontre et ce qu’il introduit
+        </summary>
+        <CompareTable
+          caption="Profondeur du parcours"
+          rowHeading="Sujet"
+          columns={['Niveau', 'Portée']}
+          rows={(coverage[moduleId] ?? []).map(([label, level, detail]) => ({
+            label,
+            cells: [{ content: level }, { content: detail }],
+          }))}
+        />
+      </details>
       <ol className="space-y-4">
         {module.chapters.map((chapter) => (
           <li key={chapter.id} className="rounded-xl border border-line bg-surface p-4">
@@ -49,13 +74,24 @@ function ModulePage() {
                     </Link>
                     <span className="shrink-0 text-xs">
                       {status === 'done' ? (
-                        <span className="text-ok">✓ validée</span>
+                        <span className="text-ok">
+                          <AppIcon icon={faCheck} className="mr-1 inline size-3" />
+                          validée
+                        </span>
                       ) : status === 'in-progress' ? (
-                        <span className="text-accent">en cours</span>
+                        <span className="text-accent">
+                          <AppIcon icon={faCircleHalfStroke} className="mr-1 inline size-3" />
+                          en cours
+                        </span>
                       ) : lesson.ready ? (
-                        <span className="text-muted">à commencer</span>
+                        <span className="text-muted">
+                          <AppIcon icon={faCirclePlay} className="mr-1 inline size-3" />à commencer
+                        </span>
                       ) : (
-                        <span className="text-muted/60">en construction</span>
+                        <span className="text-muted/60">
+                          <AppIcon icon={faHammer} className="mr-1 inline size-3" />
+                          en construction
+                        </span>
                       )}
                     </span>
                   </li>

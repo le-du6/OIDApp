@@ -1,3 +1,4 @@
+import { quizBank } from '../../data/quiz-bank'
 import { Term } from '../../components/content/Term'
 import { Callout } from '../../components/content/Callout'
 import { Quiz } from '../../components/content/Quiz'
@@ -28,8 +29,9 @@ export default function VciCh1() {
         <code>credential_issuer</code>), <strong>quoi</strong> (
         <code>credential_configuration_ids</code>), <strong>comment</strong> (<code>grants</code>).
         Ici le grant est le pre-authorized code — un vrai grant OAuth2, avec son URN :{' '}
-        <code>urn:ietf:params:oauth:grant-type:pre-authorized_code</code>. La Phase 1 n'a jamais été
-        aussi utile : tout le vocabulaire (grant, token endpoint, back channel) resurgit tel quel.
+        <code>urn:ietf:params:oauth:grant-type:pre-authorized_code</code>. le module OAuth 2.0 n'a
+        jamais été aussi utile : tout le vocabulaire (grant, token endpoint, back channel) resurgit
+        tel quel.
       </p>
 
       <h2>Le maillon anti-interception : tx_code</h2>
@@ -57,76 +59,20 @@ export default function VciCh1() {
         chose qu'un fichier copiable.
       </p>
 
+      <h2>Format choisi et clé du détenteur</h2>
+      <p>
+        OID4VCI émet des credentials : le format illustré est SD-JWT VC, identifié par{' '}
+        <code>dc+sd-jwt</code>. mdoc, identifié par <code>mso_mdoc</code>, est un autre format
+        majeur. Le protocole d’émission ne se confond avec aucun de ces formats.
+      </p>
+      <p>
+        Dans nos exemples, l’Issuer lie le credential à la clé publique du wallet. Cette liaison
+        signée sera utilisée à la présentation ; la preuve jwt à l’émission et le KB-JWT ultérieur
+        ont des audiences et des objectifs différents.
+      </p>
       <Quiz
         quizId="oid4vci/credential-offer/pre-authorized"
-        questions={[
-          {
-            id: 'q1',
-            question: 'Qu’est-ce qui caractérise le pre-authorized code flow ?',
-            options: [
-              {
-                text: 'L’Issuer a identifié l’utilisateur AVANT le flow, par ses propres moyens',
-                correct: true,
-                explanation:
-                  'Oui — portail, guichet, parcours d’identification déjà fait : l’« autorisation » est acquise avant que le wallet n’intervienne.',
-              },
-              {
-                text: 'Le wallet n’a pas besoin d’access token',
-                explanation:
-                  'Non — le pre-authorized code s’échange précisément contre un access token, au token endpoint.',
-              },
-              {
-                text: 'Le credential est émis sans signature',
-                explanation:
-                  'Non — le credential est toujours signé par l’Issuer ; rien ne change de ce côté.',
-              },
-            ],
-          },
-          {
-            id: 'q2',
-            question: 'Contre quoi le tx_code protège-t-il ?',
-            options: [
-              {
-                text: 'Contre le vol de la clé privée du wallet',
-                explanation:
-                  'Non — la clé du wallet est protégée par l’appareil (et attestée, chapitre 5). Le tx_code protège une autre étape.',
-              },
-              {
-                text: 'Contre l’interception de l’offer : un QR photographié ne suffit pas à encaisser le credential',
-                correct: true,
-                explanation:
-                  'Oui — le tx_code arrive par un canal séparé ; qui n’a que le QR ne peut pas compléter l’échange au token endpoint.',
-              },
-              {
-                text: 'Contre les attaques par rejeu du c_nonce',
-                explanation:
-                  'Non — la fraîcheur de la preuve de clé est le rôle du c_nonce lui-même, pas du tx_code.',
-              },
-            ],
-          },
-          {
-            id: 'q3',
-            question: 'D’où vient le c_nonce dans OID4VCI 1.0 finale ?',
-            options: [
-              {
-                text: 'De la token response',
-                explanation:
-                  'Non — c’était le cas dans d’anciens drafts ; la version finale l’a déplacé. Attention aux articles datés.',
-              },
-              {
-                text: 'D’un Nonce Endpoint dédié de l’Issuer',
-                correct: true,
-                explanation:
-                  'Oui — POST /nonce → { c_nonce }, avec Cache-Control: no-store (§7). Un changement typique de spec encore jeune : d’où l’affichage de la version de référence.',
-              },
-              {
-                text: 'Le wallet le génère lui-même',
-                explanation:
-                  'Non — le c_nonce doit venir de l’ISSUER : c’est lui qui vérifiera que la preuve est fraîche et liée à SON flow.',
-              },
-            ],
-          },
-        ]}
+        questions={quizBank['oid4vci/credential-offer/pre-authorized']!}
       />
     </div>
   )

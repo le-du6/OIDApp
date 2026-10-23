@@ -1,3 +1,4 @@
+import { quizBank } from '../../data/quiz-bank'
 import { Term } from '../../components/content/Term'
 import { Callout } from '../../components/content/Callout'
 import { Quiz } from '../../components/content/Quiz'
@@ -11,16 +12,14 @@ export default function VpCh2() {
   return (
     <div className="lesson-prose">
       <p>
-        Comment un Verifier dit-il « je veux le prénom et la date de naissance, d'une attestation
-        d'identité, émise par une autorité que je reconnais » ? Avec un <Term id="scope" /> OAuth2 —
-        impossible : trop grossier. La 1.0 définit <Term id="dcql" />, un langage de requête JSON
-        transporté dans le paramètre <code>dcql_query</code>, qui a entièrement remplacé l'ancien
-        Presentation Exchange.
+        DCQL décrit les credentials et les claims demandés dans dcql_query. OID4VP 1.0 l'utilise
+        comme langage de requête ; des scopes convenus peuvent aussi référencer une demande (§5.5).
+        Les exemples de Presentation Exchange appartiennent à d'autres versions ou profils.
       </p>
 
       <CodeBlock
         lang="json"
-        title="Une requête DCQL complète, annotée par l'exemple"
+        title="DCQL commenté — extrait pédagogique, commentaires à retirer en JSON"
         code={`{
   "credentials": [
     {
@@ -57,7 +56,7 @@ export default function VpCh2() {
         <strong>
           <code>meta.vct_values</code>
         </strong>{' '}
-        — le type de credential attendu (le <Term id="vct" /> de la Phase 3) ; côté mdoc, on
+        — le type de credential attendu (le <Term id="vct" /> du module OID4VCI) ; côté mdoc, on
         filtrerait par <code>doctype_value</code>.
       </p>
       <p>
@@ -85,74 +84,40 @@ export default function VpCh2() {
         </p>
       </Callout>
 
+      <h2>Conservation déclarée pour mdoc</h2>
+      <CodeBlock
+        lang="json"
+        title="Claims Query mdoc : intent_to_retain (OID4VP annexe B.2.4)"
+        code={JSON.stringify(
+          {
+            credentials: [
+              {
+                id: 'permis',
+                format: 'mso_mdoc',
+                meta: { doctype_value: 'org.iso.18013.5.1.mDL' },
+                claims: [{ path: ['org.iso.18013.5.1', 'family_name'], intent_to_retain: false }],
+              },
+            ],
+          },
+          null,
+          2,
+        )}
+      />
+      <p>
+        Ce paramètre optionnel exprime l’intention de conservation pour mdoc. Il ne s’applique pas
+        ici aux Claims Queries SD-JWT et n’empêche techniquement aucune copie. Le wallet peut en
+        informer l’utilisateur.
+      </p>
+      <h2>Demander, sélectionner, accepter</h2>
+      <p>
+        Le wallet sélectionne des credentials adaptés à DCQL. Le Verifier doit ensuite contrôler la
+        réponse par rapport à cette demande, établir la confiance dans l’Issuer, valider la
+        cryptographie et appliquer sa politique. Un filtre trusted_authorities ne réalise pas ces
+        vérifications à sa place.
+      </p>
       <Quiz
         quizId="oid4vp/dcql/langage-requete"
-        questions={[
-          {
-            id: 'q1',
-            question: 'Pourquoi DCQL plutôt qu’un scope OAuth2 ?',
-            options: [
-              {
-                text: 'Les scopes sont interdits dans OID4VP',
-                explanation:
-                  'Non — la raison est fonctionnelle : il faut exprimer format, type, claims précis, émetteurs de confiance, alternatives. Un scope ne porte rien de tout ça.',
-              },
-              {
-                text: 'Il faut demander au claim près, filtrer par type/format/émetteur et exprimer des alternatives — granularité hors de portée d’un scope',
-                correct: true,
-                explanation:
-                  'Oui — même logique que RAR au chapitre 7 d’OAuth2 : quand la demande devient structurée, il faut un langage structuré.',
-              },
-              {
-                text: 'Pour la compatibilité avec Presentation Exchange',
-                explanation:
-                  'Non — au contraire : DCQL a REMPLACÉ Presentation Exchange dans la 1.0 finale.',
-              },
-            ],
-          },
-          {
-            id: 'q2',
-            question: 'À quoi sert trusted_authorities ?',
-            options: [
-              {
-                text: 'À chiffrer la réponse pour certaines autorités',
-                explanation: 'Non — le chiffrement relève de direct_post.jwt, pas de DCQL.',
-              },
-              {
-                text: 'À n’accepter que les credentials émis par certains émetteurs (aki, etsi_tl, openid_federation)',
-                correct: true,
-                explanation:
-                  'Oui — le filtre d’origine est exprimé dans la requête ; le type etsi_tl branche directement le monde des listes de confiance eIDAS.',
-              },
-              {
-                text: 'À authentifier le Verifier',
-                explanation:
-                  'Non — l’identification du Verifier passe par les Client Identifier Prefixes (chapitre précédent).',
-              },
-            ],
-          },
-          {
-            id: 'q3',
-            question: 'Comment exprimer « permis de conduire OU (identité + domicile) » ?',
-            options: [
-              {
-                text: 'Avec credential_sets : options = [[permis], [identite, domicile]]',
-                correct: true,
-                explanation:
-                  'Oui — chaque option est une liste d’ids de credential queries ; le wallet satisfait l’une d’elles.',
-              },
-              {
-                text: 'En envoyant deux requêtes DCQL successives',
-                explanation:
-                  'Non — les alternatives s’expriment dans UNE requête ; le wallet choisit en une passe, avec l’utilisateur.',
-              },
-              {
-                text: 'Ce n’est pas exprimable en DCQL',
-                explanation: 'Si — c’est exactement le rôle de credential_sets (§6).',
-              },
-            ],
-          },
-        ]}
+        questions={quizBank['oid4vp/dcql/langage-requete']!}
       />
     </div>
   )

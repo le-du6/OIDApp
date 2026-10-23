@@ -14,10 +14,12 @@ const verdictClass = {
 
 export function CompareTable({
   caption,
+  rowHeading = 'Critère',
   columns,
   rows,
 }: {
   caption: string
+  rowHeading?: string
   columns: string[]
   rows: { label: string; cells: CompareCell[] }[]
 }) {
@@ -29,7 +31,9 @@ export function CompareTable({
         </caption>
         <thead>
           <tr className="border-b border-line">
-            <th className="p-2.5 text-left text-xs font-semibold text-muted" scope="col"></th>
+            <th className="p-2.5 text-left text-xs font-semibold text-muted" scope="col">
+              {rowHeading}
+            </th>
             {columns.map((c) => (
               <th key={c} className="p-2.5 text-left text-xs font-semibold" scope="col">
                 {c}

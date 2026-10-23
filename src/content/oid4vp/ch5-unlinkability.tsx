@@ -1,4 +1,4 @@
-import { Term } from '../../components/content/Term'
+import { quizBank } from '../../data/quiz-bank'
 import { Callout } from '../../components/content/Callout'
 import { Quiz } from '../../components/content/Quiz'
 import { CompareTable } from '../../components/content/CompareTable'
@@ -11,31 +11,24 @@ export default function VpCh5() {
   return (
     <div className="lesson-prose">
       <p>
-        Dernier étage de l'exigence vie privée : au-delà de « l'émetteur ne voit rien » (chapitre 0
-        d'OID4VCI) et de « je ne révèle que le nécessaire » (divulgation sélective), il y a l'
-        <Term id="unlinkability" /> — deux présentations d'une même personne ne devraient pas être{' '}
-        <em>corrélables</em>, ni par des Verifiers qui coopèrent, ni par un Verifier au fil du temps
-        (au-delà de ce que les claims révélés impliquent).
+        La divulgation sélective limite ce qui est transmis. L'unlinkability vise une autre
+        propriété : empêcher de relier plusieurs présentations au-delà de ce que les attributs
+        révélés permettent déjà. Les deux propriétés ne se déduisent pas l'une de l'autre.
       </p>
 
       <h2>Les ennemis concrets de l'unlinkability</h2>
       <p>
-        Présenter deux fois <em>le même</em> credential, c'est présenter deux fois la même{' '}
-        <strong>signature</strong> de l'Issuer et les mêmes <strong>digests salés</strong> — deux
-        identifiants uniques de fait, corrélables entre Verifiers sans lire un seul claim. Les
-        parades sont connues et pratiquées : émission <strong>par lots</strong> de credentials au
-        contenu identique mais aux sels et signatures distincts (batch issuance — la Credential
-        Request d'OID4VCI accepte plusieurs proofs pour cela), usage limité voire unique de chaque
-        exemplaire, rotation.
+        Un credential réutilisé expose les mêmes signatures et digests. Une clé publique stable, un
+        timestamp d'émission très précis, un identifiant de statut ou une combinaison rare de claims
+        peuvent aussi relier des présentations. Corréler deux traces ne signifie pas toujours
+        identifier civilement une personne : cela dépend des connaissances de l'observateur.
       </p>
       <Callout kind="security" title="L'état honnête du sujet">
         <p>
-          Le batch issuance traite la corrélation entre Verifiers « ordinaires ». Face à un
-          adversaire qui serait à la fois émetteur et vérificateur (collusion Issuer-Verifier), les
-          signatures classiques gardent des surfaces de corrélation — c'est l'argument des schémas à
-          preuves à divulgation nulle (BBS+, ZK-SNARKs sur ECDSA), encore en cours de maturation
-          pour ces écosystèmes. Le cours s'arrête à l'état de l'art déployé ; sachez où est la
-          frontière.
+          L'émission de plusieurs exemplaires peut réduire certaines corrélations si les sels, clés,
+          horodatages et usages sont convenablement gérés. Elle ne suffit pas à garantir
+          l'unlinkability, notamment face à l'Issuer qui connaît les objets qu'il a émis. Un nonce
+          renouvelé ne masque aucun autre identifiant stable.
         </p>
       </Callout>
 
@@ -47,54 +40,66 @@ export default function VpCh5() {
 
       <CompareTable
         caption="Fédération (OIDC) vs triangle wallet (OID4VCI/VP)"
-        columns={['Axe', 'Fédération (IdP central)', 'Wallet (triangle)']}
+        columns={['Fédération (IdP central)', 'Wallet (triangle)']}
         rows={[
           {
             label: 'Qui est en ligne à chaque usage',
             cells: [
-              { content: 'L’IdP, à CHAQUE connexion', verdict: 'bad' },
-              { content: 'Wallet + Verifier seulement — l’Issuer jamais', verdict: 'good' },
+              { content: 'L’OP lors d’une nouvelle authentification ; session locale ensuite' },
+              { content: 'Wallet et Verifier ; clés/statut peuvent nécessiter un accès réseau' },
             ],
           },
           {
             label: 'Ce que l’émetteur d’identité apprend',
             cells: [
-              { content: 'Où, quand, à quelle fréquence vous vous connectez', verdict: 'bad' },
-              { content: 'Rien : il ne voit aucune présentation', verdict: 'good' },
+              {
+                content:
+                  'Les nouvelles authentifications qu’il traite, pas toutes les actions du RP',
+              },
+              {
+                content:
+                  'Pas d’appel imposé pour chaque présentation ; statut et collusion à considérer',
+              },
             ],
           },
           {
             label: 'Granularité de la divulgation',
             cells: [
-              { content: 'Paquets de claims par scope, définis côté IdP', verdict: 'mid' },
-              { content: 'Au claim près, consenti à chaque présentation', verdict: 'good' },
+              { content: 'Scopes et demandes individuelles par claims (Core §5.5)' },
+              { content: 'Sélection parmi les claims rendus divulgables par le format' },
             ],
           },
           {
             label: 'Liaison au porteur',
             cells: [
-              { content: 'Session/cookies + (rarement) DPoP', verdict: 'mid' },
-              { content: 'Clé dans le wallet + KB-JWT à chaque présentation', verdict: 'good' },
+              { content: 'Session du RP ; DPoP lie les access tokens lorsqu’il est utilisé' },
+              { content: 'Preuve de détenteur selon format et demande ; KB-JWT pour SD-JWT' },
             ],
           },
           {
             label: 'Révocation / fraîcheur',
             cells: [
-              { content: 'Immédiate — l’IdP est dans la boucle', verdict: 'good' },
-              { content: 'Listes de statut, durées courtes : plus difficile', verdict: 'mid' },
+              { content: 'Tokens, sessions locales et caches ont des durées distinctes' },
+              { content: 'Listes de statut, durées courtes : plus difficile' },
             ],
           },
           {
             label: 'Disponibilité',
             cells: [
-              { content: 'IdP en panne = plus personne ne se connecte', verdict: 'bad' },
-              { content: 'Présentation possible hors ligne (mdoc, NFC/BLE)', verdict: 'good' },
+              {
+                content:
+                  'Une panne empêche de nouvelles authentifications, pas forcément les sessions',
+              },
+              {
+                content:
+                  'mdoc de proximité peut fonctionner hors ligne ; pas ce parcours OID4VP HTTP',
+              },
             ],
           },
           {
             label: 'Charge de sécurité',
             cells: [
-              { content: 'Concentrée sur l’IdP (cible unique, très défendue)', verdict: 'mid' },
+              { content: 'Concentrée sur l’IdP (cible unique, très défendue)' },
               {
                 content: 'Déplacée vers des millions de wallets (WSCD, attestation)',
                 verdict: 'mid',
@@ -104,91 +109,23 @@ export default function VpCh5() {
           {
             label: 'Maturité opérationnelle',
             cells: [
-              { content: 'Vingt ans de production', verdict: 'good' },
-              { content: 'Déploiements en cours (EUDI : specs finales 2025)', verdict: 'mid' },
+              { content: 'Vingt ans de production' },
+              { content: 'Déploiements en cours (EUDI : specs finales 2025)' },
             ],
           },
         ]}
       />
 
       <p>
-        Lecture honnête du tableau : le wallet gagne sur la vie privée et la traçabilité —{' '}
-        <em>par construction</em>, pas par promesse. Il paie en complexité de révocation, en
-        dépendance à la sécurité des terminaux, en jeunesse opérationnelle. La fédération n'est pas
-        « battue » : elle reste parfaitement adaptée là où l'IdP et le service relèvent du même
-        périmètre de confiance. Le triangle s'impose là où l'utilisateur, l'émetteur et le
-        vérificateur sont trois mondes distincts — l'identité régalienne en est le cas d'école.
+        Le choix dépend du contexte : sessions et gouvernance d'un domaine pour la fédération ;
+        réutilisation de credentials entre acteurs distincts pour les wallets. Dans les deux cas,
+        minimisation, statut, confiance et sécurité du terminal demandent une politique explicite.
+        La couleur d'un tableau ne doit pas remplacer ces hypothèses.
       </p>
 
       <Quiz
         quizId="oid4vp/unlinkability/federation-vs-wallet"
-        questions={[
-          {
-            id: 'q1',
-            question: 'Qu’est-ce qui rend deux présentations du MÊME credential corrélables ?',
-            options: [
-              {
-                text: 'Le nonce du Verifier, identique',
-                explanation:
-                  'Non — le nonce change à chaque transaction : c’est le Verifier qui le choisit.',
-              },
-              {
-                text: 'La signature de l’Issuer et les digests salés, identiques d’une présentation à l’autre',
-                correct: true,
-                explanation:
-                  'Oui — des octets uniques et stables valent identifiant, même sans lire un claim. D’où le batch issuance et la rotation.',
-              },
-              {
-                text: 'Le KB-JWT, réutilisé',
-                explanation:
-                  'Non — le KB-JWT est resigné à chaque présentation (nonce frais). Ce sont les parties STABLES qui corrèlent.',
-              },
-            ],
-          },
-          {
-            id: 'q2',
-            question: 'Quelle est la parade déployée aujourd’hui ?',
-            options: [
-              {
-                text: 'Chiffrer le credential',
-                explanation:
-                  'Non — chiffrer ne change pas la stabilité des artefacts entre présentations aux Verifiers.',
-              },
-              {
-                text: 'L’émission par lots : plusieurs exemplaires aux sels/signatures distincts, à usage limité',
-                correct: true,
-                explanation:
-                  'Oui — chaque présentation consomme un exemplaire « frais ». La Credential Request d’OID4VCI (proofs multiples) est prévue pour ça.',
-              },
-              {
-                text: 'Interdire les présentations répétées',
-                explanation:
-                  'Non — impraticable, et ce n’est pas ce que font les écosystèmes réels.',
-              },
-            ],
-          },
-          {
-            id: 'q3',
-            question: 'Sur quel axe la fédération garde-t-elle l’avantage ?',
-            options: [
-              {
-                text: 'La vie privée vis-à-vis de l’émetteur',
-                explanation: 'Non — c’est l’axe où le triangle gagne par construction.',
-              },
-              {
-                text: 'La révocation immédiate et la fraîcheur, l’IdP étant dans la boucle de chaque usage',
-                correct: true,
-                explanation:
-                  'Oui — le prix du découplage : sans émetteur en ligne, la révocation demande listes de statut et durées courtes. Chaque architecture paie ses propriétés.',
-              },
-              {
-                text: 'La divulgation sélective',
-                explanation:
-                  'Non — les scopes de la fédération sont plus grossiers que la sélection par claim.',
-              },
-            ],
-          },
-        ]}
+        questions={quizBank['oid4vp/unlinkability/federation-vs-wallet']!}
       />
     </div>
   )

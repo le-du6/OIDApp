@@ -4,7 +4,12 @@
   "description": "Le même Authorization Code Flow qu'en OAuth 2.0, mais avec scope=openid : l'OpenID Provider émet en plus un ID Token — un JWT signé qui prouve QUI s'est authentifié, et quand. L'app « PhotoPrint » (Relying Party) veut connecter l'utilisateur, pas seulement accéder à une API.",
   "specRefs": ["OIDC Core 1.0 §3.1", "OIDC Core §2", "OIDC Core §5.3"],
   "actors": [
-    { "id": "user", "name": "End-User", "role": "user", "alias": "= vous (Resource Owner)" },
+    {
+      "id": "user",
+      "name": "End-User",
+      "role": "user",
+      "alias": "= vous (Resource Owner)"
+    },
     {
       "id": "browser",
       "name": "User-Agent",
@@ -120,7 +125,7 @@
         "channel": "front",
         "request": {
           "method": "POST",
-          "url": "https://op.example/authorize (consentement)"
+          "url": "https://op.example/authorize"
         },
         "response": {
           "status": 302,
@@ -128,7 +133,9 @@
           "headers": {
             "Location": "https://photoprint.example/callback?code=SplxlOBeZQQYbYS6WxSbIA&state=af0ifjsldkj"
           }
-        }
+        },
+        "responseOnly": true,
+        "note": "Réponse du serveur à une requête précédente ; la flèche montre ici uniquement le retour."
       },
       "tokens": [
         {
@@ -143,6 +150,33 @@
         "level": "warning",
         "note": "Le RP vérifie state == valeur de session AVANT d'échanger le code (anti-CSRF, chapitre 5). Sans cette vérification, tout le flow reste vulnérable, ID Token ou pas.",
         "specRef": "OIDC Core §3.1.2.7"
+      }
+    },
+    {
+      "id": "browser-callback",
+      "from": "browser",
+      "to": "rp",
+      "label": "GET /callback?code=…&state=…",
+      "kind": "http",
+      "summary": "Le navigateur suit le Location du 302. Le RP reçoit le code, compare state à la session et retrouve la transaction avant de contacter le token endpoint.",
+      "request": {
+        "channel": "front",
+        "request": {
+          "method": "GET",
+          "url": "https://photoprint.example/callback",
+          "params": [
+            {
+              "name": "code",
+              "value": "SplxlOBeZQQYbYS6WxSbIA",
+              "description": "Code émis par l’OP, transporté par le navigateur."
+            },
+            {
+              "name": "state",
+              "value": "af0ifjsldkj",
+              "description": "Valeur attendue dans la session du RP."
+            }
+          ]
+        }
       }
     },
     {
@@ -163,7 +197,7 @@
           },
           "body": {
             "type": "form",
-            "content": "grant_type=authorization_code&code=SplxlOBeZQQYbYS6WxSbIA&redirect_uri=https%3A%2F%2Fphotoprint.example%2Fcallback",
+            "content": "grant_type=authorization_code&code=SplxlOBeZQQYbYS6WxSbIA",
             "params": [
               {
                 "name": "grant_type",
@@ -177,16 +211,21 @@
                 "description": "Le code du callback, à usage unique.",
                 "specRef": "RFC 6749 §4.1.3"
               }
-            ]
+            ],
+            "representation": "wire"
           }
         },
         "response": {
           "status": 200,
           "statusText": "OK",
-          "headers": { "Content-Type": "application/json", "Cache-Control": "no-store" },
+          "headers": {
+            "Content-Type": "application/json",
+            "Cache-Control": "no-store"
+          },
           "body": {
             "type": "json",
-            "content": "{\n  \"access_token\": \"SlAV32hkKG\",\n  \"token_type\": \"Bearer\",\n  \"expires_in\": 3600,\n  \"id_token\": \"eyJhbGciOiJFUzI1NiIsInR5cCI6IkpXVCIsImtpZCI6Im9wLTIwMjYtMDEifQ.eyJhdXRoX3RpbWUiOjE3NjcyMjU1ODAsIm5vbmNlIjoibi0wUzZfV3pBMk1qIiwiYXRfaGFzaCI6InJYSDdRV1ZUWm5YWUNvdV82VmRwZmciLCJlbWFpbCI6InVzZXJAbWFpbC5leGFtcGxlIiwiZW1haWxfdmVyaWZpZWQiOnRydWUsImlzcyI6Imh0dHBzOi8vb3AuZXhhbXBsZSIsInN1YiI6InVzZXItOGIyYzkxIiwiYXVkIjoid2ViLWFwcCIsImlhdCI6MTc2NzIyNTYwMCwiZXhwIjoxNzY3MjI5MjAwfQ.QTmRvNUgt0gRk1sSIDyr-Q_-5D8XKhzHWpiQOhTvaOeVGMlwiHIk201bUo_MoMdihh-SwaAS9GXQSVrDTS_EVg\"\n}"
+            "content": "{\n  \"access_token\": \"SlAV32hkKG\",\n  \"token_type\": \"Bearer\",\n  \"expires_in\": 3600,\n  \"id_token\": \"eyJhbGciOiJFUzI1NiIsInR5cCI6IkpXVCIsImtpZCI6Im9wLTIwMjYtMDEifQ.eyJhdXRoX3RpbWUiOjE3NjcyMjU1ODAsIm5vbmNlIjoibi0wUzZfV3pBMk1qIiwiYXRfaGFzaCI6InJYSDdRV1ZUWm5YWUNvdV82VmRwZmciLCJlbWFpbCI6InVzZXJAbWFpbC5leGFtcGxlIiwiZW1haWxfdmVyaWZpZWQiOnRydWUsImlzcyI6Imh0dHBzOi8vb3AuZXhhbXBsZSIsInN1YiI6InVzZXItOGIyYzkxIiwiYXVkIjoid2ViLWFwcCIsImlhdCI6MTc2NzIyNTYwMCwiZXhwIjoxNzY3MjI5MjAwfQ.QTmRvNUgt0gRk1sSIDyr-Q_-5D8XKhzHWpiQOhTvaOeVGMlwiHIk201bUo_MoMdihh-SwaAS9GXQSVrDTS_EVg\"\n}",
+            "representation": "wire"
           }
         }
       },
@@ -217,7 +256,7 @@
       "from": "rp",
       "to": "rp",
       "kind": "internal",
-      "label": "Valide l'ID Token (13 contrôles, §3.1.3.7)",
+      "label": "Valide l’ID Token selon les conditions de Core",
       "summary": "Étape invisible mais CENTRALE : le RP ne fait confiance à l'ID Token qu'après l'avoir validé — signature (via JWKS), iss exact, aud contient client_id, exp non dépassé, nonce == celui envoyé, at_hash cohérent avec l'access token. Détail jouable dans la leçon « validation ».",
       "security": {
         "level": "danger",
@@ -237,15 +276,20 @@
         "request": {
           "method": "GET",
           "url": "https://op.example/userinfo",
-          "headers": { "Authorization": "Bearer SlAV32hkKG" }
+          "headers": {
+            "Authorization": "Bearer SlAV32hkKG"
+          }
         },
         "response": {
           "status": 200,
           "statusText": "OK",
-          "headers": { "Content-Type": "application/json" },
+          "headers": {
+            "Content-Type": "application/json"
+          },
           "body": {
             "type": "json",
-            "content": "{\n  \"sub\": \"user-8b2c91\",\n  \"email\": \"user@mail.example\",\n  \"email_verified\": true\n}"
+            "content": "{\n  \"sub\": \"user-8b2c91\",\n  \"email\": \"user@mail.example\",\n  \"email_verified\": true\n}",
+            "representation": "wire"
           }
         }
       },

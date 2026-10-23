@@ -1,3 +1,4 @@
+import { quizBank } from '../../data/quiz-bank'
 import { Link } from '@tanstack/react-router'
 import { Term } from '../../components/content/Term'
 import { Callout } from '../../components/content/Callout'
@@ -13,25 +14,27 @@ export default function VpCh3() {
   return (
     <div className="lesson-prose">
       <p>
-        La Phase 3 a montré la mécanique côté émission : des digests salés dans <code>_sd</code>,
-        des <Term id="disclosure">disclosures</Term> à côté. Voici le moment où elle paie : à la
-        présentation, le wallet n'envoie <strong>que les disclosures consenties</strong>. Notre
-        fixture le fait pour de vrai — regardez ce qui part et ce qui reste :
+        le module OID4VCI a montré la mécanique côté émission : des digests salés dans{' '}
+        <code>_sd</code>, des <Term id="disclosure">disclosures</Term> à côté. Voici le moment où
+        elle paie : à la présentation, le wallet n'envoie{' '}
+        <strong>que les disclosures consenties</strong>. Notre fixture le fait pour de vrai —
+        regardez ce qui part et ce qui reste :
       </p>
 
       <CompareTable
         caption="La présentation de la fixture : 2 claims révélés, 1 retenu"
-        columns={['Claim', 'Décision', 'Ce que le Verifier peut en savoir']}
+        rowHeading="Claim"
+        columns={['Valeur transmise', 'Décision', 'Contrôle du Verifier']}
         rows={VP_DISCLOSURES.map((d) => ({
           label: d.name,
           cells: [
             { content: d.revealed ? String(d.value) : '(valeur non transmise)' },
             d.revealed
-              ? { content: 'Révélé — disclosure jointe', verdict: 'good' as const }
-              : { content: 'RETENU — disclosure absente', verdict: 'mid' as const },
+              ? { content: 'Révélé — disclosure jointe' }
+              : { content: 'RETENU — disclosure absente' },
             d.revealed
-              ? { content: 'Vérifie : digest(disclosure) ∈ _sd ✓' }
-              : { content: 'Un digest salé dans _sd — rien d’exploitable' },
+              ? { content: 'Vérifie : digest(disclosure) présent dans _sd' }
+              : { content: 'Valeur cachée, mais digest stable potentiellement corrélable' },
           ],
         }))}
       />
@@ -45,7 +48,7 @@ export default function VpCh3() {
       </p>
       <Callout kind="note" title="À manipuler, vraiment">
         <p>
-          La section « 🎭 Divulgation sélective » du{' '}
+          La section « Divulgation sélective » du{' '}
           <Link to="/labo-crypto" className="text-accent underline underline-offset-2">
             Crypto Lab
           </Link>{' '}
@@ -68,73 +71,7 @@ export default function VpCh3() {
 
       <Quiz
         quizId="oid4vp/divulgation-selective/choisir-ses-claims"
-        questions={[
-          {
-            id: 'q1',
-            question: 'Pourquoi retirer une disclosure ne casse-t-il pas la signature ?',
-            options: [
-              {
-                text: 'Parce que le Verifier re-signe la présentation',
-                explanation:
-                  'Non — le Verifier ne signe rien : il vérifie. La raison est structurelle.',
-              },
-              {
-                text: 'Parce que l’Issuer n’a signé que les digests (_sd) : la sélection ne touche pas au JWT signé',
-                correct: true,
-                explanation:
-                  'Oui — les disclosures voyagent HORS du jeton signé. Les retenir ou les joindre ne modifie pas ce que la signature couvre.',
-              },
-              {
-                text: 'Parce que la signature est recalculée par le wallet',
-                explanation:
-                  'Non — le wallet ne peut pas signer à la place de l’Issuer ; il n’en a pas la clé. Et il n’en a pas besoin.',
-              },
-            ],
-          },
-          {
-            id: 'q2',
-            question: 'Que peut déduire le Verifier du digest de family_name (claim retenu) ?',
-            options: [
-              {
-                text: 'La valeur, par force brute sur les noms courants',
-                explanation:
-                  'Non — c’est exactement ce que le SEL empêche : sans lui, tester « Martin » serait trivial. Avec : le digest est imprévisible.',
-              },
-              {
-                text: 'Rien d’exploitable : le sel rend le digest imprévisible',
-                correct: true,
-                explanation:
-                  'Oui — un digest salé non révélé est muet. (La PRÉSENCE d’un claim caché, elle, peut se voir — d’où les réflexions du chapitre unlinkability.)',
-              },
-              {
-                text: 'Le type du claim, via le registre IANA',
-                explanation:
-                  'Non — le digest couvre [salt, nom, valeur] en bloc : même le NOM du claim retenu n’est pas lisible.',
-              },
-            ],
-          },
-          {
-            id: 'q3',
-            question: 'Contre quoi la divulgation sélective ne protège-t-elle PAS ?',
-            options: [
-              {
-                text: 'Contre la lecture des claims non révélés',
-                explanation: 'Si — c’est précisément ce qu’elle protège.',
-              },
-              {
-                text: 'Contre un Verifier qui exige trop de claims — le problème devient la proportionnalité de la demande',
-                correct: true,
-                explanation:
-                  'Oui — révélé = révélé. La minimisation technique doit s’accompagner d’un cadrage des demandes (gouvernance, chapitre 1) et du jugement de l’utilisateur.',
-              },
-              {
-                text: 'Contre la falsification des claims révélés',
-                explanation:
-                  'Non, elle protège aussi cela — indirectement : un claim modifié ne matche plus son digest dans _sd, signé par l’Issuer.',
-              },
-            ],
-          },
-        ]}
+        questions={quizBank['oid4vp/divulgation-selective/choisir-ses-claims']!}
       />
     </div>
   )

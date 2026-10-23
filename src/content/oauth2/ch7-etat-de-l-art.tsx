@@ -1,3 +1,4 @@
+import { quizBank } from '../../data/quiz-bank'
 import { Link } from '@tanstack/react-router'
 import { Term } from '../../components/content/Term'
 import { Callout } from '../../components/content/Callout'
@@ -17,21 +18,18 @@ export default function Ch7EtatDeLArt() {
 
       <h2>RFC 9700 — le Security BCP : la mémoire des leçons</h2>
       <p>
-        Le <Term id="security-bcp" /> (janvier 2025) consolide vingt ans d'incidents en obligations.
-        Vous en avez appliqué l'essentiel : <Term id="pkce" /> pour tous les clients,{' '}
-        <Term id="redirect-uri" /> en correspondance exacte, mort d'
-        <Term id="implicit-grant">implicit</Term> et de <Term id="ropc" />, tokens{' '}
-        <Term id="dpop">sender-constrained</Term> recommandés, <Term id="iss-response" /> contre le
-        mix-up. Le BCP est le document à citer quand on vous demande « pourquoi cette contrainte ?
-        ».
+        Le <Term id="security-bcp" /> (RFC 9700, janvier 2025) actualise la sécurité OAuth : PKCE
+        requis pour les clients publics et recommandé pour les confidentiels, correspondance exacte
+        des redirect_uri avec l'exception des ports loopback des apps natives, défense contre le
+        mix-up, Implicit déconseillé et ROPC interdit. Les obligations gardent leur contexte.
       </p>
 
       <h2>OAuth 2.1 — le nettoyage</h2>
       <p>
-        <Term id="oauth21" /> n'invente rien : il fige RFC 6749 + le BCP en un seul document, et{' '}
-        <em>retire</em> ce qui est mort. Disparus : implicit, ROPC, le bearer token en query string.
-        Obligatoires : PKCE partout, exact matching des redirect_uri. Migrer vers OAuth 2.1, c'est
-        surtout supprimer du code dangereux.
+        <Term id="oauth21" /> reste un Internet-Draft, ici version 16 (septembre 2026). Il consolide
+        le cadre et certaines pratiques modernes ; il ne faut pas attribuer toutes ses formulations
+        à RFC 9700. Le cours prend OAuth 2.0 et le BCP comme base normative, et présente 2.1 comme
+        évolution.
       </p>
 
       <h2>PAR, JAR, RAR — durcir la requête elle-même</h2>
@@ -76,11 +74,11 @@ export default function Ch7EtatDeLArt() {
         </Link>
         .
       </p>
-      <Callout kind="security" title="La suite : OIDC (Phase 2)">
+      <Callout kind="security" title="La suite : OIDC (OIDC)">
         <p>
           OAuth 2.0 fait de la <em>délégation d'autorisation</em>. Il ne dit toujours pas « qui est
           l'utilisateur » — et « se connecter avec un access token » est un anti-pattern qu'OpenID
-          Connect existe précisément pour corriger. C'est le point de départ de la Phase 2 :{' '}
+          Connect existe précisément pour corriger. C'est le point de départ du module OIDC :{' '}
           <Term id="jwt">ID Token</Term>, validation de signature (JWKS, <code>kid</code>),{' '}
           Discovery, et <code>nonce</code> vs <Term id="state" />.
         </p>
@@ -88,93 +86,7 @@ export default function Ch7EtatDeLArt() {
 
       <Quiz
         quizId="oauth2/etat-de-l-art/bcp-oauth21"
-        questions={[
-          {
-            id: 'q1',
-            question: 'Qu’est-ce qu’OAuth 2.1 apporte de vraiment nouveau ?',
-            options: [
-              {
-                text: 'De nouveaux grants plus sûrs',
-                explanation:
-                  'Non — OAuth 2.1 n’ajoute pas de grant : il en RETIRE (implicit, ROPC) et consolide le BCP.',
-              },
-              {
-                text: 'Rien de neuf : il consolide RFC 6749 + le BCP et supprime ce qui est déprécié',
-                correct: true,
-                explanation:
-                  'Exactement — c’est un travail de nettoyage et de cohérence, pas d’invention. PKCE obligatoire, exact matching, fin d’implicit/ROPC.',
-              },
-              {
-                text: 'Le remplacement des JWT par un format propriétaire',
-                explanation: 'Non — les JWT restent le format structuré de référence.',
-              },
-            ],
-          },
-          {
-            id: 'q2',
-            question: 'PAR (RFC 9126) répond à quel problème du front channel ?',
-            options: [
-              {
-                text: 'Le vol de bearer token',
-                explanation: 'Non — ça, c’est DPoP/mTLS.',
-              },
-              {
-                text: 'La manipulation des paramètres de l’authorization request dans le navigateur',
-                correct: true,
-                explanation:
-                  'Oui — en poussant les paramètres en back channel, PAR ne laisse qu’une référence opaque dans l’URL : plus rien à falsifier.',
-              },
-              {
-                text: 'L’expiration trop rapide des access tokens',
-                explanation: 'Non — PAR ne touche pas au cycle de vie des tokens.',
-              },
-            ],
-          },
-          {
-            id: 'q3',
-            question: 'Quel est l’apport de RAR (RFC 9396) face aux scopes classiques ?',
-            options: [
-              {
-                text: 'Des scopes plus courts',
-                explanation:
-                  'Non — RAR ne raccourcit pas les scopes, il les remplace par une structure riche.',
-              },
-              {
-                text: 'Un consentement structuré et précis (« virement de 50 € vers IBAN X ») plutôt qu’un scope grossier',
-                correct: true,
-                explanation:
-                  'Oui — authorization_details en JSON : le consentement décrit l’action exacte. Socle des usages FAPI / banque ouverte.',
-              },
-              {
-                text: 'Le chiffrement du token',
-                explanation:
-                  'Non — RAR concerne la granularité de l’autorisation, pas la protection du token.',
-              },
-            ],
-          },
-          {
-            id: 'q4',
-            question: 'Le Security BCP (RFC 9700) est avant tout…',
-            options: [
-              {
-                text: 'Un nouveau protocole concurrent d’OAuth2',
-                explanation:
-                  'Non — c’est un document de bonnes pratiques POUR OAuth 2.0, pas un remplaçant.',
-              },
-              {
-                text: 'La consolidation en obligations des leçons tirées des attaques réelles',
-                correct: true,
-                explanation:
-                  'Oui — chaque « DOIT » du BCP referme une classe d’attaque documentée. C’est la mémoire opérationnelle du protocole.',
-              },
-              {
-                text: 'Une spec réservée au secteur bancaire',
-                explanation:
-                  'Non — le secteur bancaire a SES profils (FAPI), mais le BCP s’applique à tout déploiement OAuth2.',
-              },
-            ],
-          },
-        ]}
+        questions={quizBank['oauth2/etat-de-l-art/bcp-oauth21']!}
       />
     </div>
   )

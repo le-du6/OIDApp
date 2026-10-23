@@ -41,18 +41,31 @@ export const httpParamSchema = z.object({
   description: z.string().optional(),
   /** Référence normative, ex. « RFC 6749 §4.1.1 ». */
   specRef: z.string().optional(),
+  guide: z
+    .object({
+      type: z.string().optional(),
+      producer: z.string().optional(),
+      recipient: z.string().optional(),
+      origin: z.string().optional(),
+      check: z.string().optional(),
+      requirement: z.string().optional(),
+      sensitivity: z.string().optional(),
+      retention: z.string().optional(),
+    })
+    .optional(),
 })
 export type HttpParam = z.infer<typeof httpParamSchema>
 
 export const httpBodySchema = z.object({
   type: z.enum(['form', 'json', 'html', 'text']),
+  representation: z.enum(['wire', 'decoded', 'excerpt']).optional(),
   content: z.string(),
   /** Body de type form/query décomposé en paramètres annotés. */
   params: z.array(httpParamSchema).optional(),
 })
 
 export const httpRequestSchema = z.object({
-  method: z.enum(['GET', 'POST', 'PUT', 'DELETE', 'PATCH', 'HEAD', 'OPTIONS']),
+  method: z.enum(['GET', 'POST', 'PUT', 'DELETE', 'PATCH', 'HEAD', 'OPTIONS', 'INVOKE']),
   /** URL sans query string (les paramètres sont listés dans `params`). */
   url: z.string(),
   params: z.array(httpParamSchema).optional(),
@@ -71,10 +84,12 @@ export const httpResponseSchema = z.object({
  * Échange HTTP complet affiché quand on clique sur une flèche du diagramme.
  * `channel` est LA notion structurante du module OAuth2 :
  * front channel = transite par le navigateur (observable, manipulable),
- * back channel = serveur à serveur (TLS, authentifié).
+ * back channel = appel direct ; type de client et authentification explicités séparément.
  */
 export const httpExchangeSchema = z.object({
   channel: z.enum(['front', 'back']),
+  note: z.string().optional(),
+  responseOnly: z.boolean().optional(),
   request: httpRequestSchema,
   response: httpResponseSchema.optional(),
 })

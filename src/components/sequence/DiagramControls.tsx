@@ -1,5 +1,14 @@
 import type { Dispatch } from 'react'
 import type { SequencerAction, SequencerState } from '../../engine/sequencer'
+import {
+  faBackwardStep,
+  faChevronLeft,
+  faChevronRight,
+  faGaugeHigh,
+  faPause,
+  faPlay,
+} from '@fortawesome/free-solid-svg-icons'
+import { AppIcon } from '../ui/AppIcon'
 
 const speeds = [0.5, 1, 2] as const
 
@@ -21,7 +30,7 @@ export function DiagramControls({
         onClick={() => dispatch({ type: 'reset' })}
         aria-label="Revenir au début"
       >
-        ⏮
+        <AppIcon icon={faBackwardStep} className="size-3.5" />
       </button>
       <button
         type="button"
@@ -30,7 +39,7 @@ export function DiagramControls({
         disabled={state.stepIndex <= -1}
         aria-label="Étape précédente"
       >
-        ←
+        <AppIcon icon={faChevronLeft} className="size-3.5" />
       </button>
       <button
         type="button"
@@ -38,7 +47,8 @@ export function DiagramControls({
         onClick={() => dispatch({ type: 'toggle' })}
         aria-label={state.playing ? 'Pause' : 'Lecture'}
       >
-        {state.playing ? '⏸ Pause' : '▶ Lecture'}
+        <AppIcon icon={state.playing ? faPause : faPlay} className="mr-2 inline size-3.5" />
+        {state.playing ? 'Pause' : 'Lecture'}
       </button>
       <button
         type="button"
@@ -47,12 +57,13 @@ export function DiagramControls({
         disabled={state.stepIndex >= state.stepCount - 1}
         aria-label="Étape suivante"
       >
-        →
+        <AppIcon icon={faChevronRight} className="size-3.5" />
       </button>
       <span className="ml-2 text-sm text-muted tabular-nums" aria-live="polite">
         {state.stepIndex + 1} / {state.stepCount}
       </span>
       <div className="ml-auto flex items-center gap-1" role="group" aria-label="Vitesse de lecture">
+        <AppIcon icon={faGaugeHigh} tone="muted" className="mr-1 size-3.5" />
         {speeds.map((s) => (
           <button
             key={s}

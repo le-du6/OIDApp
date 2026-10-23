@@ -1,11 +1,21 @@
 {
   "id": "oid4vci/triangle",
   "title": "Le triangle Issuer · Holder (Wallet) · Verifier",
-  "description": "Le changement de paradigme : l'émission (une fois) et la présentation (autant de fois qu'on veut) sont DÉCOUPLÉES. L'Issuer signe un credential remis au Wallet ; plus tard, le Wallet le présente à un Verifier — sans que l'Issuer ne soit contacté, ni même informé.",
+  "description": "Émission et présentation sont découplées. Ici les clés sont connues et la présentation ne contacte pas l’Issuer. Des accès au statut, la résolution de clés ou la collusion peuvent néanmoins révéler les usages.",
   "specRefs": ["OID4VCI 1.0 (Final) §3", "eIDAS 2.0 (Règlement UE 2024/1183)"],
   "actors": [
-    { "id": "user", "name": "Holder", "role": "user", "alias": "= vous (détenteur)" },
-    { "id": "wallet", "name": "Wallet", "role": "wallet", "alias": "= votre app portefeuille" },
+    {
+      "id": "user",
+      "name": "Holder",
+      "role": "user",
+      "alias": "= vous (détenteur)"
+    },
+    {
+      "id": "wallet",
+      "name": "Wallet",
+      "role": "wallet",
+      "alias": "= votre app portefeuille"
+    },
     {
       "id": "issuer",
       "name": "Credential Issuer",
@@ -26,7 +36,7 @@
       "to": "wallet",
       "kind": "user-action",
       "label": "Demande son attestation d'identité",
-      "summary": "Phase d'ÉMISSION — elle n'a lieu qu'une fois (ou au renouvellement). L'utilisateur demande à son wallet d'obtenir un credential auprès d'un émetteur."
+      "summary": "Émission — elle intervient à l’obtention ou au renouvellement. L'utilisateur demande à son wallet d'obtenir un credential auprès d'un émetteur."
     },
     {
       "id": "issue",
@@ -55,7 +65,7 @@
       "to": "wallet",
       "kind": "http",
       "label": "Des semaines plus tard : demande de présentation",
-      "summary": "Phase de PRÉSENTATION (protocole OID4VP — Phase 4). Un Verifier — un site, un guichet — demande une preuve : « avez-vous plus de 18 ans ? », « votre nom ? »."
+      "summary": "Présentation (OID4VP). Un Verifier — un site, un guichet — demande une preuve : « avez-vous plus de 18 ans ? », « votre nom ? »."
     },
     {
       "id": "consent",
@@ -66,7 +76,7 @@
       "summary": "La divulgation sélective : l'utilisateur montre sa date de naissance SANS son adresse, par exemple. Mécanique SD-JWT au chapitre formats.",
       "security": {
         "level": "info",
-        "note": "Le consentement est par présentation ET par claim — granularité impossible dans le modèle fédéré, où l'IdP renvoie un paquet de claims défini par scope."
+        "note": "La sélection locale porte sur les disclosures disponibles. OIDC permet aussi des demandes individuelles via claims ; les mécanismes diffèrent car le credential est déjà émis."
       }
     },
     {

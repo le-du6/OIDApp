@@ -25,7 +25,7 @@ export type ModuleMeta = {
   title: string
   shortTitle: string
   description: string
-  /** Module ouvert (Phase 1) ou à venir. */
+  /** Module ouvert (OAuth 2.0) ou à venir. */
   available: boolean
   /**
    * Versions de référence des specs du module (garde-fou : les specs
@@ -101,7 +101,7 @@ export const curriculum: ModuleMeta[] = [
         lessons: [
           { id: 'csrf-state', title: 'CSRF sur le callback → state', ready: true },
           { id: 'interception-pkce', title: 'Interception du code → PKCE', ready: true },
-          { id: 'implicit-ropc', title: 'Pourquoi Implicit et ROPC sont morts', ready: true },
+          { id: 'implicit-ropc', title: 'Implicit déconseillé, ROPC interdit', ready: true },
           { id: 'bearer-dpop', title: 'Vol de bearer token → DPoP / mTLS', ready: true },
         ],
       },
@@ -137,7 +137,7 @@ export const curriculum: ModuleMeta[] = [
     shortTitle: 'OIDC',
     description:
       'La couche d’identité au-dessus d’OAuth2 : ID Token, validation de signature, Discovery, JWKS, nonce — et pourquoi « login avec un access token » est une faille.',
-    specVersions: ['OIDC Core 1.0 (errata set 2) · OIDC Discovery 1.0'],
+    specVersions: ['OIDC Core 1.0 (errata set 2) · OIDC Discovery 1.0 (errata set 2)'],
     available: true,
     phase: 2,
     chapters: [
@@ -163,7 +163,7 @@ export const curriculum: ModuleMeta[] = [
       {
         id: 'flow-complet',
         number: 2,
-        title: 'Le flow OIDC complet',
+        title: 'Le parcours OIDC Authorization Code',
         lessons: [
           {
             id: 'flow-pas-a-pas',
@@ -218,11 +218,10 @@ export const curriculum: ModuleMeta[] = [
     title: 'OID4VCI — l’émission de credentials',
     shortTitle: 'OID4VCI',
     description:
-      'Changement de paradigme : le triangle Issuer / Wallet / Verifier remplace la fédération. Credential Offer, pre-authorized code, preuve de possession de clé, SD-JWT VC et mdoc.',
+      'Changement de paradigme : le triangle Issuer / Wallet / Verifier découple émission et présentation. Credential Offer, pre-authorized code, preuve de possession de clé, SD-JWT VC et mdoc.',
     specVersions: [
-      'OID4VCI 1.0 (Final)',
-      'draft-ietf-oauth-sd-jwt-vc-13 (nov. 2025)',
-      'draft-ietf-oauth-selective-disclosure-jwt',
+      'OID4VCI 1.0 (Final, 16 septembre 2025)',
+      'SD-JWT VC draft 19 (31 août 2026) · SD-JWT RFC 9901',
       'ISO/IEC 18013-5:2021 (mdoc/mDL)',
     ],
     available: true,
@@ -307,11 +306,11 @@ export const curriculum: ModuleMeta[] = [
     title: 'OID4VP — la présentation vérifiable',
     shortTitle: 'OID4VP',
     description:
-      'La seconde moitié du triangle : demander une preuve (DCQL), choisir ce qu’on révèle (divulgation sélective), prouver qu’on est le détenteur (Key Binding JWT) — sans que l’émetteur ne voie rien.',
+      'La seconde moitié du triangle : demander une preuve (DCQL), choisir ce qu’on révèle (divulgation sélective), prouver qu’on est le détenteur (Key Binding JWT) — avec les conditions de confidentialité et de confiance explicitées.',
     specVersions: [
       'OID4VP 1.0 (Final, 9 juil. 2025)',
-      'draft-ietf-oauth-selective-disclosure-jwt (KB-JWT)',
-      'draft-ietf-oauth-sd-jwt-vc-13',
+      'RFC 9901 (KB-JWT)',
+      'SD-JWT VC draft 19 (31 août 2026)',
     ],
     available: true,
     phase: 4,

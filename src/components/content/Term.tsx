@@ -1,6 +1,8 @@
 import { useEffect, useId, useRef, useState } from 'react'
 import { getGlossaryEntry } from '../../data/glossary'
 import { actorColor } from '../../lib/actors'
+import { faBookBookmark, faTag } from '@fortawesome/free-solid-svg-icons'
+import { AppIcon } from '../ui/AppIcon'
 
 /**
  * Terme technique cliquable : popover avec définition FR, terme EN officiel,
@@ -59,10 +61,14 @@ export function Term({ id, children }: { id: string; children?: React.ReactNode 
           <span className="mt-1.5 block leading-relaxed text-ink/90">{entry.definition}</span>
           {entry.naming && (
             <span className="mt-2 block rounded border-l-2 border-warning bg-warning-soft py-1 pl-2 pr-1 text-xs leading-relaxed">
-              🏷️ {entry.naming}
+              <AppIcon icon={faTag} tone="warning" className="mr-2 inline size-3" />
+              {entry.naming}
             </span>
           )}
-          <span className="mt-2 block font-mono text-xs text-muted">📜 {entry.specRef}</span>
+          <span className="mt-2 flex items-start gap-2 font-mono text-xs text-muted">
+            <AppIcon icon={faBookBookmark} className="mt-0.5 size-3" />
+            {entry.specRef}
+          </span>
         </span>
       )}
     </span>

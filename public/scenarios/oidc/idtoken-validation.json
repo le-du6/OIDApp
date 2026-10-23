@@ -1,10 +1,15 @@
 {
   "id": "oidc/idtoken-validation",
   "title": "Valider un ID Token : JWKS → kid → clé → verify",
-  "description": "Zoom sur l'étape « validate » du flow complet. Comment le Relying Party passe d'un JWT reçu du réseau — donc a priori sans valeur — à une identité de confiance. La signature n'est qu'un des contrôles ; on les déroule dans l'ordre de la spec (§3.1.3.7).",
+  "description": "Regroupement pédagogique des contrôles de la fixture ES256. La leçon fournit les treize points conditionnels de Core §3.1.3.7 ; ce diagramme ne reproduit pas leur ordre normatif.",
   "specRefs": ["OIDC Core §3.1.3.7", "OIDC Core §3.1.3.6", "RFC 7517", "RFC 7515"],
   "actors": [
-    { "id": "rp", "name": "Relying Party", "role": "client", "alias": "= l'app qui valide" },
+    {
+      "id": "rp",
+      "name": "Relying Party",
+      "role": "client",
+      "alias": "= l'app qui valide"
+    },
     {
       "id": "op",
       "name": "OpenID Provider",
@@ -44,14 +49,21 @@
       "summary": "Le RP récupère le JWKS de l'OP (l'URL vient de la discovery, champ jwks_uri). C'est l'ensemble des clés PUBLIQUES de l'OP — souvent mises en cache, avec rotation.",
       "request": {
         "channel": "back",
-        "request": { "method": "GET", "url": "https://op.example/.well-known/jwks.json" },
+        "request": {
+          "method": "GET",
+          "url": "https://op.example/.well-known/jwks.json"
+        },
         "response": {
           "status": 200,
           "statusText": "OK",
-          "headers": { "Content-Type": "application/json", "Cache-Control": "max-age=86400" },
+          "headers": {
+            "Content-Type": "application/json",
+            "Cache-Control": "max-age=86400"
+          },
           "body": {
             "type": "json",
-            "content": "{\n  \"keys\": [\n    {\n      \"kty\": \"EC\", \"crv\": \"P-256\", \"use\": \"sig\", \"alg\": \"ES256\",\n      \"kid\": \"op-2026-01\",\n      \"x\": \"xW33eUhIVQiXYUl_6EwHAivO6J9nwibFa56ILrP1F94\",\n      \"y\": \"ZxwsTfzF2ECeH4gkmGeFW__urmi1rJhMestuaeVtzIY\"\n    }\n  ]\n}"
+            "content": "{\n  \"keys\": [\n    {\n      \"kty\": \"EC\", \"crv\": \"P-256\", \"use\": \"sig\", \"alg\": \"ES256\",\n      \"kid\": \"op-2026-01\",\n      \"x\": \"xW33eUhIVQiXYUl_6EwHAivO6J9nwibFa56ILrP1F94\",\n      \"y\": \"ZxwsTfzF2ECeH4gkmGeFW__urmi1rJhMestuaeVtzIY\"\n    }\n  ]\n}",
+            "representation": "wire"
           }
         }
       },
@@ -92,7 +104,7 @@
       "to": "rp",
       "kind": "internal",
       "label": "iss exact · aud∋client_id · exp · nonce · at_hash",
-      "summary": "Contrôles des claims : iss identique à l'OP attendu ; aud contient client_id ; exp non dépassé (et iat pas trop ancien) ; nonce == celui envoyé ; at_hash cohérent avec l'access token reçu. Tous doivent passer.",
+      "summary": "Vérifier iss, aud, exp et nonce attendu. Dans cet exemple, at_hash est aussi calculé ; sa présence et son contrôle sont optionnels au token endpoint en code flow. Les dates fixes sont lues à l’horloge de démonstration.",
       "security": {
         "level": "danger",
         "note": "at_hash lie l'ID Token à l'access token de la MÊME réponse : il empêche d'associer un ID Token à un access token d'une autre provenance. Contrôle souvent oublié.",

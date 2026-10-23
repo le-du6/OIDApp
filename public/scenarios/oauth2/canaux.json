@@ -4,9 +4,24 @@
   "description": "La notion qui commande tout le reste : ce qui transite PAR le navigateur (observable, manipulable) contre ce qui va de serveur à serveur (TLS, authentifié). Suivez le même « secret » sur les deux canaux.",
   "specRefs": ["RFC 6749 §1.5 (usage)", "RFC 9700 §4"],
   "actors": [
-    { "id": "user", "name": "Resource Owner", "role": "user", "alias": "= vous" },
-    { "id": "browser", "name": "User-Agent", "role": "browser", "alias": "= le navigateur" },
-    { "id": "client", "name": "Client", "role": "client", "alias": "= l'application (serveur)" },
+    {
+      "id": "user",
+      "name": "Resource Owner",
+      "role": "user",
+      "alias": "= vous"
+    },
+    {
+      "id": "browser",
+      "name": "User-Agent",
+      "role": "browser",
+      "alias": "= le navigateur"
+    },
+    {
+      "id": "client",
+      "name": "Client",
+      "role": "client",
+      "alias": "= l'application (serveur)"
+    },
     {
       "id": "as",
       "name": "Authorization Server",
@@ -24,7 +39,10 @@
       "summary": "Le Client et l'AS ne se connaissent pas encore : pour joindre l'AS « au nom de l'utilisateur », le Client rebondit sur le navigateur avec une redirection. C'est LE front channel : le message est une URL, portée par le navigateur.",
       "request": {
         "channel": "front",
-        "request": { "method": "GET", "url": "https://photoprint.example/connect" },
+        "request": {
+          "method": "GET",
+          "url": "https://photoprint.example/connect"
+        },
         "response": {
           "status": 302,
           "statusText": "Found",
@@ -66,7 +84,7 @@
       },
       "security": {
         "level": "info",
-        "note": "Règle de conception : on ne met sur le front channel QUE des données publiques ou inutilisables seules (un code éphémère, une empreinte PKCE, un state). Jamais un token, jamais un secret."
+        "note": "Dans ce code flow avec backend, le navigateur porte le code, le challenge et state. Ce sont des valeurs à protéger. Implicit exposait historiquement l’access token dans le fragment ; une SPA reçoit aussi ses tokens en appelant directement le token endpoint."
       }
     },
     {
@@ -97,7 +115,11 @@
             "Authorization": "Basic d2ViLWFwcDpzM2NyM3Q=",
             "Content-Type": "application/x-www-form-urlencoded"
           },
-          "body": { "type": "form", "content": "grant_type=authorization_code&code=…" }
+          "body": {
+            "type": "form",
+            "content": "grant_type=authorization_code&code=…",
+            "representation": "excerpt"
+          }
         }
       },
       "security": {
@@ -114,14 +136,21 @@
       "summary": "La réponse (tokens compris) emprunte le même canal protégé. Le navigateur ne verra jamais l'access token — il verra seulement, plus tard, le RÉSULTAT de son utilisation.",
       "request": {
         "channel": "back",
-        "request": { "method": "POST", "url": "https://as.example/token (réponse)" },
+        "request": {
+          "method": "POST",
+          "url": "https://as.example/token"
+        },
         "response": {
           "status": 200,
           "statusText": "OK",
-          "headers": { "Cache-Control": "no-store" },
+          "headers": {
+            "Cache-Control": "no-store",
+            "Content-Type": "application/json"
+          },
           "body": {
             "type": "json",
-            "content": "{ \"access_token\": \"…\", \"token_type\": \"Bearer\" }"
+            "content": "{ \"access_token\": \"…\", \"token_type\": \"Bearer\" }",
+            "representation": "excerpt"
           }
         }
       }

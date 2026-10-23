@@ -32,7 +32,7 @@ export const lessonComponents: Record<string, LazyExoticComponent<ComponentType>
     () => import('./oauth2/ch7-etat-de-l-art'),
   ),
 
-  // — OIDC (Phase 2) —
+  // — OIDC (OIDC) —
   [lessonKey('oidc', 'pourquoi-oidc', 'anti-pattern-login')]: lazy(
     () => import('./oidc/ch0-pourquoi-oidc'),
   ),
@@ -45,7 +45,7 @@ export const lessonComponents: Record<string, LazyExoticComponent<ComponentType>
   [lessonKey('oidc', 'nonce-at-hash', 'liaisons')]: lazy(() => import('./oidc/ch5-nonce-at-hash')),
   [lessonKey('oidc', 'oidc-vs-saml', 'comparaison')]: lazy(() => import('./oidc/ch6-oidc-vs-saml')),
 
-  // — OID4VCI (Phase 3) —
+  // — OID4VCI (OID4VCI) —
   [lessonKey('oid4vci', 'paradigme', 'phone-home')]: lazy(() => import('./oid4vci/ch0-paradigme')),
   [lessonKey('oid4vci', 'credential-offer', 'pre-authorized')]: lazy(
     () => import('./oid4vci/ch1-credential-offer'),
@@ -62,7 +62,7 @@ export const lessonComponents: Record<string, LazyExoticComponent<ComponentType>
   ),
   [lessonKey('oid4vci', 'eidas', 'contexte-eudi')]: lazy(() => import('./oid4vci/ch6-eidas')),
 
-  // — OID4VP (Phase 4) —
+  // — OID4VP (OID4VP) —
   [lessonKey('oid4vp', 'authorization-request', 'flow-presentation')]: lazy(
     () => import('./oid4vp/ch0-authorization-request'),
   ),

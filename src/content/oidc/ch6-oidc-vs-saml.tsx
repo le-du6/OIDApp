@@ -1,3 +1,4 @@
+import { quizBank } from '../../data/quiz-bank'
 import { Term } from '../../components/content/Term'
 import { Callout } from '../../components/content/Callout'
 import { Quiz } from '../../components/content/Quiz'
@@ -20,7 +21,7 @@ export default function OidcCh6() {
 
       <CompareTable
         caption="SAML 2.0 vs OpenID Connect — mêmes objectifs, autres moyens"
-        columns={['Axe', 'SAML 2.0', 'OpenID Connect']}
+        columns={['SAML 2.0', 'OpenID Connect']}
         rows={[
           {
             label: 'Format du jeton',
@@ -101,75 +102,7 @@ export default function OidcCh6() {
 
       <Quiz
         quizId="oidc/oidc-vs-saml/comparaison"
-        questions={[
-          {
-            id: 'q1',
-            question: 'Quelle différence de format distingue SAML et OIDC ?',
-            options: [
-              {
-                text: 'SAML utilise des assertions XML signées ; OIDC un JWT/JSON signé',
-                correct: true,
-                explanation:
-                  'Oui — XML-DSig d’un côté, JWS/JSON de l’autre. Cela conditionne outillage, taille des messages et pièges de validation.',
-              },
-              {
-                text: 'SAML est chiffré, OIDC ne l’est jamais',
-                explanation:
-                  'Non — les deux peuvent chiffrer (SAML EncryptedAssertion, OIDC via JWE), mais ce n’est pas leur différence structurante.',
-              },
-              {
-                text: 'OIDC n’a pas de signature',
-                explanation:
-                  'Non — l’ID Token est signé (JWS) ; c’est même le cœur de sa validation.',
-              },
-            ],
-          },
-          {
-            id: 'q2',
-            question: 'D’où viennent le plus souvent les failles OIDC en pratique ?',
-            options: [
-              {
-                text: 'Du format JSON, intrinsèquement peu sûr',
-                explanation:
-                  'Non — le format n’est pas en cause. C’est la validation côté RP qui pèche.',
-              },
-              {
-                text: 'D’une validation incomplète de l’ID Token (signature seule, aud/alg négligés)',
-                correct: true,
-                explanation:
-                  'Oui — la rigueur du receveur fait la sécurité. Vérifier la signature sans aud ni alg contraint laisse des brèches.',
-              },
-              {
-                text: 'De l’absence de chiffrement systématique',
-                explanation:
-                  'Non — la plupart des ID Tokens sont signés et non chiffrés, et c’est acceptable ; le problème est la validation.',
-              },
-            ],
-          },
-          {
-            id: 'q3',
-            question:
-              'Pour une nouvelle application mobile consommant des API, que choisir a priori ?',
-            options: [
-              {
-                text: 'SAML, plus mûr',
-                explanation:
-                  'Non — SAML est pensé pour le SSO web serveur ; ses bindings XML/POST conviennent mal au mobile natif et aux API.',
-              },
-              {
-                text: 'OIDC, conçu pour API/mobile/SPA au-dessus d’OAuth2',
-                correct: true,
-                explanation:
-                  'Oui — OIDC est le choix par défaut du web/mobile moderne. SAML garde sa place dans l’écosystème d’entreprise existant.',
-              },
-              {
-                text: 'Ni l’un ni l’autre : un mot de passe maison',
-                explanation:
-                  'Non — refaire de l’authentification maison est exactement ce que ces standards évitent.',
-              },
-            ],
-          },
-        ]}
+        questions={quizBank['oidc/oidc-vs-saml/comparaison']!}
       />
     </div>
   )

@@ -38,7 +38,11 @@
           "url": "https://photoprint.example/login",
           "body": {
             "type": "json",
-            "content": "{ \"id_token\": \"eyJ… aud: attacker-app, nonce: (aucun pour ce RP) …\" }"
+            "content": "{ \"id_token\": \"eyJ… aud: attacker-app, nonce: (aucun pour ce RP) …\" }",
+            "representation": "excerpt"
+          },
+          "headers": {
+            "Content-Type": "application/json"
           }
         }
       },
@@ -69,7 +73,7 @@
       "summary": "Contrôle décisif : l'ID Token a été émis pour aud=attacker-app, pas pour ce RP (client_id=web-app). Le jeton n'était pas destiné à ce RP. Rejet immédiat.",
       "security": {
         "level": "info",
-        "note": "aud est ce qui manquait à l'access token : l'ID Token dit explicitement POUR QUI il a été fabriqué. Un jeton d'un autre client ne passe pas — la substitution est structurellement impossible.",
+        "note": "Le contrôle de aud lie l’ID Token à ce RP. Un access token peut lui aussi contenir aud, mais il ne fournit pas le contrat de validation du login OIDC.",
         "specRef": "OIDC Core §3.1.3.7 (3)"
       }
     },
@@ -95,8 +99,14 @@
       "summary": "Le RP rejette. La substitution qui réussissait avec un access token nu échoue avec un ID Token correctement validé : ce n'est pas un patch, c'est la raison d'être d'OIDC.",
       "request": {
         "channel": "back",
-        "request": { "method": "POST", "url": "https://photoprint.example/login" },
-        "response": { "status": 401, "statusText": "Unauthorized" }
+        "request": {
+          "method": "POST",
+          "url": "https://photoprint.example/login"
+        },
+        "response": {
+          "status": 401,
+          "statusText": "Unauthorized"
+        }
       },
       "security": {
         "level": "info",

@@ -46,7 +46,7 @@ Les signatures des fixtures OIDC/VCI/VP, les digests VCI, le `sd_hash` VP et les
 
 ## Étape 1 — Fixer le référentiel et les repères du cours
 
-- [ ] **R01 — Référentiel de versions et niveaux normatifs** · P1 · confirmé · audit initial.
+- [x] **R01 — Référentiel de versions et niveaux normatifs** · P1 · confirmé · audit initial.
 
   **À reprendre :** distinguer norme de base, BCP, draft, profil d'écosystème et choix de démonstration. Consigner les éditions exactes et les sections utilisées ; revoir les mentions non versionnées de SD-JWT, désormais également documenté par la [RFC 9901](https://www.rfc-editor.org/rfc/rfc9901.html). Une publication plus récente ne rend pas automatiquement erroné un exemple explicitement rattaché à un ancien draft.
 
@@ -54,7 +54,7 @@ Les signatures des fixtures OIDC/VCI/VP, les digests VCI, le `sd_hash` VP et les
 
   **Terminé lorsque :** chaque module annonce son référentiel ; les MUST/SHOULD/MAY et les obligations propres à un profil ne sont plus intervertis. Les conclusions dépendant d'une version sont signalées comme telles.
 
-- [ ] **R02 — Repérage par protocole, chapitre et leçon** · P1 · confirmé · H04.
+- [x] **R02 — Repérage par protocole, chapitre et leçon** · P1 · confirmé · H04.
 
   **À reprendre :** remplacer dans le parcours apprenant les renvois « Phase 3 », « Phase 4 », etc., par des noms explicites et des liens. Distinguer numérotation éditoriale et historique de développement. Recenser les références avant de les modifier pour éviter des liens orphelins.
 
@@ -62,7 +62,7 @@ Les signatures des fixtures OIDC/VCI/VP, les digests VCI, le `sd_hash` VP et les
 
   **Terminé lorsque :** une leçon ouverte directement se comprend sans connaître les « phases » ; navigation, titres et renvois emploient le même vocabulaire.
 
-- [ ] **R03 — Ordre des notions et prérequis** · P1 · pédagogique · H03, H19.
+- [x] **R03 — Ordre des notions et prérequis** · P1 · pédagogique · H03, H19.
 
   **À reprendre :** dresser la carte des premières utilisations : rôle logique et client public/confidentiel ; requête/réponse/redirection ; grant/token ; JWS/JWK ; signature/confiance ; credential/format ; clé du détenteur/binding ; requête de présentation/DCQL. Séparer première définition, rappel et approfondissement. Introduire les différences de versions au moment où elles évitent une confusion, sans obliger le débutant à apprendre un ancien protocole d'abord.
 
@@ -70,7 +70,7 @@ Les signatures des fixtures OIDC/VCI/VP, les digests VCI, le `sd_hash` VP et les
 
   **Terminé lorsque :** chaque notion nécessaire à une étape possède une explication préalable ou immédiate ; une relecture dans l'ordre ne nécessite pas de sauts répétés vers des chapitres futurs.
 
-- [ ] **R04 — Convention commune d'explication des champs** · P1 · confirmé · H02, audit HTTP.
+- [x] **R04 — Convention commune d'explication des champs** · P1 · confirmé · H02, audit HTTP.
 
   **À reprendre :** définir un format éditorial commun : emplacement, type, sens dans ce message, producteur, destinataire, origine de la valeur, conservation, contrôle attendu, caractère obligatoire et condition, confidentialité, exemple et référence. Distinguer claims du payload et paramètres JOSE du header. Les mêmes noms (`aud`, `nonce`, `cnf`) nécessitent un contexte propre à chaque artefact.
 
@@ -80,7 +80,7 @@ Les signatures des fixtures OIDC/VCI/VP, les digests VCI, le `sd_hash` VP et les
 
 ## Étape 2 — Rendre les supports fiables
 
-- [ ] **R05 — Tableaux comparatifs : structure et sémantique** · P1 · confirmé · H13.
+- [x] **R05 — Tableaux comparatifs : structure et sémantique** · P1 · confirmé · H13.
 
   **Constat :** [CompareTable](/Users/bob/codes/OIDApp/src/components/content/CompareTable.tsx) ajoute un en-tête vide pour les libellés de lignes. [OIDC/SAML](/Users/bob/codes/OIDApp/src/content/oidc/ch6-oidc-vs-saml.tsx) fournit en plus « Axe » dans `columns` : quatre en-têtes, trois cellules par ligne. D'autres tableaux ont des effectifs compatibles mais des intitulés sémantiquement décalés.
 
@@ -88,7 +88,7 @@ Les signatures des fixtures OIDC/VCI/VP, les digests VCI, le `sd_hash` VP et les
 
   **Terminé lorsque :** chaque cellule est sous le bon en-tête ; contrôle visuel sur écran large et étroit, et navigation accessible cohérente. Le défaut a été confirmé statiquement ; sa validation visuelle reste à réaliser.
 
-- [ ] **R06 — Échanges HTTP : brut et explications concordants** · P1 · confirmé · audit initial.
+- [x] **R06 — Échanges HTTP : brut et explications concordants** · P1 · confirmé · audit initial.
 
   **Constat :** [HttpRequestView](/Users/bob/codes/OIDApp/src/components/http/HttpRequestView.tsx:47) remplace le corps brut par les annotations lorsque `body.params` existe. Headers et réponses sont moins explicités. Certains deep links sont montrés comme des GET HTTP, et certains payloads JWT décodés comme des corps reçus sur le réseau.
 
@@ -96,7 +96,7 @@ Les signatures des fixtures OIDC/VCI/VP, les digests VCI, le `sd_hash` VP et les
 
   **Terminé lorsque :** aucun affichage ne fait passer un payload décodé pour la sérialisation réellement transportée ; le lecteur peut reconstituer chaque exemple déclaré complet. Dépend de R04 et R12.
 
-- [ ] **R07 — Inspection JWT adaptée au signataire** · P1 · confirmé · H02, audit key binding.
+- [x] **R07 — Inspection JWT adaptée au signataire** · P1 · confirmé · H02, audit key binding.
 
   **Constat :** [JwtInspector](/Users/bob/codes/OIDApp/src/components/jwt/JwtInspector.tsx:65) annonce toujours ES256 et une recherche JWKS par `kid`. Ce texte ne convient pas à toutes les preuves affichées. Le dictionnaire partagé ne décrit notamment pas `nonce`, `cnf`, `sd_hash` ou les champs DPoP.
 
@@ -104,7 +104,7 @@ Les signatures des fixtures OIDC/VCI/VP, les digests VCI, le `sd_hash` VP et les
 
   **Terminé lorsque :** inspecter successivement ID Token, credential, proof VCI, DPoP et KB-JWT ne produit aucune explication contradictoire sur la clé utilisée.
 
-- [ ] **R08 — Quiz sans indices de forme** · P1 · confirmé et mesuré · H01.
+- [x] **R08 — Quiz sans indices de forme** · P1 · confirmé et mesuré · H01.
 
   **Mesure :** analyse syntaxique de 103 questions aux options littérales dans les leçons TSX : bonne réponse parmi les plus longues dans 93 cas, seule plus longue dans 92 cas (89,3 %). Positions correctes : première 14, deuxième 87 (84,5 %), troisième 2. Il s'agit de la longueur du texte de réponse, hors explication ; pas d'une étude d'utilisateurs.
 
@@ -116,7 +116,7 @@ Les signatures des fixtures OIDC/VCI/VP, les digests VCI, le `sd_hash` VP et les
 
 ## Étape 3 — Reprendre les fondations OAuth2
 
-- [ ] **R09 — Rôles et authentifications** · P1 · à nuancer · H05, H06.
+- [x] **R09 — Rôles et authentifications** · P1 · à nuancer · H05, H06.
 
   **À reprendre :** définir Client comme rôle, illustrer plusieurs déploiements et identifier séparément utilisateur, client et serveur authentifiés. Conserver le backend comme exemple, pas comme définition. Expliquer que l'authentification du Resource Owner intervient dans les flows concernés alors que sa méthode n'est pas normalisée par OAuth ; éviter de l'imposer au client credentials grant. Références : [RFC 6749, §1.1, §2.1 et §4.1](https://www.rfc-editor.org/rfc/rfc6749.html#section-2.1).
 
@@ -124,13 +124,13 @@ Les signatures des fixtures OIDC/VCI/VP, les digests VCI, le `sd_hash` VP et les
 
   **Terminé lorsque :** « OAuth ne fournit pas au RP un protocole d'authentification utilisateur » n'est plus compris comme « aucune authentification n'a lieu ».
 
-- [ ] **R10 — Authentification et identification du client au token endpoint** · P1 · confirmé · H07, audit initial.
+- [x] **R10 — Authentification et identification du client au token endpoint** · P1 · confirmé · H07, audit initial.
 
   **À reprendre :** expliciter les mécanismes déjà montrés ; différencier `client_id`, secret client, PKCE et DPoP. Corriger les POST du code grant dans [DPoP](/Users/bob/codes/OIDApp/public/scenarios/oauth2/dpop.json) et [VCI authorization code](/Users/bob/codes/OIDApp/public/scenarios/oid4vci/authorization-code.json), actuellement sans authentification client ni `client_id` : cette dernière valeur est requise en l'absence d'authentification. [RFC 6749, §2.3 et §4.1.3](https://www.rfc-editor.org/rfc/rfc6749.html#section-4.1.3).
 
   **Terminé lorsque :** chaque scénario indique son type de client et montre une requête compatible ; aucune preuve de possession n'est présentée comme une identité enregistrée par elle-même.
 
-- [ ] **R11 — Histoire de la délégation sans caricature** · P2 · à nuancer · H08.
+- [x] **R11 — Histoire de la délégation sans caricature** · P2 · à nuancer · H08.
 
   **À reprendre :** présenter le partage de mot de passe comme l'anti-pattern choisi, pas l'état de toute l'authentification avant OAuth. Situer brièvement [HTTP Digest, RFC 2617 (1999)](https://www.rfc-editor.org/rfc/rfc2617.html) et [Kerberos V5, RFC 4120](https://datatracker.ietf.org/doc/html/rfc4120). Ne pas limiter Kerberos au « local » ; ne pas confondre corps HTTP lisible dans le cours et trafic non chiffré. Nuancer aussi le récit uniforme des API keys et la formule « aucun secret exposé » : un bearer token reste sensible.
 
@@ -138,7 +138,7 @@ Les signatures des fixtures OIDC/VCI/VP, les digests VCI, le `sd_hash` VP et les
 
   **Terminé lorsque :** l'apport étudié est clairement la délégation d'accès à un tiers ; aucune histoire exhaustive ni supériorité universelle n'est suggérée.
 
-- [ ] **R12 — Canaux et différences entre grants et architectures** · P1 · confirmé · H09, H15, audit initial.
+- [x] **R12 — Canaux et différences entre grants et architectures** · P1 · confirmé · H09, H15, audit initial.
 
   **À reprendre :** séparer parcours via l'agent utilisateur, appel direct, localisation du logiciel et propriétés de sécurité. Montrer tôt l'exception historique Implicit : token dans le fragment, avec sa déconseillation actuelle. Pour les wallets, nommer les acteurs effectifs de chaque transport ; ne pas interdire abstraitement le terme back channel. [RFC 6749, §4.2](https://www.rfc-editor.org/rfc/rfc6749.html#section-4.2).
 
@@ -146,7 +146,7 @@ Les signatures des fixtures OIDC/VCI/VP, les digests VCI, le `sd_hash` VP et les
 
   **Terminé lorsque :** le cours ne dit plus que tout appel direct exige deux serveurs ou que toute donnée sensible est absente du navigateur ; il conserve les précautions applicables aux redirections.
 
-- [ ] **R13 — BCP, CSRF, PKCE et flows historiques** · P1 · confirmé · audit initial.
+- [x] **R13 — BCP, CSRF, PKCE et flows historiques** · P1 · confirmé · audit initial.
 
   **À reprendre :** distinguer obligations pour clients publics, recommandations pour confidentiels, précautions permettant PKCE/nonce contre CSRF et état applicatif de `state`. Séparer Implicit déconseillé et ROPC interdit ; ne pas attribuer tous les choix d'OAuth 2.1 à RFC 9700. [Security BCP, §2.1 et §2.4](https://www.rfc-editor.org/rfc/rfc9700.html#section-2.1).
 
@@ -154,7 +154,7 @@ Les signatures des fixtures OIDC/VCI/VP, les digests VCI, le `sd_hash` VP et les
 
   **Terminé lorsque :** toutes les règles ont une portée explicite ; le choix de conserver plusieurs protections n'est pas présenté comme une obligation universelle.
 
-- [ ] **R14 — Cycle de vie et portée des garanties des tokens** · P2 · confirmé · audit initial.
+- [x] **R14 — Cycle de vie et portée des garanties des tokens** · P2 · confirmé · audit initial.
 
   **À reprendre :** corriger la révocation automatique supposée de tous les access tokens après révocation du refresh token : [RFC 7009, §2.1](https://www.rfc-editor.org/rfc/rfc7009.html#section-2.1) formule une recommandation conditionnelle. Éviter les équivalences « JWT = révocation impossible » et « opaque = révocation instantanée garantie ». Préciser les hypothèses de validation locale, introspection, cache et politique du système.
 
@@ -164,7 +164,7 @@ Les signatures des fixtures OIDC/VCI/VP, les digests VCI, le `sd_hash` VP et les
 
 ## Étape 4 — Compléter OIDC
 
-- [ ] **R15 — Claims de l'ID Token et extensibilité** · P1 · confirmé · H02, H10.
+- [x] **R15 — Claims de l'ID Token et extensibilité** · P1 · confirmé · H02, H10.
 
   **À reprendre :** intégrer `acr` (contexte), `amr` (méthodes), `azp` (partie autorisée), leurs différences et les claims additionnels. Ne pas rendre ces champs systématiquement obligatoires. La rédaction consultée de [Core §2](https://openid.net/specs/openid-connect-core-1_0.html#IDToken) situe l'usage d'`azp` dans les extensions : éviter une règle copiée d'un ancien tutoriel sans version. Revoir aussi les conditions d'`auth_time`.
 
@@ -172,7 +172,7 @@ Les signatures des fixtures OIDC/VCI/VP, les digests VCI, le `sd_hash` VP et les
 
   **Terminé lorsque :** chaque champ ajouté est expliqué dans la convention R04 et relié à son usage, sans surcharger artificiellement toutes les fixtures.
 
-- [ ] **R16 — Rendre visible le callback navigateur → RP** · P1 · confirmé · H11.
+- [x] **R16 — Rendre visible le callback navigateur → RP** · P1 · confirmé · H11.
 
   **À reprendre :** montrer distinctement réponse 302 de l'OP, suivi du Location par le navigateur, réception du code par le RP, corrélation avec la requête en cours puis POST du RP à `/token`. Les flèches manquantes ne doivent plus être laissées à l'inférence du lecteur.
 
@@ -180,7 +180,7 @@ Les signatures des fixtures OIDC/VCI/VP, les digests VCI, le `sd_hash` VP et les
 
   **Terminé lorsque :** le lecteur peut désigner l'émetteur et le receveur de chacun des messages et sait comment le code parvient au RP. Conserver l'exemple de client confidentiel explicitement.
 
-- [ ] **R17 — Validation annoncée et validation réellement couverte** · P1 · confirmé · H12, audit initial.
+- [x] **R17 — Validation annoncée et validation réellement couverte** · P1 · confirmé · H12, audit initial.
 
   **À reprendre :** rendre les treize points de [Core §3.1.3.7](https://openid.net/specs/openid-connect-core-1_0.html#IDTokenValidation) consultables avec leurs conditions ; distinguer ordre normatif et regroupement pédagogique. Inclure les branches non illustrées par ES256 et les exigences de contexte. Ne pas prétendre que tous les contrôles sont treize opérations obligatoires identiques sur chaque jeton.
 
@@ -188,7 +188,7 @@ Les signatures des fixtures OIDC/VCI/VP, les digests VCI, le `sd_hash` VP et les
 
   **Terminé lorsque :** l'intitulé « validation » indique exactement les vérifications exécutées ou simulées ; le cas de démonstration est traçable au référentiel sans prétendre remplacer un validateur général.
 
-- [ ] **R18 — Cohérence de `at_hash`, `c_hash`, `nonce` et `state`** · P1 · confirmé · audit initial.
+- [x] **R18 — Cohérence de `at_hash`, `c_hash`, `nonce` et `state`** · P1 · confirmé · audit initial.
 
   **À reprendre :** supprimer la contradiction entre validation et chapitre des liaisons ; préciser présence et contrôle selon flow/endpoint, et rattacher SHA-256 aux algorithmes choisis. `at_hash` est optionnel en code flow. [Core §3.1.3.6–3.1.3.8](https://openid.net/specs/openid-connect-core-1_0.html#CodeIDToken).
 
@@ -198,7 +198,7 @@ Les signatures des fixtures OIDC/VCI/VP, les digests VCI, le `sd_hash` VP et les
 
 ## Étape 5 — Préciser ce qu'OID4VCI enseigne
 
-- [ ] **R19 — Credential, format et choix de l'exemple** · P1 · à nuancer · H14, H16.
+- [x] **R19 — Credential, format et choix de l'exemple** · P1 · à nuancer · H14, H16.
 
   **À reprendre :** annoncer dès l'offer que SD-JWT VC est le format illustré ; positionner mdoc sans attendre un chapitre tardif. Ne pas remplacer « credential » par « toute donnée » : le protocole reste celui d'une émission de credentials, avec des profils de format. [OID4VCI, §3.3.1 et annexe A](https://openid.net/specs/openid-4-verifiable-credential-issuance-1_0.html#section-3.3.1).
 
@@ -206,7 +206,7 @@ Les signatures des fixtures OIDC/VCI/VP, les digests VCI, le `sd_hash` VP et les
 
   **Terminé lorsque :** l'apprenant distingue émission, format, modèle de claims et profil d'écosystème ; les exemples n'impliquent pas que tout credential est un SD-JWT.
 
-- [ ] **R20 — Conditions de preuve et durée du nonce** · P1 · confirmé · audit initial.
+- [x] **R20 — Conditions de preuve et durée du nonce** · P1 · confirmé · audit initial.
 
   **À reprendre :** retirer « passage obligé des deux flows » comme règle universelle ; différencier preuve, binding et politique d'émission. Le nonce n'est pas intrinsèquement un identifiant exclusif de transaction ni nécessairement à usage unique ; l'Issuer fixe son acceptation. [OID4VCI, §8.1 et §13.8](https://openid.net/specs/openid-4-verifiable-credential-issuance-1_0.html#section-13.8).
 
@@ -214,7 +214,7 @@ Les signatures des fixtures OIDC/VCI/VP, les digests VCI, le `sd_hash` VP et les
 
   **Terminé lorsque :** le cours distingue autorisation d'émettre, possession de clé et fraîcheur ; R25 ne démontre pas une garantie plus forte que celle effectivement contrôlée.
 
-- [ ] **R21 — Découverte et convergence des flows d'émission** · P2 · confirmé comme raccourci pédagogique · audit initial.
+- [x] **R21 — Découverte et convergence des flows d'émission** · P2 · confirmé comme raccourci pédagogique · audit initial.
 
   **À reprendre :** expliciter l'hypothèse actuelle « Credential Issuer = Authorization Server », la provenance des endpoints et des configurations, puis suivre les identifiants de credential entre autorisation, token response et émission. Identifier les messages regroupés ou omis dans les scénarios. Traiter l'authentification du wallet avec R10.
 
@@ -222,7 +222,7 @@ Les signatures des fixtures OIDC/VCI/VP, les digests VCI, le `sd_hash` VP et les
 
   **Terminé lorsque :** aucune URL ou valeur structurante n'apparaît sans origine expliquée ; les différences entre les deux parcours sont visibles avant leur convergence.
 
-- [ ] **R22 — Transition `vc+sd-jwt` → `dc+sd-jwt`** · P2 · déjà correct sur le sens · H18.
+- [x] **R22 — Transition `vc+sd-jwt` → `dc+sd-jwt`** · P2 · déjà correct sur le sens · H18.
 
   **À reprendre :** conserver `dc+sd-jwt` dans les exemples actuels. La [leçon existante](/Users/bob/codes/OIDApp/src/content/oid4vci/ch4-formats.tsx) donne déjà la bonne chronologie. Préciser que l'acceptation des deux valeurs est une recommandation transitoire destinée aux Holders et Verifiers, pas une obligation perpétuelle ni l'assurance que tous les produits acceptent les deux. [SD-JWT VC draft-13, §3.2.1](https://www.ietf.org/archive/id/draft-ietf-oauth-sd-jwt-vc-13.html#section-3.2.1).
 
@@ -230,7 +230,7 @@ Les signatures des fixtures OIDC/VCI/VP, les digests VCI, le `sd_hash` VP et les
 
 ## Étape 6 — Faire du key binding une chaîne démontrable
 
-- [ ] **R23 — Distinguer les liaisons et les garanties** · P1 · pédagogique · H17, audit initial.
+- [x] **R23 — Distinguer les liaisons et les garanties** · P1 · pédagogique · H17, audit initial.
 
   **À reprendre :** articuler quatre questions : quelle clé est attachée au credential ; qui contrôle sa partie privée ; à quelle présentation cette preuve correspond ; comment cette clé est protégée. Comparer sans fusionner DPoP, proof VCI, KB-JWT, key attestation et authentification du client. Séparer identité du sujet, détenteur et personne utilisant l'appareil.
 
@@ -238,7 +238,7 @@ Les signatures des fixtures OIDC/VCI/VP, les digests VCI, le `sd_hash` VP et les
 
   **Terminé lorsque :** l'apprenant sait distinguer une liaison certifiée par l'Issuer d'une preuve fraîche du wallet, puis expliquer ce qu'aucune de ces signatures ne prouve à elle seule. Dépend de R04, R09 et R20.
 
-- [ ] **R24 — Continuité des artefacts émission → présentation** · P1 · confirmé · audit initial.
+- [x] **R24 — Continuité des artefacts émission → présentation** · P1 · confirmé · audit initial.
 
   **Constat :** [le générateur VP](/Users/bob/codes/OIDApp/scripts/gen-oid4vp-fixtures.mjs:6) crée un ensemble autonome, indépendant de VCI. Les clés de détenteur diffèrent effectivement. Ce n'est pas une erreur cryptographique, mais la « boucle » annoncée n'est pas le suivi d'un même objet.
 
@@ -246,7 +246,7 @@ Les signatures des fixtures OIDC/VCI/VP, les digests VCI, le `sd_hash` VP et les
 
   **Terminé lorsque :** le lecteur peut identifier le même credential et la même clé entre les deux modules ; les variantes autonomes sont annoncées comme telles.
 
-- [ ] **R25 — Laboratoire de binding et scénarios de rejet distincts** · P1 · confirmé · audit initial.
+- [x] **R25 — Laboratoire de binding et scénarios de rejet distincts** · P1 · confirmé · audit initial.
 
   **Constat :** [le laboratoire](/Users/bob/codes/OIDApp/src/routes/labo-crypto.tsx) calcule le `sd_hash` de la sélection mais laisse `<kb-jwt>` comme emplacement. Le rejeu VCI consiste à remplacer le nonce attendu.
 
@@ -254,7 +254,7 @@ Les signatures des fixtures OIDC/VCI/VP, les digests VCI, le `sd_hash` VP et les
 
   **Terminé lorsque :** chaque rejet possède sa cause propre ; une signature mathématiquement valide peut échouer à la validation de contexte ; aucune simulation n'est présentée comme un contrôle réellement exécuté. Dépend de R07, R20, R23 et R24.
 
-- [ ] **R26 — Attestations, stockage des clés et binding mdoc** · P2 · à approfondir · H17, audit initial.
+- [x] **R26 — Attestations, stockage des clés et binding mdoc** · P2 · à approfondir · H17, audit initial.
 
   **À reprendre :** montrer la différence entre le type `attestation` et un proof `jwt` transportant `key_attestation` ; le premier peut fonctionner sans signature de possession par la clé attestée. [OID4VCI, annexe F](https://openid.net/specs/openid-4-verifiable-credential-issuance-1_0.html#appendix-F). Expliquer la confiance accordée au tiers attestant. Côté mdoc, cadrer un exemple distinct, sans lui attribuer un KB-JWT.
 
@@ -264,7 +264,7 @@ Les signatures des fixtures OIDC/VCI/VP, les digests VCI, le `sd_hash` VP et les
 
 ## Étape 7 — Compléter la présentation OID4VP
 
-- [ ] **R27 — Requête et identité du Verifier** · P1 · confirmé · H19, audit initial.
+- [x] **R27 — Requête et identité du Verifier** · P1 · confirmé · H19, audit initial.
 
   **À reprendre :** contextualiser le préfixe avant son utilisation ; rendre visibles `typ` et `aud` dans les exemples complets de Request Object. [OID4VP, §5 et §5.8](https://openid.net/specs/openid-4-verifiable-presentations-1_0.html#section-5.8). Corriger l'affichage de `location.example` après vérification de `verifier.example`, ou expliciter une relation de confiance vérifiable. Séparer nom déclaré, identité authentifiée et droit de demander des données.
 
@@ -272,7 +272,7 @@ Les signatures des fixtures OIDC/VCI/VP, les digests VCI, le `sd_hash` VP et les
 
   **Terminé lorsque :** chaque élément d'identité affiché a une provenance ; le lecteur sait distinguer la forme actuelle de l'ancien `client_id_scheme`.
 
-- [ ] **R28 — DCQL, conservation et décision d'acceptation** · P1 · confirmé · H20, audit initial.
+- [x] **R28 — DCQL, conservation et décision d'acceptation** · P1 · confirmé · H20, audit initial.
 
   **À reprendre :** ajouter `intent_to_retain` dans un exemple mdoc : il s'agit d'un paramètre optionnel spécifique à ce format dans [OID4VP, annexe B.2.4](https://openid.net/specs/openid-4-verifiable-presentations-1_0.html#appendix-B.2.4). Distinguer intention déclarée de garantie technique de non-conservation. Compléter « Vérifie tout » par l'adéquation à la requête et distinguer filtre de sélection, confiance dans l'Issuer et validation cryptographique. [OID4VP, §8.6](https://openid.net/specs/openid-4-verifiable-presentations-1_0.html#section-8.6).
 
@@ -280,7 +280,7 @@ Les signatures des fixtures OIDC/VCI/VP, les digests VCI, le `sd_hash` VP et les
 
   **Terminé lorsque :** l'ajout n'est pas abusivement appliqué au SD-JWT ; une présentation authentique mais hors demande n'est pas automatiquement acceptée.
 
-- [ ] **R29 — Réponses, chiffrement et DC API** · P1 · confirmé · audit initial et vérification complémentaire.
+- [x] **R29 — Réponses, chiffrement et DC API** · P1 · confirmé · audit initial et vérification complémentaire.
 
   **À reprendre :** corriger « signé et/ou chiffré » : `direct_post.jwt` désigne ici une réponse chiffrée. [OID4VP, §8.3](https://openid.net/specs/openid-4-verifiable-presentations-1_0.html#section-8.3). Rectifier aussi la leçon DC API : `origin:` sert à l'audience de présentation ; ce n'est pas un `client_id` préfixé à accepter dans la requête. [OID4VP, §5.9.3](https://openid.net/specs/openid-4-verifiable-presentations-1_0.html#section-5.9.3).
 
@@ -290,7 +290,7 @@ Les signatures des fixtures OIDC/VCI/VP, les digests VCI, le `sd_hash` VP et les
 
 ## Étape 8 — Reprendre les garanties de vie privée
 
-- [ ] **R30 — Absence de phone home et limites du modèle** · P1 · confirmé · audit initial.
+- [x] **R30 — Absence de phone home et limites du modèle** · P1 · confirmé · audit initial.
 
   **À reprendre :** remplacer l'impossibilité absolue de connaître les usages par les hypothèses réelles du scénario. Les contacts de statut et la collusion peuvent révéler des présentations. [RFC 9901, §10.1](https://www.rfc-editor.org/rfc/rfc9901.html#section-10.1). Conserver la valeur du découplage sans confondre absence d'appel requis et absence de toute fuite possible. Nuancer « fichier mort » : une exfiltration peut rester une atteinte aux données personnelles.
 
@@ -298,7 +298,7 @@ Les signatures des fixtures OIDC/VCI/VP, les digests VCI, le `sd_hash` VP et les
 
   **Terminé lorsque :** les premières leçons ne promettent plus ce que le chapitre unlinkability relativise ensuite.
 
-- [ ] **R31 — Corrélation par clés, temps et combinaisons de champs** · P1 · confirmé · H21, audit initial.
+- [x] **R31 — Corrélation par clés, temps et combinaisons de champs** · P1 · confirmé · H21, audit initial.
 
   **À reprendre :** compléter signatures et digests par clé publique, timestamps précis, identifiants de statut et combinaisons rares de claims. Pour l'émission en lots, traiter les clés et les temps, pas uniquement les sels/signatures. La [RFC 9901, §10.1](https://www.rfc-editor.org/rfc/rfc9901.html#section-10.1) traite explicitement ces facteurs. Ne pas prétendre que toute valeur unique suffit toujours à réidentifier : décrire sa stabilité, son partage et les connaissances de l'observateur.
 
@@ -306,7 +306,7 @@ Les signatures des fixtures OIDC/VCI/VP, les digests VCI, le `sd_hash` VP et les
 
   **Terminé lorsque :** le lecteur distingue corrélation et identification, et peut expliquer pourquoi changer un nonce ne supprime pas les autres identifiants.
 
-- [ ] **R32 — Comparaisons équitables entre fédération et wallets** · P2 · confirmé · audit initial.
+- [x] **R32 — Comparaisons équitables entre fédération et wallets** · P2 · confirmé · audit initial.
 
   **À reprendre :** intégrer les demandes individuelles par `claims` en OIDC, distinctes de la divulgation sélective d'un credential déjà émis. [Core §5.5](https://openid.net/specs/openid-connect-core-1_0.html#ClaimsParameter). Revoir les absolus « IdP à chaque usage », « révocation immédiate », « aucune présentation visible », ainsi que les jugements de couleur qui avantagent systématiquement une technologie. Distinguer session applicative et nouvelle authentification fédérée.
 
@@ -316,7 +316,7 @@ Les signatures des fixtures OIDC/VCI/VP, les digests VCI, le `sd_hash` VP et les
 
 ## Étape 9 — Décider les approfondissements, puis valider
 
-- [ ] **R33 — Couverture complémentaire à cadrer** · P3 · à cadrer · audit initial.
+- [x] **R33 — Couverture complémentaire à cadrer** · P3 · à cadrer · audit initial.
 
   **À reprendre :** classer explicitement comme introduction, approfondissement ou hors périmètre les sujets peu développés : erreurs et reprises ; émission différée ; notifications ; chiffrement VCI ; opérations en lots ; `transaction_data` ; parcours mdoc ; discovery et négociation plus riches ; authentification client par attestation ; extensions OIDC et sessions. Leur absence n'est pas, à elle seule, une non-conformité du cours.
 
@@ -324,7 +324,7 @@ Les signatures des fixtures OIDC/VCI/VP, les digests VCI, le `sd_hash` VP et les
 
   **Terminé lorsque :** une matrice indique la profondeur retenue pour chaque sujet et évite de qualifier un module de « complet » sans définir ce que cela couvre. Ce lot ne bloque pas les corrections confirmées précédentes.
 
-- [ ] **R34 — Vérifications du contenu protocolaire** · P1 · confirmé comme manque de couverture · audit initial.
+- [x] **R34 — Vérifications du contenu protocolaire** · P1 · confirmé comme manque de couverture · audit initial.
 
   **À reprendre :** compléter les contrôles existants là où ils ne vérifient que le schéma interne ou les signatures : cohérence entre requêtes/réponses, fixtures affichées, claims attendus, scénario de référence et cas de rejet. Les dates fixes doivent être traitées avec une horloge déclarée. Une primitive telle que `verifyCompactJwsES256` n'est pas à qualifier de validateur OIDC général.
 
@@ -332,7 +332,7 @@ Les signatures des fixtures OIDC/VCI/VP, les digests VCI, le `sd_hash` VP et les
 
   **Terminé lorsque :** les tests ajoutés détectent les écarts corrigés sans simplement recopier l'implémentation ; les garanties annoncées correspondent aux contrôles exécutés. À traiter avec chaque lot concerné, pas seulement à la fin.
 
-- [ ] **R35 — Relecture finale technique et pédagogique** · P1 · à réaliser après les lots concernés.
+- [x] **R35 — Relecture finale technique et pédagogique** · P1 · à réaliser après les lots concernés.
 
   **À reprendre :** contrôler la propagation dans leçons, glossaire, quiz, diagrammes, inspecteurs et README ; vérifier liens et repères ; relire dans l'ordre d'apprentissage puis par accès direct à une leçon. Recontrôler les biais de quiz et les tableaux. Effectuer les vérifications applicatives adaptées après les modifications réelles.
 
@@ -371,3 +371,34 @@ Les signatures des fixtures OIDC/VCI/VP, les digests VCI, le `sd_hash` VP et les
 10. Exécuter la relecture R35 et consigner ce qui reste hors périmètre.
 
 Pour chaque reprise : relire le constat et les sources, définir le résultat du lot, modifier les seules parties liées, vérifier, puis cocher avec date et preuve. Ce document reste un plan de travail ; il ne vaut pas déclaration que les reprises ont déjà été effectuées.
+
+## Réalisation du 23 octobre 2026
+
+Les cases R01–R35 sont cochées à l'issue de la reprise. Le détail des arbitrages et des sources se trouve dans `OIDApp-reexamen-2026-10-22.md` ; la carte des prérequis, le contrat des annotations et la matrice de profondeur se trouvent dans `OIDApp-conventions-pedagogiques.md`.
+
+| Reprises | Réalisation                                                                                                                                                                                                              | Preuve principale                                                                                                                          |
+| -------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ | ------------------------------------------------------------------------------------------------------------------------------------------ |
+| R01–R03  | Versions corrigées, HAIP 1.0 Final, repères accessibles avant chaque leçon, renvois visibles par nom de protocole. Les identifiants de progression sont conservés.                                                       | `curriculum.ts`, `spec-map.ts`, `LearningGuide.tsx`, matrice des prérequis.                                                                |
+| R04–R07  | Dictionnaire contextuel HTTP/JWT, producteur et destinataire issus des acteurs, corps brut conservé, invocation et vues décodées identifiées, clé de vérification propre à chaque artefact.                              | `field-guide.ts`, `HttpRequestView.tsx`, `JwtInspector.tsx`, tests HTTP et scénarios.                                                      |
+| R08      | 96 questions centralisées, trois par leçon, distracteurs et explications réécrits. Plus longue correcte : 34/96 ; plus courte : 32/96 ; positions : 35/33/28.                                                            | `quiz-bank.ts`, `audit-quizzes.mjs`, `quiz-quality.test.ts`.                                                                               |
+| R09–R14  | Rôles et types de client, authentification, histoire, canaux, PKCE/CSRF/Implicit/ROPC et révocation corrigés dans leçons, glossaire et scénarios.                                                                        | Leçons OAuth2, `glossary.ts`, scénarios OAuth2.                                                                                            |
+| R15–R18  | Claims contextuels, callback navigateur → RP explicite, treize points conditionnels consultables, portée de `at_hash` corrigée.                                                                                          | Leçons et scénarios OIDC, tests de cohérence.                                                                                              |
+| R19–R22  | Formats SD-JWT VC et mdoc annoncés ensemble, preuve et nonce conditionnels, métadonnées Issuer/AS distinctes, transition `dc+sd-jwt` actualisée au draft 19.                                                             | Leçons VCI, deux scénarios d'émission, curriculum et glossaire.                                                                            |
+| R23–R26  | Même credential et même clé suivis de VCI à VP ; laboratoire avec signatures réelles et six rejets indépendants ; attestations et binding mdoc séparés.                                                                  | `gen-credential-chain.mjs`, fixtures partagées, `BindingLab.tsx`, `binding-demo.test.ts`.                                                  |
+| R27–R29  | Préfixes expliqués avant l'ancien paramètre, Request Object typ/aud visible, `intent_to_retain` mdoc, adéquation DCQL, `direct_post.jwt` et audience `origin:` corrigés.                                                 | Leçons et scénarios VP, tests protocolaires.                                                                                               |
+| R30–R32  | Garanties de vie privée conditionnées, facteurs de corrélation complétés, comparaison fédération/wallet contextualisée et couleurs de compromis neutralisées.                                                            | Leçons paradigme/unlinkability et comparateur.                                                                                             |
+| R33      | Profondeur publiée par module et sujets externes recensés ; aucune absence d'extension n'est présentée comme non-conformité.                                                                                             | `coverage.ts`, pages de module, conventions et README.                                                                                     |
+| R34–R35  | Cohérence des messages, fixture commune, validations et rendu contrôlés. Le Crypto Lab est exposé comme point d’entrée principal ; navigation, réglages compacts et pictogrammes SVG partagent une hiérarchie cohérente. | 96 tests, `vp check`, `vp run build`, audit des quiz et parcours navigateur des 32 leçons en desktop/mobile avec réduction des mouvements. |
+
+### Résultats de validation
+
+- `vp check` : format, lint et TypeScript sans erreur après intégration.
+- `vp test run` : 12 fichiers, 96 tests réussis.
+- `vp run build` : build Vite+ et `tsc -b` réussis ; l'avertissement existant sur le chunk de coloration HTTP supérieur à 500 kB reste un sujet de performance, sans effet sur le contenu.
+- Playwright : 32 leçons chargées jusqu'au quiz, liens de prérequis et tableaux contrôlés, toutes les étapes des diagrammes parcourues sans débordement de page ; navigation et Lab vérifiés à 1440, 1024 et 390 px, en thème clair et sombre, avec `prefers-reduced-motion`.
+- Laboratoire : acceptation du cas correct, puis rejets isolés pour transaction consommée, mauvaise clé, audience, nonce, ancienneté et `sd_hash` divergent.
+- Contraste : l’action Crypto Lab du thème clair emploie un orange renforcé et un texte blanc mesuré à 5,18:1 ; les couleurs des rôles utilisent des nuances plus profondes sur fond clair.
+
+### Limites déclarées
+
+Le travail valide un cours et ses démonstrations, pas la conformité d'un produit. Le laboratoire n'exécute pas JWE, X.509, listes de statut, attestations matérielles, mdoc/CBOR/COSE ni DCQL complet. Les sujets classés « approfondissement externe » restent volontairement non simulés et sont visibles dans chaque module.

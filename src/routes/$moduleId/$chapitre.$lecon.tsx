@@ -1,9 +1,12 @@
+import { LearningGuide } from '../../components/content/LearningGuide'
 import { Suspense, useEffect } from 'react'
 import { createFileRoute, Link, notFound } from '@tanstack/react-router'
 import { getLesson, getModule, lessonKey } from '../../data/curriculum'
 import { useAllProgress, useSetLessonStatus } from '../../db/hooks'
 import { ScenarioLoader } from '../../components/sequence/AttackScenario'
 import { lessonComponents } from '../../content/registry'
+import { faArrowLeft, faArrowRight, faCheck, faHammer } from '@fortawesome/free-solid-svg-icons'
+import { AppIcon } from '../../components/ui/AppIcon'
 
 export const Route = createFileRoute('/$moduleId/$chapitre/$lecon')({
   loader: ({ params }) => {
@@ -66,11 +69,13 @@ function LessonPage() {
                 : 'border-line bg-surface-2 hover:border-ok'
             }`}
           >
-            {status === 'done' ? '✓ Leçon validée' : 'Marquer comme terminée'}
+            {status === 'done' && <AppIcon icon={faCheck} className="mr-2 inline size-3.5" />}
+            {status === 'done' ? 'Leçon validée' : 'Marquer comme terminée'}
           </button>
         )}
       </div>
 
+      <LearningGuide moduleId={module.id} />
       <LessonBody lessonId={key} scenarioId={lesson.scenarioId} ready={lesson.ready} />
 
       <nav
@@ -83,7 +88,8 @@ function LessonPage() {
             params={{ moduleId: module.id, chapitre: prev.chapter.id, lecon: prev.lesson.id }}
             className="text-muted transition-colors hover:text-accent"
           >
-            ← {prev.lesson.title}
+            <AppIcon icon={faArrowLeft} className="mr-2 inline size-3" />
+            {prev.lesson.title}
           </Link>
         ) : (
           <span />
@@ -94,7 +100,8 @@ function LessonPage() {
             params={{ moduleId: module.id, chapitre: next.chapter.id, lecon: next.lesson.id }}
             className="text-right text-muted transition-colors hover:text-accent"
           >
-            {next.lesson.title} →
+            {next.lesson.title}
+            <AppIcon icon={faArrowRight} className="ml-2 inline size-3" />
           </Link>
         ) : (
           <span />
@@ -104,7 +111,7 @@ function LessonPage() {
   )
 }
 
-/** Corps de la leçon : contenu rédigé si présent, sinon scénario seul, sinon 🚧. */
+/** Corps de la leçon : contenu rédigé, scénario seul ou état de construction. */
 function LessonBody({
   lessonId,
   scenarioId,
@@ -127,9 +134,9 @@ function LessonBody({
   }
   return (
     <div className="rounded-xl border border-dashed border-line bg-surface p-8 text-center text-sm text-muted">
-      <p className="text-2xl">🚧</p>
+      <AppIcon icon={faHammer} tone="warning" className="mx-auto size-6" />
       <p className="mt-2">
-        Leçon en construction — elle arrive avec la suite de la Phase 1 (contenu rédigé, quiz,
+        Leçon en construction — elle arrive avec la suite du module OAuth 2.0 (contenu rédigé, quiz,
         scénarios).
       </p>
     </div>

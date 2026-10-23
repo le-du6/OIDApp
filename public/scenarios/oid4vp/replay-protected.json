@@ -1,7 +1,7 @@
 {
   "id": "oid4vp/replay-protected",
   "title": "Le même rejeu, contre le Key Binding JWT (protégé)",
-  "description": "Rejouons la même attaque dans le monde réel d'OID4VP : la présentation exigée est <credential>~<disclosures>~<KB-JWT>, où le KB-JWT est signé par la clé privée du wallet (celle du cnf) sur le nonce FRAIS du Verifier. Le fichier volé de l'attaquant ne suffit plus.",
+  "description": "Rejouons la même attaque dans le monde réel d'OID4VP : la présentation exigée est <credential>~<disclosures>~<KB-JWT>, où le KB-JWT est signé par la clé privée du wallet (celle du cnf) sur le nonce FRAIS du Verifier. Le fichier volé de l'attaquant ne suffit plus. Démonstration datée du 1er janvier 2026 : données fictives, validation à l’horloge du scénario.",
   "specRefs": ["draft-ietf-oauth-selective-disclosure-jwt (KB-JWT)", "OID4VP 1.0 App. B.3"],
   "actors": [
     {
@@ -10,7 +10,12 @@
       "role": "attacker",
       "alias": "= même présentation volée en main"
     },
-    { "id": "verifier", "name": "Verifier", "role": "verifier", "alias": "= exige le Key Binding" }
+    {
+      "id": "verifier",
+      "name": "Verifier",
+      "role": "verifier",
+      "alias": "= exige le Key Binding"
+    }
   ],
   "steps": [
     {
@@ -22,7 +27,7 @@
       "summary": "Toute demande de présentation porte un nonce neuf, imprévisible. La présentation attendue devra contenir un KB-JWT signé SUR ce nonce — la preuve devra être fabriquée maintenant, pour cette transaction.",
       "security": {
         "level": "info",
-        "note": "Le défi-réponse, encore : celui qui vérifie choisit le défi (cf. c_nonce en Phase 3). Une preuve pré-fabriquée — comme celle du fichier volé — est structurellement périmée."
+        "note": "Dans ce scénario, un nouveau défi est attendu. La preuve capturée sur un autre nonce échoue ; une seconde soumission sur le même nonce exige aussi le suivi de la transaction."
       }
     },
     {
@@ -39,7 +44,11 @@
           "url": "https://verifier.example/response",
           "body": {
             "type": "form",
-            "content": "vp_token={ \"identite\": [\"<jwt>~<disclosures>~<KB-JWT signé sur vpn-4Kd82mQxaz (VIEUX nonce)>\"] }"
+            "content": "vp_token=%7B%22identite%22%3A%5B%22eyJhbGciOiJFUzI1NiIsInR5cCI6ImRjK3NkLWp3dCIsImtpZCI6InZjaS1pc3N1ZXItMjAyNi0wMSJ9.eyJ2Y3QiOiJodHRwczovL2NyZWRlbnRpYWxzLmV4YW1wbGUvaWRlbnRpdHlfY3JlZGVudGlhbCIsIl9zZCI6WyJQRzZubmJ3OThvNGdPbkNic2hXU1d5LWRqZ0dWaFRLcXZFM2RHWmpPdjlzIiwiWnB5cjk3a051UU9KVnR5ampLcTRQLUFsajV1U1lNN3pUN1ZJQkZUa21OWSIsImZuSHlfd29NeGg0M3E4TGoyemN5M0lhNUlyeGdVNzk3Um9uQXgwbDFFNTAiXSwiX3NkX2FsZyI6InNoYS0yNTYiLCJjbmYiOnsiandrIjp7Imt0eSI6IkVDIiwieCI6IkJkcXJ0OERUWDRTTVBtNGp2LW02YVNfNGlhYjBxWkJMMk1mdTk2VXdnSkUiLCJ5IjoiNkFiZVU2ZGZUQVNjNTF1WF9oS0l3dVVsSlkzM19BZHhqMGpVZFd4RENJQSIsImNydiI6IlAtMjU2In19LCJpc3MiOiJodHRwczovL2lzc3Vlci5leGFtcGxlIiwiaWF0IjoxNzY3MjI1NjAwLCJleHAiOjE3OTg3NjE2MDB9.WVemA8UjWdRMXZ2kX5qF_7zEzLKjEmOXhK71MHdEw2v00m_lgOjIjonhkzElmO2zDGJ-mMXe6-969YdV6fqH5w%7EWyJDeXVrMGVEbDVWQWdZaDhBUGJBaDRRIiwiZ2l2ZW5fbmFtZSIsIkNhbWlsbGUiXQ%7EWyI2YlRrVWF0VFFCbTBsYTR3WHZKaTZ3IiwiYmlydGhkYXRlIiwiMTk5MC0wMS0wMSJd%7EeyJhbGciOiJFUzI1NiIsInR5cCI6ImtiK2p3dCJ9.eyJub25jZSI6InZwbi00S2Q4Mm1ReGF6Iiwic2RfaGFzaCI6ImRFeF9DYmtPdW1xcTRkSHlxVkY1ZXc4cGJ6M1RfTWVLZ3JoTWM0a0ZzSm8iLCJhdWQiOiJ4NTA5X3Nhbl9kbnM6dmVyaWZpZXIuZXhhbXBsZSIsImlhdCI6MTc2NzIyOTIwMH0.5OHcX466mAKIEZPE6CzDiWYkz_gaJwyllxMYjwuJ9cYhpgLUPm1i8CpK2YUfV0f1SKO6oH642yZIuGiVTpOzIQ%22%5D%7D",
+            "representation": "wire"
+          },
+          "headers": {
+            "Content-Type": "application/x-www-form-urlencoded"
           }
         }
       }
@@ -66,12 +75,24 @@
       "summary": "Rejet. Le fichier volé est réduit à ce qu'il est : lisible (données personnelles — la fuite reste un incident !), mais inutilisable comme preuve d'identité. La possession de la clé, elle, ne se vole pas dans un fichier.",
       "request": {
         "channel": "back",
-        "request": { "method": "POST", "url": "https://verifier.example/response" },
+        "request": {
+          "method": "POST",
+          "url": "https://verifier.example/response"
+        },
         "response": {
           "status": 400,
           "statusText": "Bad Request",
-          "body": { "type": "json", "content": "{ \"error\": \"invalid_request\" }" }
-        }
+          "body": {
+            "type": "json",
+            "content": "{ \"error\": \"invalid_request\" }",
+            "representation": "wire"
+          },
+          "headers": {
+            "Content-Type": "application/json"
+          }
+        },
+        "responseOnly": true,
+        "note": "Réponse du serveur à une requête précédente ; la flèche montre ici uniquement le retour."
       },
       "security": {
         "level": "info",

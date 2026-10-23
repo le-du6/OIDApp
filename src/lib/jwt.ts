@@ -61,22 +61,6 @@ export function decodeJwt(token: string): DecodedJwt {
   }
 }
 
-/** Annotations FR des claims standard (registre IANA + RFC 7519 / RFC 9068). */
-export const claimDescriptions: Record<string, { description: string; specRef: string }> = {
-  iss: { description: 'Issuer — qui a émis le token', specRef: 'RFC 7519 §4.1.1' },
-  sub: { description: 'Subject — de qui parle le token', specRef: 'RFC 7519 §4.1.2' },
-  aud: { description: 'Audience — à qui le token est destiné', specRef: 'RFC 7519 §4.1.3' },
-  exp: { description: 'Expiration (epoch seconds)', specRef: 'RFC 7519 §4.1.4' },
-  nbf: { description: 'Not before — invalide avant cet instant', specRef: 'RFC 7519 §4.1.5' },
-  iat: { description: 'Issued at — instant d’émission', specRef: 'RFC 7519 §4.1.6' },
-  jti: { description: 'JWT ID — identifiant unique (anti-rejeu)', specRef: 'RFC 7519 §4.1.7' },
-  scope: { description: 'Périmètre d’accès accordé', specRef: 'RFC 8693 §4.2' },
-  client_id: { description: 'Client pour lequel le token a été émis', specRef: 'RFC 9068 §2.2' },
-  alg: { description: 'Algorithme de signature', specRef: 'RFC 7515 §4.1.1' },
-  typ: { description: 'Type de token (at+jwt = access token JWT)', specRef: 'RFC 9068 §2.1' },
-  kid: { description: 'Key ID — quelle clé a signé (lookup JWKS)', specRef: 'RFC 7515 §4.1.4' },
-}
-
 /** Formate un claim epoch-seconds en date lisible, sinon retourne null. */
 export function formatEpochClaim(name: string, value: unknown): string | null {
   if (!['exp', 'iat', 'nbf', 'auth_time'].includes(name)) return null

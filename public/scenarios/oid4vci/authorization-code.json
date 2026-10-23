@@ -1,15 +1,25 @@
 {
   "id": "oid4vci/authorization-code",
   "title": "Authorization Code Flow pour l'émission",
-  "description": "L'autre voie d'émission : quand l'utilisateur part de son wallet (pas d'offer pré-autorisée), c'est l'Authorization Code Flow de la Phase 1 qui reprend du service — PKCE compris — avec une nouveauté : authorization_details, qui demande précisément un CREDENTIAL et non un scope d'API.",
+  "description": "L'autre voie d'émission : quand l'utilisateur part de son wallet (pas d'offer pré-autorisée), c'est l'Authorization Code Flow du module OAuth 2.0 qui reprend du service — PKCE compris — avec une nouveauté : authorization_details, qui demande précisément un CREDENTIAL et non un scope d'API. Démonstration datée du 1er janvier 2026 : données fictives, validation à l’horloge du scénario. Le wallet est public ; l’Issuer joue aussi le rôle d’AS dans cet exemple. L’accès anonyme au token endpoint est permis pour le seul grant préautorisé ici.",
   "specRefs": [
     "OID4VCI 1.0 §5",
     "RFC 9396 (authorization_details)",
     "OID4VCI 1.0 §12.2.2 (metadata)"
   ],
   "actors": [
-    { "id": "user", "name": "Holder", "role": "user", "alias": "= vous" },
-    { "id": "wallet", "name": "Wallet", "role": "wallet", "alias": "= l'app portefeuille" },
+    {
+      "id": "user",
+      "name": "Holder",
+      "role": "user",
+      "alias": "= vous"
+    },
+    {
+      "id": "wallet",
+      "name": "Wallet",
+      "role": "wallet",
+      "alias": "= l'app portefeuille"
+    },
     {
       "id": "issuer",
       "name": "Credential Issuer",
@@ -27,12 +37,12 @@
       "summary": "Cette fois le point de départ est le wallet : l'utilisateur veut un credential, sans être passé par le portail de l'émetteur. Le wallet va devoir TOUT découvrir, puis faire authentifier l'utilisateur."
     },
     {
-      "id": "metadata",
+      "id": "issuer-metadata",
       "from": "wallet",
       "to": "issuer",
+      "label": "Découvre le Credential Issuer",
       "kind": "http",
-      "label": "GET /.well-known/openid-credential-issuer",
-      "summary": "Même réflexe que la Discovery OIDC : le wallet récupère la configuration de l'Issuer — endpoints, et surtout le catalogue des credentials offerts avec leurs formats.",
+      "summary": "Exemple fictif : les endpoints et capacités sont obtenus des métadonnées du rôle concerné.",
       "request": {
         "channel": "back",
         "request": {
@@ -41,17 +51,41 @@
         },
         "response": {
           "status": 200,
-          "statusText": "OK",
+          "headers": {
+            "Content-Type": "application/json"
+          },
           "body": {
             "type": "json",
-            "content": "{\n  \"credential_issuer\": \"https://issuer.example\",\n  \"credential_endpoint\": \"https://issuer.example/credential\",\n  \"nonce_endpoint\": \"https://issuer.example/nonce\",\n  \"credential_configurations_supported\": {\n    \"identity_credential\": {\n      \"format\": \"dc+sd-jwt\",\n      \"vct\": \"https://credentials.example/identity_credential\",\n      \"cryptographic_binding_methods_supported\": [\"jwk\"],\n      \"proof_types_supported\": { \"jwt\": { \"proof_signing_alg_values_supported\": [\"ES256\"] } }\n    }\n  }\n}"
+            "content": "{\n  \"credential_issuer\": \"https://issuer.example\",\n  \"authorization_servers\": [\n    \"https://issuer.example\"\n  ],\n  \"credential_endpoint\": \"https://issuer.example/credential\",\n  \"nonce_endpoint\": \"https://issuer.example/nonce\",\n  \"credential_configurations_supported\": {\n    \"identity_credential\": {\n      \"format\": \"dc+sd-jwt\",\n      \"vct\": \"https://credentials.example/identity_credential\",\n      \"cryptographic_binding_methods_supported\": [\n        \"jwk\"\n      ],\n      \"credential_signing_alg_values_supported\": [\n        \"ES256\"\n      ],\n      \"proof_types_supported\": {\n        \"jwt\": {\n          \"proof_signing_alg_values_supported\": [\n            \"ES256\"\n          ]\n        }\n      }\n    }\n  }\n}",
+            "representation": "wire"
           }
         }
-      },
-      "security": {
-        "level": "info",
-        "note": "Le well-known dédié d'OID4VCI : /.well-known/openid-credential-issuer. On y lit le format (dc+sd-jwt), le vct, et les types de proofs acceptés — tout ce que le wallet doit savoir avant de se lancer.",
-        "specRef": "OID4VCI 1.0 §12.2.2"
+      }
+    },
+    {
+      "id": "as-metadata",
+      "from": "wallet",
+      "to": "issuer",
+      "label": "Découvre l’Authorization Server",
+      "kind": "http",
+      "summary": "Exemple fictif : les endpoints et capacités sont obtenus des métadonnées du rôle concerné.",
+      "request": {
+        "channel": "back",
+        "request": {
+          "method": "GET",
+          "url": "https://issuer.example/.well-known/oauth-authorization-server"
+        },
+        "response": {
+          "status": 200,
+          "headers": {
+            "Content-Type": "application/json"
+          },
+          "body": {
+            "type": "json",
+            "content": "{\n  \"issuer\": \"https://issuer.example\",\n  \"authorization_endpoint\": \"https://issuer.example/authorize\",\n  \"token_endpoint\": \"https://issuer.example/token\",\n  \"response_types_supported\": [\n    \"code\"\n  ],\n  \"code_challenge_methods_supported\": [\n    \"S256\"\n  ],\n  \"grant_types_supported\": [\n    \"authorization_code\",\n    \"urn:ietf:params:oauth:grant-type:pre-authorized_code\"\n  ],\n  \"token_endpoint_auth_methods_supported\": [\n    \"none\"\n  ],\n  \"pre-authorized_grant_anonymous_access_supported\": true\n}",
+            "representation": "wire"
+          }
+        }
       }
     },
     {
@@ -70,7 +104,7 @@
             {
               "name": "response_type",
               "value": "code",
-              "description": "Code flow, comme toujours.",
+              "description": "Code flow choisi pour ce parcours ; le parcours préautorisé utilise un autre grant.",
               "specRef": "RFC 6749 §4.1.1"
             },
             {
@@ -96,6 +130,11 @@
               "value": "S256",
               "description": "Méthode de dérivation du challenge.",
               "specRef": "RFC 7636 §4.3"
+            },
+            {
+              "name": "redirect_uri",
+              "value": "https://wallet.example/callback",
+              "description": "Callback HTTPS enregistré pour ce wallet de démonstration."
             }
           ]
         }
@@ -136,12 +175,12 @@
           "url": "https://issuer.example/token",
           "body": {
             "type": "form",
-            "content": "grant_type=authorization_code&code=vciSplxl0BeZQQYbYS6W&code_verifier=dBjftJeZ4CVP-mB92K27uhbUJU1p1r_wW1gFWFOEjXk",
+            "content": "grant_type=authorization_code&code=vciSplxl0BeZQQYbYS6W&code_verifier=dBjftJeZ4CVP-mB92K27uhbUJU1p1r_wW1gFWFOEjXk&client_id=wallet-app&redirect_uri=https%3A%2F%2Fwallet.example%2Fcallback",
             "params": [
               {
                 "name": "grant_type",
                 "value": "authorization_code",
-                "description": "Le grant classique de la Phase 1.",
+                "description": "Le grant classique du module OAuth 2.0.",
                 "specRef": "RFC 6749 §4.1.3"
               },
               {
@@ -155,17 +194,35 @@
                 "value": "dBjftJeZ4CVP-mB92K27uhbUJU1p1r_wW1gFWFOEjXk",
                 "description": "Le secret PKCE originel — l'AS recalcule S256 et compare.",
                 "specRef": "RFC 7636 §4.5"
+              },
+              {
+                "name": "client_id",
+                "value": "wallet-app",
+                "description": "Identifiant public du client, ou callback lié à ce code."
+              },
+              {
+                "name": "redirect_uri",
+                "value": "https://wallet.example/callback",
+                "description": "Identifiant public du client, ou callback lié à ce code."
               }
-            ]
+            ],
+            "representation": "wire"
+          },
+          "headers": {
+            "Content-Type": "application/x-www-form-urlencoded"
           }
         },
         "response": {
           "status": 200,
           "statusText": "OK",
-          "headers": { "Content-Type": "application/json", "Cache-Control": "no-store" },
+          "headers": {
+            "Content-Type": "application/json",
+            "Cache-Control": "no-store"
+          },
           "body": {
             "type": "json",
-            "content": "{\n  \"access_token\": \"vci-at-77xQ4c\",\n  \"token_type\": \"Bearer\",\n  \"expires_in\": 300,\n  \"authorization_details\": [{\n    \"type\": \"openid_credential\",\n    \"credential_configuration_id\": \"identity_credential\",\n    \"credential_identifiers\": [\"identity_credential_1\"]\n  }]\n}"
+            "content": "{\n  \"access_token\": \"vci-at-77xQ4c\",\n  \"token_type\": \"Bearer\",\n  \"expires_in\": 300,\n  \"authorization_details\": [{\n    \"type\": \"openid_credential\",\n    \"credential_configuration_id\": \"identity_credential\",\n    \"credential_identifiers\": [\"identity_credential_1\"]\n  }]\n}",
+            "representation": "wire"
           }
         }
       },
@@ -176,21 +233,52 @@
       }
     },
     {
+      "id": "nonce",
+      "from": "wallet",
+      "to": "issuer",
+      "label": "POST /nonce → c_nonce",
+      "kind": "http",
+      "summary": "Exemple fictif : les endpoints et capacités sont obtenus des métadonnées du rôle concerné.",
+      "request": {
+        "channel": "back",
+        "request": {
+          "method": "POST",
+          "url": "https://issuer.example/nonce"
+        },
+        "response": {
+          "status": 200,
+          "headers": {
+            "Content-Type": "application/json",
+            "Cache-Control": "no-store"
+          },
+          "body": {
+            "type": "json",
+            "content": "{\n  \"c_nonce\": \"cn-7f3b9d24aa\"\n}",
+            "representation": "wire"
+          }
+        }
+      }
+    },
+    {
       "id": "nonce-proof-credential",
       "from": "wallet",
       "to": "issuer",
       "kind": "http",
-      "label": "POST /nonce, puis /credential (proofs.jwt)",
-      "summary": "Suite identique au pre-authorized flow : c_nonce au Nonce Endpoint, jwt proof signé par la clé du wallet, Credential Request, et le SD-JWT VC arrive — lié à la clé via cnf. Le zoom complet est au chapitre proof of possession.",
+      "label": "POST /credential (proof jwt)",
+      "summary": "Le nonce a été obtenu à l’étape précédente. Le wallet signe une preuve pour l’Issuer et utilise credential_identifier reçu dans la réponse token.",
       "request": {
         "channel": "back",
         "request": {
           "method": "POST",
           "url": "https://issuer.example/credential",
-          "headers": { "Authorization": "Bearer vci-at-77xQ4c" },
+          "headers": {
+            "Authorization": "Bearer vci-at-77xQ4c",
+            "Content-Type": "application/json"
+          },
           "body": {
             "type": "json",
-            "content": "{\n  \"credential_identifier\": \"identity_credential_1\",\n  \"proofs\": { \"jwt\": [\"eyJ…openid4vci-proof+jwt…\"] }\n}"
+            "content": "{\n  \"credential_identifier\": \"identity_credential_1\",\n  \"proofs\": {\n    \"jwt\": [\n      \"eyJhbGciOiJFUzI1NiIsInR5cCI6Im9wZW5pZDR2Y2ktcHJvb2Yrand0IiwiandrIjp7Imt0eSI6IkVDIiwieCI6IkJkcXJ0OERUWDRTTVBtNGp2LW02YVNfNGlhYjBxWkJMMk1mdTk2VXdnSkUiLCJ5IjoiNkFiZVU2ZGZUQVNjNTF1WF9oS0l3dVVsSlkzM19BZHhqMGpVZFd4RENJQSIsImNydiI6IlAtMjU2In19.eyJub25jZSI6ImNuLTdmM2I5ZDI0YWEiLCJhdWQiOiJodHRwczovL2lzc3Vlci5leGFtcGxlIiwiaWF0IjoxNzY3MjI1NjAwfQ.3XBhu4JDzSaE_6Avxx7XpS_ZICpZWIG9Mf1cUlcbUdH6ptzwokbcGXZTmlTr4K_DIG4wK6WJfL7lY6B1_8iq1Q\"\n    ]\n  }\n}",
+            "representation": "wire"
           }
         },
         "response": {
@@ -198,7 +286,11 @@
           "statusText": "OK",
           "body": {
             "type": "json",
-            "content": "{\n  \"credentials\": [ { \"credential\": \"eyJ…dc+sd-jwt…~disclosures~\" } ]\n}"
+            "content": "{\n  \"credentials\": [\n    {\n      \"credential\": \"eyJhbGciOiJFUzI1NiIsInR5cCI6ImRjK3NkLWp3dCIsImtpZCI6InZjaS1pc3N1ZXItMjAyNi0wMSJ9.eyJ2Y3QiOiJodHRwczovL2NyZWRlbnRpYWxzLmV4YW1wbGUvaWRlbnRpdHlfY3JlZGVudGlhbCIsIl9zZCI6WyJQRzZubmJ3OThvNGdPbkNic2hXU1d5LWRqZ0dWaFRLcXZFM2RHWmpPdjlzIiwiWnB5cjk3a051UU9KVnR5ampLcTRQLUFsajV1U1lNN3pUN1ZJQkZUa21OWSIsImZuSHlfd29NeGg0M3E4TGoyemN5M0lhNUlyeGdVNzk3Um9uQXgwbDFFNTAiXSwiX3NkX2FsZyI6InNoYS0yNTYiLCJjbmYiOnsiandrIjp7Imt0eSI6IkVDIiwieCI6IkJkcXJ0OERUWDRTTVBtNGp2LW02YVNfNGlhYjBxWkJMMk1mdTk2VXdnSkUiLCJ5IjoiNkFiZVU2ZGZUQVNjNTF1WF9oS0l3dVVsSlkzM19BZHhqMGpVZFd4RENJQSIsImNydiI6IlAtMjU2In19LCJpc3MiOiJodHRwczovL2lzc3Vlci5leGFtcGxlIiwiaWF0IjoxNzY3MjI1NjAwLCJleHAiOjE3OTg3NjE2MDB9.WVemA8UjWdRMXZ2kX5qF_7zEzLKjEmOXhK71MHdEw2v00m_lgOjIjonhkzElmO2zDGJ-mMXe6-969YdV6fqH5w~WyJDeXVrMGVEbDVWQWdZaDhBUGJBaDRRIiwiZ2l2ZW5fbmFtZSIsIkNhbWlsbGUiXQ~WyJNU2ZiS09WMjMzd0pvaDBBanVZQWV3IiwiZmFtaWx5X25hbWUiLCJNYXJ0aW4iXQ~WyI2YlRrVWF0VFFCbTBsYTR3WHZKaTZ3IiwiYmlydGhkYXRlIiwiMTk5MC0wMS0wMSJd~\"\n    }\n  ]\n}",
+            "representation": "wire"
+          },
+          "headers": {
+            "Content-Type": "application/json"
           }
         }
       }
@@ -212,7 +304,7 @@
       "summary": "Pre-authorized : l'Issuer a déjà identifié l'utilisateur (portail, guichet) — le wallet n'orchestre pas d'authentification. Authorization code : le wallet initie, l'Issuer authentifie pendant le flow. Les deux finissent pareil : nonce → proof → credential.",
       "security": {
         "level": "info",
-        "note": "Deux chemins d'entrée, un seul chemin de sortie : la preuve de possession de clé est le passage obligé des DEUX flows. C'est elle qui fait du credential un objet lié au wallet, pas un simple fichier.",
+        "note": "Les deux exemples convergent vers une émission avec preuve jwt. Le besoin de preuve et de liaison de clé dépend de la configuration et du profil ; ce n’est pas une règle universelle d’OID4VCI.",
         "specRef": "OID4VCI 1.0 §8"
       }
     }

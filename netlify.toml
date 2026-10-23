@@ -9,23 +9,23 @@
 # `dist/` sur app.netlify.com/drop.)
 
 [build]
-  command = "npm run build"
-  publish = "dist"
+command = "npm run build"
+publish = "dist"
 
 [build.environment]
-  # Aligné sur .nvmrc — Netlify lit aussi ce fichier, on l'explicite ici.
-  NODE_VERSION = "24"
+# Aligné sur .nvmrc — Netlify lit aussi ce fichier, on l'explicite ici.
+NODE_VERSION = "24"
 
 # SPA : toute route inconnue (deep link /oidc/validation/…) doit servir
 # index.html, à charge du routeur client de résoudre l'URL. status = 200
 # (rewrite, pas redirect) pour conserver l'URL dans la barre d'adresse.
 [[redirects]]
-  from = "/*"
-  to = "/index.html"
-  status = 200
+from = "/*"
+to = "/index.html"
+status = 200
 
 # Les assets versionnés (hash dans le nom) peuvent être mis en cache à vie.
 [[headers]]
-  for = "/assets/*"
-  [headers.values]
-    Cache-Control = "public, max-age=31536000, immutable"
+for = "/assets/*"
+[headers.values]
+Cache-Control = "public, max-age=31536000, immutable"

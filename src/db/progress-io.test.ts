@@ -1,5 +1,5 @@
 import 'fake-indexeddb/auto'
-import { beforeEach, describe, expect, it } from 'vitest'
+import { beforeEach, describe, expect, it } from 'vite-plus/test'
 import { db } from './db'
 import { buildProgressExport, clearAllProgress, importProgress } from './progress-io'
 

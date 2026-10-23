@@ -1,3 +1,4 @@
+import { BindingLab } from '../components/content/BindingLab'
 import { useEffect, useState } from 'react'
 import { createFileRoute } from '@tanstack/react-router'
 import {
@@ -18,6 +19,25 @@ import { JwtInspector } from '../components/jwt/JwtInspector'
 import { Callout } from '../components/content/Callout'
 import { OIDC_ACCESS_TOKEN, OIDC_AT_HASH, OIDC_ID_TOKEN, OIDC_JWKS } from '../data/fixtures/oidc'
 import { VCI_DISCLOSURES, VCI_SD_JWT } from '../data/fixtures/oid4vci'
+import type { IconDefinition } from '@fortawesome/fontawesome-svg-core'
+import {
+  faArrowRight,
+  faCheck,
+  faDice,
+  faFileSignature,
+  faFingerprint,
+  faFlaskVial,
+  faHashtag,
+  faIdCardClip,
+  faKey,
+  faLink,
+  faMagnifyingGlass,
+  faMasksTheater,
+  faShieldHalved,
+  faTicket,
+  faXmark,
+} from '@fortawesome/free-solid-svg-icons'
+import { AppIcon } from '../components/ui/AppIcon'
 
 export const Route = createFileRoute('/labo-crypto')({
   component: CryptoLabPage,
@@ -34,36 +54,70 @@ const FIXTURE_JWT =
 function CryptoLabPage() {
   return (
     <div className="mx-auto max-w-3xl space-y-8">
-      <div>
-        <h1 className="text-2xl font-bold">Crypto Lab</h1>
+      <div className="relative overflow-hidden rounded-2xl border border-accent/35 bg-gradient-to-br from-accent-soft via-surface to-ok-soft p-6">
+        <AppIcon
+          icon={faFlaskVial}
+          className="absolute -right-4 -top-5 size-28 text-accent opacity-[0.07]"
+        />
+        <p className="flex items-center gap-2 text-[10px] font-semibold uppercase tracking-[0.2em] text-accent">
+          <AppIcon icon={faFingerprint} className="size-3" />
+          Manipulations cryptographiques réelles
+        </p>
+        <h1 className="mt-2 text-3xl font-bold">Crypto Lab</h1>
         <p className="mt-1 text-sm text-muted">
           Tout ici tourne dans votre navigateur avec la <strong>WebCrypto API native</strong> —
           aucune bibliothèque, aucune donnée n'en sort, toutes les clés sont jetables.
         </p>
       </div>
+      <a
+        href="#binding"
+        className="group flex items-center gap-3 rounded-xl border border-accent/40 bg-accent-soft p-4 text-sm text-accent transition-all hover:-translate-y-0.5 hover:border-accent"
+      >
+        <span className="grid size-9 shrink-0 place-items-center rounded-lg bg-accent text-white">
+          <AppIcon icon={faLink} className="size-4" />
+        </span>
+        <span className="flex-1">
+          <strong className="block">Parcours Key Binding</strong>
+          <span className="text-xs text-ink/75">
+            Suivre une même clé de l’émission à la présentation.
+          </span>
+        </span>
+        <AppIcon
+          icon={faArrowRight}
+          className="size-3.5 transition-transform group-hover:translate-x-1"
+        />
+      </a>
       <HashSection />
       <PkceSection />
       <SignSection />
       <IdTokenSection />
       <PopSection />
       <SdSection />
+      <BindingLab />
       <JwtSection />
     </div>
   )
 }
 
 function Section({
+  icon,
   title,
   intro,
   children,
 }: {
+  icon: IconDefinition
   title: string
   intro: string
   children: React.ReactNode
 }) {
   return (
     <section className="rounded-xl border border-line bg-surface p-5">
-      <h2 className="text-lg font-bold">{title}</h2>
+      <h2 className="flex items-center gap-3 text-lg font-bold">
+        <span className="grid size-9 place-items-center rounded-xl bg-accent-soft text-accent">
+          <AppIcon icon={icon} className="size-4" />
+        </span>
+        {title}
+      </h2>
       <p className="mt-1 text-sm text-muted">{intro}</p>
       <div className="mt-4">{children}</div>
     </section>
@@ -91,8 +145,9 @@ function HashSection() {
   }, [input])
   return (
     <Section
-      title="🔢 Hachage SHA-256"
-      intro="Une empreinte à sens unique : impossible de remonter au texte, et le moindre caractère modifié change tout (effet avalanche). Essayez d'ajouter un point."
+      icon={faHashtag}
+      title="Hachage SHA-256"
+      intro="Une empreinte à sens unique : non réversible directement, mais un texte prévisible peut être retrouvé par essais, et le moindre caractère modifié change tout (effet avalanche). Essayez d'ajouter un point."
     >
       <label className="block text-xs font-medium text-muted">
         Texte à hacher
@@ -120,11 +175,13 @@ function PkceSection() {
   }
   return (
     <Section
-      title="🔐 PKCE — code_verifier → code_challenge (S256)"
+      icon={faShieldHalved}
+      title="PKCE — code_verifier → code_challenge (S256)"
       intro="Exactement ce que fait un Client au début d'un flow avec PKCE (RFC 7636) : un secret aléatoire, et son empreinte envoyée dans l'authorization request. challenge = BASE64URL(SHA-256(verifier))."
     >
       <button type="button" onClick={() => void roll()} className={btnCls}>
-        🎲 Générer un code_verifier
+        <AppIcon icon={faDice} className="mr-2 inline size-3.5" />
+        Générer un code_verifier
       </button>
       {verifier && (
         <>
@@ -176,12 +233,14 @@ function SignSection() {
 
   return (
     <Section
-      title="✍️ Signature ES256 — signer, vérifier… et altérer"
-      intro="La primitive derrière toute signature de JWT : la clé privée signe, la clé publique vérifie. Signez, vérifiez (✔), puis modifiez un caractère du message et re-vérifiez (✘)."
+      icon={faFileSignature}
+      title="Signature ES256 — signer, vérifier… et altérer"
+      intro="La primitive derrière toute signature de JWT : la clé privée signe, la clé publique vérifie. Signez, vérifiez, puis modifiez un caractère du message et recommencez."
     >
       <div className="flex flex-wrap gap-2">
         <button type="button" onClick={() => void genKeys()} className={btnCls}>
-          🔑 Générer une paire de clés P-256
+          <AppIcon icon={faKey} className="mr-2 inline size-3.5" />
+          Générer une paire de clés P-256
         </button>
         <button
           type="button"
@@ -189,7 +248,8 @@ function SignSection() {
           disabled={!keys}
           className={`${btnCls} disabled:opacity-40`}
         >
-          ✍️ Signer
+          <AppIcon icon={faFileSignature} className="mr-2 inline size-3.5" />
+          Signer
         </button>
         <button
           type="button"
@@ -197,7 +257,8 @@ function SignSection() {
           disabled={!signature}
           className={`${btnCls} disabled:opacity-40`}
         >
-          🔎 Vérifier
+          <AppIcon icon={faMagnifyingGlass} className="mr-2 inline size-3.5" />
+          Vérifier
         </button>
       </div>
       {jwk && (
@@ -230,9 +291,10 @@ function SignSection() {
           }`}
           aria-live="polite"
         >
+          <AppIcon icon={verdict ? faCheck : faXmark} className="mr-2 inline size-3.5" />
           {verdict
-            ? '✔ Signature valide : ce message est bien celui qui a été signé, par cette clé.'
-            : `✘ Signature invalide : le message a changé depuis la signature${
+            ? 'Signature valide : ce message est bien celui qui a été signé, par cette clé.'
+            : `Signature invalide : le message a changé depuis la signature${
                 signedMessage !== message ? ' (vous venez de le modifier)' : ''
               } — c'est exactement ce qui protège un JWT falsifié.`}
         </p>
@@ -268,7 +330,8 @@ function IdTokenSection() {
 
   return (
     <Section
-      title="🪪 Valider un ID Token — JWKS → kid → clé → verify"
+      icon={faIdCardClip}
+      title="Vérifier la signature ES256 d’un ID Token"
       intro="La séquence du chapitre « validation » d'OIDC, en vrai. On vérifie la signature d'un ID Token réel avec la clé du JWKS, puis on ALTÈRE un claim pour voir la vérification échouer. Enfin on recalcule at_hash."
     >
       <div className="rounded-md bg-surface-2 p-2.5 text-xs">
@@ -309,10 +372,12 @@ function IdTokenSection() {
 
       <div className="mt-3 flex flex-wrap gap-2">
         <button type="button" onClick={() => void verifySig()} className={btnCls}>
-          🔎 Vérifier la signature (clé du JWKS)
+          <AppIcon icon={faMagnifyingGlass} className="mr-2 inline size-3.5" />
+          Vérifier la signature (clé du JWKS)
         </button>
         <button type="button" onClick={() => void checkAtHash()} className={btnCls}>
-          🔗 Recalculer at_hash
+          <AppIcon icon={faLink} className="mr-2 inline size-3.5" />
+          Recalculer at_hash
         </button>
       </div>
 
@@ -323,9 +388,10 @@ function IdTokenSection() {
           }`}
           aria-live="polite"
         >
+          <AppIcon icon={sigVerdict ? faCheck : faXmark} className="mr-2 inline size-3.5" />
           {sigVerdict
-            ? '✔ Signature valide : le jeton vient bien de l’OP et n’a pas été modifié. (Restent iss, aud, exp, nonce à vérifier — la signature ne suffit jamais.)'
-            : '✘ Signature invalide : le payload altéré ne correspond plus à la signature. Un ID Token injecté est rejeté ici même.'}
+            ? 'Signature valide : le jeton vient bien de l’OP et n’a pas été modifié. (Restent iss, aud, exp, nonce à vérifier — la signature ne suffit jamais.)'
+            : 'Signature invalide : le payload altéré ne correspond plus à la signature. Un ID Token injecté est rejeté ici même.'}
         </p>
       )}
 
@@ -337,19 +403,25 @@ function IdTokenSection() {
           <br />
           at_hash dans l’ID Token = <span className="text-accent">{OIDC_AT_HASH}</span>{' '}
           {atHash === OIDC_AT_HASH ? (
-            <span className="text-ok">✔ concordent</span>
+            <span className="text-ok">
+              <AppIcon icon={faCheck} className="mr-1 inline size-3" />
+              concordent
+            </span>
           ) : (
-            <span className="text-danger">✘ divergent</span>
+            <span className="text-danger">
+              <AppIcon icon={faXmark} className="mr-1 inline size-3" />
+              divergent
+            </span>
           )}
         </output>
       )}
 
       <Callout kind="note" title="Ce que vous venez de faire">
         <p>
-          Exactement les étapes 6 à 8 de la validation (§3.1.3.7) : sélection de la clé par{' '}
-          <code>kid</code>, vérification ES256 sur « header.payload », et le contrôle{' '}
-          <code>at_hash</code> (§3.1.3.6). Altérer un seul caractère du payload casse la signature :
-          c'est ce qui rend un JWT infalsifiable sans la clé privée de l'OP.
+          Ce laboratoire vérifie une signature ES256 avec une clé publique connue et calcule at_hash
+          pour cet algorithme. Il ne réalise pas les treize points de validation OIDC ; at_hash
+          relève d’un contrôle distinct. La fixture a des dates fixes de démonstration, sa signature
+          valide ne signifie pas qu’elle est acceptable à la date réelle.
         </p>
       </Callout>
     </Section>
@@ -414,7 +486,7 @@ function PopSection() {
     setVerdict({ sig, nonce: claims.nonce === againstNonce })
   }
 
-  // Rejeu RÉALISTE : le proof (signature intacte) est représenté alors que
+  // Politique de démonstration : le proof (signature intacte) est représenté alors que
   // l'Issuer a déjà émis un nouveau c_nonce — fraîcheur perdue, rejet.
   const replay = async () => {
     const bytes = crypto.getRandomValues(new Uint8Array(12))
@@ -425,8 +497,9 @@ function PopSection() {
 
   return (
     <Section
-      title="🎫 Proof of possession — le jwt proof d'OID4VCI"
-      intro="Jouez les deux rôles de l'émission : l'Issuer émet un c_nonce, le Wallet signe un proof (typ openid4vci-proof+jwt) avec sa clé jetable, l'Issuer vérifie signature ET nonce — puis simulez un rejeu pour voir le rejet."
+      icon={faTicket}
+      title="Proof of possession — le jwt proof d'OID4VCI"
+      intro="Deux contrôles isolés : signature et correspondance du nonce. Ici changer le nonce invalide l’ancien par choix de politique ; OID4VCI n’impose pas universellement ce comportement. Le laboratoire suivant construit la chaîne complète de démonstration."
     >
       <div className="flex flex-wrap gap-2">
         <button type="button" onClick={issueNonce} className={btnCls}>
@@ -457,7 +530,7 @@ function PopSection() {
           disabled={!proof}
           className={`${btnCls} disabled:opacity-40`}
         >
-          🧨 Rejouer le proof plus tard (nouveau c_nonce)
+          Changer le nonce attendu (politique du laboratoire)
         </button>
       </div>
 
@@ -480,7 +553,7 @@ function PopSection() {
             note={
               proofNonce === cNonce
                 ? 'Décodez : typ openid4vci-proof+jwt, jwk dans le header, nonce = le c_nonce courant.'
-                : 'Attention : un nouveau c_nonce a été émis depuis — ce proof est périmé, la vérification du nonce échouera.'
+                : 'Attention : un nouveau c_nonce a été émis depuis — ce laboratoire attend uniquement le nouveau nonce ; l’ancien est refusé selon cette politique.'
             }
           />
         </div>
@@ -494,12 +567,15 @@ function PopSection() {
           }`}
           aria-live="polite"
         >
-          Signature : {verdict.sig ? '✔ valide' : '✘ invalide'} · nonce :{' '}
-          {verdict.nonce ? '✔ correspond au c_nonce émis' : '✘ ne correspond pas'} —{' '}
+          Signature :{' '}
+          <AppIcon icon={verdict.sig ? faCheck : faXmark} className="mx-1 inline size-3" />
+          {verdict.sig ? 'valide' : 'invalide'} · nonce :{' '}
+          <AppIcon icon={verdict.nonce ? faCheck : faXmark} className="mx-1 inline size-3" />
+          {verdict.nonce ? 'correspond au c_nonce émis' : 'ne correspond pas'} —{' '}
           {verdict.sig && verdict.nonce
-            ? "l'Issuer accepte : le credential sera lié à cette clé (cnf.jwk)."
+            ? 'les deux contrôles illustrés passent ; aud, iat et la politique d’émission restent à vérifier.'
             : verdict.sig
-              ? 'signature intacte mais nonce étranger : rejeu détecté, émission refusée.'
+              ? 'signature intacte mais nonce inattendu : ce contrôle échoue selon la politique du laboratoire.'
               : 'payload altéré après signature : rejet immédiat.'}
         </p>
       )}
@@ -540,8 +616,9 @@ function SdSection() {
 
   return (
     <Section
-      title="🎭 Divulgation sélective — choisissez ce que vous révélez"
-      intro="Vous êtes le wallet, face à une demande de présentation. Cochez les claims à révéler : la présentation SD-JWT se construit en direct, chaque digest est recalculé et vérifié contre le _sd signé par l'Issuer, et le sd_hash de VOTRE sélection s'affiche — c'est lui que le Key Binding JWT scellerait."
+      icon={faMasksTheater}
+      title="Divulgation sélective — choisissez ce que vous révélez"
+      intro="Vous êtes le wallet, face à une demande de présentation. Cochez les claims à révéler : la présentation SD-JWT se construit en direct, chaque digest est recalculé et vérifié contre le _sd signé par l'Issuer, et le sd_hash de VOTRE sélection s'affiche — le laboratoire suivant construit et signe réellement un KB-JWT avec ses propres clés."
     >
       <div className="flex flex-wrap gap-4">
         {VCI_DISCLOSURES.map((d) => (
@@ -568,14 +645,17 @@ function SdSection() {
           </span>
         ))}
         <span className="text-muted">~</span>
-        <span className="text-accent">&lt;kb-jwt&gt;</span>
+        <span className="text-accent">[preuve non construite dans cet exercice]</span>
       </output>
 
       {chosen.map((d) => (
         <output key={d.name} className={outCls}>
           digest({d.name}) = <span className="text-ok">{digests[d.name] ?? '…'}</span>{' '}
           {digests[d.name] === d.digest ? (
-            <span className="text-ok">✔ présent dans _sd</span>
+            <span className="text-ok">
+              <AppIcon icon={faCheck} className="mr-1 inline size-3" />
+              présent dans _sd
+            </span>
           ) : (
             <span className="text-muted">calcul…</span>
           )}
@@ -605,8 +685,9 @@ function JwtSection() {
   const [jwt, setJwt] = useState(FIXTURE_JWT)
   return (
     <Section
-      title="🔍 Décodeur de JWT"
-      intro="Collez n'importe quel JWT : il se LIT sans aucune clé (deux fois du base64url, pas du chiffrement). Seule la signature exige la clé publique de l'émetteur."
+      icon={faMagnifyingGlass}
+      title="Décodeur de JWT"
+      intro="Collez un JWT signé en JWS compact : ses deux premiers segments se décodent sans clé. Un JWE chiffré relève d’un autre format. La vérification dépend du profil et de la clé attendue."
     >
       <label className="block text-xs font-medium text-muted">
         JWT

@@ -1,7 +1,7 @@
 {
   "id": "oid4vp/replay-attack",
   "title": "Rejeu d'une présentation volée (monde naïf, sans Key Binding)",
-  "description": "Imaginons un écosystème naïf où présenter un credential = envoyer le fichier « credential + disclosures », sans preuve de possession. Un attaquant qui a capté une présentation (fuite chez un Verifier, interception, malware) peut alors se faire passer pour la victime, partout, indéfiniment.",
+  "description": "Imaginons un écosystème naïf où présenter un credential = envoyer le fichier « credential + disclosures », sans preuve de possession. Un attaquant qui a capté une présentation (fuite chez un Verifier, interception, malware) peut alors se faire passer pour la victime, partout, indéfiniment. Démonstration datée du 1er janvier 2026 : données fictives, validation à l’horloge du scénario.",
   "specRefs": ["draft-ietf-oauth-selective-disclosure-jwt (Key Binding — la contre-mesure)"],
   "actors": [
     {
@@ -50,7 +50,11 @@
           "url": "https://verifier.example/response",
           "body": {
             "type": "form",
-            "content": "vp_token={ \"identite\": [\"<jwt-signé-issuer>~<d_given_name>~<d_birthdate>~\"] }  ← aucun KB-JWT"
+            "content": "vp_token=%7B%22identite%22%3A%5B%22eyJhbGciOiJFUzI1NiIsInR5cCI6ImRjK3NkLWp3dCIsImtpZCI6InZjaS1pc3N1ZXItMjAyNi0wMSJ9.eyJ2Y3QiOiJodHRwczovL2NyZWRlbnRpYWxzLmV4YW1wbGUvaWRlbnRpdHlfY3JlZGVudGlhbCIsIl9zZCI6WyJQRzZubmJ3OThvNGdPbkNic2hXU1d5LWRqZ0dWaFRLcXZFM2RHWmpPdjlzIiwiWnB5cjk3a051UU9KVnR5ampLcTRQLUFsajV1U1lNN3pUN1ZJQkZUa21OWSIsImZuSHlfd29NeGg0M3E4TGoyemN5M0lhNUlyeGdVNzk3Um9uQXgwbDFFNTAiXSwiX3NkX2FsZyI6InNoYS0yNTYiLCJjbmYiOnsiandrIjp7Imt0eSI6IkVDIiwieCI6IkJkcXJ0OERUWDRTTVBtNGp2LW02YVNfNGlhYjBxWkJMMk1mdTk2VXdnSkUiLCJ5IjoiNkFiZVU2ZGZUQVNjNTF1WF9oS0l3dVVsSlkzM19BZHhqMGpVZFd4RENJQSIsImNydiI6IlAtMjU2In19LCJpc3MiOiJodHRwczovL2lzc3Vlci5leGFtcGxlIiwiaWF0IjoxNzY3MjI1NjAwLCJleHAiOjE3OTg3NjE2MDB9.WVemA8UjWdRMXZ2kX5qF_7zEzLKjEmOXhK71MHdEw2v00m_lgOjIjonhkzElmO2zDGJ-mMXe6-969YdV6fqH5w%7EWyJDeXVrMGVEbDVWQWdZaDhBUGJBaDRRIiwiZ2l2ZW5fbmFtZSIsIkNhbWlsbGUiXQ%7EWyI2YlRrVWF0VFFCbTBsYTR3WHZKaTZ3IiwiYmlydGhkYXRlIiwiMTk5MC0wMS0wMSJd%7E%22%5D%7D",
+            "representation": "wire"
+          },
+          "headers": {
+            "Content-Type": "application/x-www-form-urlencoded"
           }
         }
       },

@@ -1,3 +1,4 @@
+import { quizBank } from '../../data/quiz-bank'
 import { Link } from '@tanstack/react-router'
 import { Term } from '../../components/content/Term'
 import { Callout } from '../../components/content/Callout'
@@ -43,10 +44,11 @@ export default function Ch0Vocabulaire() {
         ). Cohérent — mais personne ne pense comme ça en écrivant une app.
       </p>
       <p>
-        Le piège le plus coûteux est <Term id="client" /> : dans une architecture web classique, «
-        client » désigne le navigateur. En OAuth2, le Client est <em>l'application</em> — et c'est
-        très souvent un serveur. Tant que ce réflexe n'est pas installé, chaque diagramme se lit de
-        travers.
+        Le <Term id="client" /> est un rôle : le logiciel qui demande l'accès. Il peut être un
+        backend, une application dans le navigateur, une application native, une CLI ou un appareil
+        dédié. Ici, le premier exemple utilise un backend. Un client confidentiel peut protéger ses
+        moyens d'authentification ; un client public ne peut pas garder un secret partagé distribué
+        avec son code.
       </p>
       <Callout kind="security" title="Un nom qui dit vrai">
         <p>
@@ -70,106 +72,24 @@ export default function Ch0Vocabulaire() {
         . C'est la même phrase.
       </p>
       <p>
-        Le chapitre suivant explique <em>pourquoi</em> cette machinerie existe — ce que le monde
-        faisait avant, et pourquoi c'était indéfendable. Le glossaire complet est accessible à tout
-        moment :{' '}
-        <Link to="/glossaire" className="text-accent underline underline-offset-2">
-          📖 Glossaire
-        </Link>
-        .
+        Le chapitre suivant explique le problème de la délégation à travers un exemple de partage de
+        mot de passe. Le <Link to="/glossaire">glossaire</Link> reste accessible à tout moment.
       </p>
 
+      <h2>Qui authentifie qui ?</h2>
+      <p>
+        Dans le code flow, l’AS authentifie le Resource Owner, sans qu’OAuth impose sa méthode : mot
+        de passe, passkey ou session existante. Un client confidentiel s’authentifie séparément au
+        token endpoint. TLS authentifie le serveur contacté. Le grant client credentials ne suppose
+        pas de connexion d’un utilisateur.
+      </p>
+      <p>
+        OAuth définit l’autorisation d’accès. Pour que le RP reçoive un résultat d’authentification
+        utilisateur avec un contrat de validation, nous étudierons OIDC.
+      </p>
       <Quiz
         quizId="oauth2/vocabulaire/decodage"
-        questions={[
-          {
-            id: 'q1',
-            question: 'Dans OAuth 2.0, le « Client », c’est…',
-            options: [
-              {
-                text: 'Le navigateur de l’utilisateur',
-                explanation:
-                  'Non — le navigateur est le User-Agent. C’est LE contresens classique du vocabulaire OAuth2.',
-              },
-              {
-                text: 'L’application qui consomme l’API, souvent un serveur',
-                correct: true,
-                explanation:
-                  'Oui : « client » au sens « client de l’Authorization Server ». Un backend web est un Client au sens de la RFC 6749 §1.1.',
-              },
-              {
-                text: 'L’utilisateur final',
-                explanation: 'Non — l’utilisateur est le Resource Owner (RFC 6749 §1.1).',
-              },
-            ],
-          },
-          {
-            id: 'q2',
-            question: 'Qui émet les access tokens ?',
-            options: [
-              {
-                text: 'Le Resource Server',
-                explanation:
-                  'Non : le RS les CONSOMME (il les valide et sert la ressource). C’est l’AS qui émet.',
-              },
-              {
-                text: 'L’Authorization Server',
-                correct: true,
-                explanation:
-                  'Oui — authentification de l’utilisateur, consentement, émission des tokens : c’est son métier (RFC 6749 §1.1).',
-              },
-              {
-                text: 'Le Client, après consentement',
-                explanation:
-                  'Non : le Client ne fabrique jamais de token, il en OBTIENT. S’il pouvait s’en fabriquer, le protocole ne servirait à rien.',
-              },
-            ],
-          },
-          {
-            id: 'q3',
-            question: 'Un « authorization grant », c’est fondamentalement…',
-            options: [
-              {
-                text: 'Un type de token d’accès',
-                explanation:
-                  'Non — le grant est ce qu’on ÉCHANGE contre un token, pas le token lui-même.',
-              },
-              {
-                text: 'La preuve que le Resource Owner a donné son accord',
-                correct: true,
-                explanation:
-                  'Exactement (RFC 6749 §1.3). L’authorization code en est la matérialisation la plus courante.',
-              },
-              {
-                text: 'Le contrat commercial entre le Client et l’AS',
-                explanation:
-                  'Non — l’enregistrement du Client existe (client_id), mais le grant est un objet protocolaire, par utilisateur et par flow.',
-              },
-            ],
-          },
-          {
-            id: 'q4',
-            question: 'Pourquoi « bearer token » est-il un nom bien choisi ?',
-            options: [
-              {
-                text: 'Parce qu’il décrit le format JWT du token',
-                explanation:
-                  'Non — bearer ne dit rien du format. Un bearer token peut être opaque ou JWT.',
-              },
-              {
-                text: 'Parce qu’il énonce le risque : la détention suffit à l’utiliser',
-                correct: true,
-                explanation:
-                  'Oui : « au porteur », comme un billet (RFC 6750). Toute la fin du module traite de cette propriété et de ses remèdes.',
-              },
-              {
-                text: 'Parce qu’il indique que le token est chiffré',
-                explanation:
-                  'Non — rien n’est chiffré dans un bearer token en soi ; un JWT est signé et lisible par tous.',
-              },
-            ],
-          },
-        ]}
+        questions={quizBank['oauth2/vocabulaire/decodage']!}
       />
     </div>
   )
@@ -193,7 +113,7 @@ const rows: {
     role: 'client',
     official: 'Client',
     termId: 'client',
-    real: 'L’application (souvent un serveur !)',
+    real: 'Le logiciel qui demande l’accès',
     trap: '« Client » évoque le navigateur ; ici c’est l’app qui consomme l’API.',
   },
   {
@@ -213,7 +133,7 @@ const rows: {
   {
     official: 'Authorization Grant',
     termId: 'authorization-grant',
-    real: 'La preuve que l’utilisateur a dit oui',
+    real: 'Un moyen d’obtenir une autorisation, selon le grant',
     trap: 'Quatre types de « grants » pour des réalités très différentes.',
   },
   {

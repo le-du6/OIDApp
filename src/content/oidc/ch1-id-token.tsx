@@ -1,3 +1,4 @@
+import { quizBank } from '../../data/quiz-bank'
 import { Term } from '../../components/content/Term'
 import { Callout } from '../../components/content/Callout'
 import { Quiz } from '../../components/content/Quiz'
@@ -37,7 +38,8 @@ export default function OidcCh1() {
 
       <CompareTable
         caption="Les claims de l’ID Token et leur rôle"
-        columns={['Claim', 'Rôle', 'Statut (Core §2)']}
+        rowHeading="Claim"
+        columns={['Sens', 'Contrôle / usage', 'Statut (Core §2)']}
         rows={[
           {
             label: 'iss',
@@ -84,7 +86,7 @@ export default function OidcCh1() {
             cells: [
               { content: 'Instant de l’authentification réelle' },
               { content: 'Permet d’exiger une auth récente (max_age)', verdict: 'mid' },
-              { content: 'REQUIRED si max_age, sinon OPTIONAL' },
+              { content: 'REQUIRED si max_age ou demandé comme Essential Claim' },
             ],
           },
           {
@@ -124,75 +126,21 @@ export default function OidcCh1() {
         </p>
       </Callout>
 
+      <h2>Contexte et méthodes d’authentification</h2>
+      <p>
+        <code>acr</code> exprime une classe de contexte convenue avec l’OP ; <code>amr</code> liste
+        les méthodes utilisées. Aucun ne prouve à lui seul un niveau juridique d’assurance.{' '}
+        <code>azp</code> identifie la partie autorisée dans les extensions qui le définissent ;
+        appliquer leurs conditions de validation. Ces claims sont optionnels dans Core, et des
+        claims additionnels sont possibles.
+      </p>
+      <p>
+        <code>auth_time</code> date l’authentification, <code>iat</code> l’émission du jeton. Une
+        session existante peut donc produire un nouveau jeton sans nouvelle saisie d’identifiants.
+      </p>
       <Quiz
         quizId="oidc/id-token/anatomie-id-token"
-        questions={[
-          {
-            id: 'q1',
-            question: 'Que garantit la signature (JWS) d’un ID Token ?',
-            options: [
-              {
-                text: 'La confidentialité de son contenu',
-                explanation:
-                  'Non — c’est le rôle du chiffrement (JWE). Un JWS est lisible par tous : base64url n’est pas du chiffrement.',
-              },
-              {
-                text: 'Son intégrité et son origine (émis par l’OP, non modifié)',
-                correct: true,
-                explanation:
-                  'Oui — signer prouve qui a émis et que rien n’a été altéré. Mais le contenu reste public.',
-              },
-              {
-                text: 'Que le jeton n’a pas expiré',
-                explanation:
-                  'Non — l’expiration se vérifie via le claim exp, indépendamment de la signature.',
-              },
-            ],
-          },
-          {
-            id: 'q2',
-            question: 'Quelle est la clé d’identité robuste d’un utilisateur ?',
-            options: [
-              {
-                text: 'Son email',
-                explanation:
-                  'Non — l’email peut changer et n’est pas garanti unique ni stable. Mauvais choix de clé primaire.',
-              },
-              {
-                text: 'Le couple (iss, sub)',
-                correct: true,
-                explanation:
-                  'Oui — sub est unique et non réattribué AU SEIN d’un OP ; le préfixer par iss lève l’ambiguïté entre OP.',
-              },
-              {
-                text: 'Le claim aud',
-                explanation:
-                  'Non — aud identifie le destinataire du jeton (le RP), pas l’utilisateur.',
-              },
-            ],
-          },
-          {
-            id: 'q3',
-            question: 'À quoi sert at_hash ?',
-            options: [
-              {
-                text: 'À chiffrer l’access token',
-                explanation:
-                  'Non — at_hash ne chiffre rien ; c’est une empreinte (hash), pas un chiffrement.',
-              },
-              {
-                text: 'À lier l’ID Token à l’access token de la même réponse',
-                correct: true,
-                explanation:
-                  'Oui — at_hash = base64url(moitié gauche de SHA-256(access_token)). Le RP recalcule et compare : un access token d’une autre provenance ne colle pas.',
-              },
-              {
-                text: 'À prouver que l’utilisateur s’est authentifié récemment',
-                explanation: 'Non — c’est le rôle d’auth_time (avec max_age), pas d’at_hash.',
-              },
-            ],
-          },
-        ]}
+        questions={quizBank['oidc/id-token/anatomie-id-token']!}
       />
     </div>
   )

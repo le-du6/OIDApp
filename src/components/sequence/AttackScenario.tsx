@@ -1,6 +1,8 @@
 import { useState } from 'react'
 import { useScenario } from '../../engine/useScenario'
 import { SequenceDiagram } from './SequenceDiagram'
+import { faShieldHeart, faSkullCrossbones } from '@fortawesome/free-solid-svg-icons'
+import { AppIcon } from '../ui/AppIcon'
 
 /**
  * Wrapper « attaque / contre-mesure » : joue d'abord le flow attaqué
@@ -10,8 +12,8 @@ import { SequenceDiagram } from './SequenceDiagram'
 export function AttackScenario({
   attackId,
   protectedId,
-  attackLabel = '🧨 Flow attaqué',
-  protectedLabel = '🛡 Flow protégé',
+  attackLabel = 'Flow attaqué',
+  protectedLabel = 'Flow protégé',
 }: {
   attackId: string
   protectedId: string
@@ -40,6 +42,11 @@ export function AttackScenario({
               mode === m ? activeCls : 'border-line text-muted hover:border-muted'
             }`}
           >
+            <AppIcon
+              icon={m === 'attack' ? faSkullCrossbones : faShieldHeart}
+              tone={m === 'attack' ? 'danger' : 'ok'}
+              className="mr-2 inline size-3.5"
+            />
             {label}
           </button>
         ))}

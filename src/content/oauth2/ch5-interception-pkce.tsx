@@ -1,3 +1,4 @@
+import { quizBank } from '../../data/quiz-bank'
 import { Link } from '@tanstack/react-router'
 import { Term } from '../../components/content/Term'
 import { Callout } from '../../components/content/Callout'
@@ -62,10 +63,10 @@ export default function Ch5InterceptionPkce() {
 
       <Callout kind="spec" specRef="RFC 7636 §4.4.1 · RFC 9700 §2.1.1" title="Dans la spec">
         <p>
-          RFC 7636 : le code_challenge DOIT utiliser S256 sauf impossibilité du client (« plain »
-          n'existe que comme repli, et le BCP le proscrit). RFC 9700 : TOUS les clients — publics{' '}
-          <em>et confidentiels</em> — doivent utiliser PKCE avec le flow code. Ce n'est plus une
-          option mobile, c'est le socle.
+          RFC 7636 demande S256 lorsque le client le peut. RFC 9700 §2.1.1 impose PKCE aux clients
+          publics et le recommande aux clients confidentiels ; l'AS doit le prendre en charge. Notre
+          parcours utilise S256 et applique PKCE aux deux types comme choix de démonstration, sans
+          transformer une recommandation du BCP en obligation universelle.
         </p>
       </Callout>
       <Callout kind="security" title="Pourquoi PKCE même avec un client_secret ?">
@@ -80,97 +81,7 @@ export default function Ch5InterceptionPkce() {
 
       <Quiz
         quizId="oauth2/attaques/interception-pkce"
-        questions={[
-          {
-            id: 'q1',
-            question: 'Que voit un observateur du front channel dans un flow PKCE ?',
-            options: [
-              {
-                text: 'Le code_verifier, en clair dans l’URL',
-                explanation:
-                  'Non — le verifier ne quitte JAMAIS le Client avant l’échange en back channel. C’est tout le design.',
-              },
-              {
-                text: 'Le code_challenge — une empreinte SHA-256 dont on ne remonte pas le verifier',
-                correct: true,
-                explanation:
-                  'Oui : seule l’empreinte transite en zone exposée. La préimage (le verifier) reste secrète jusqu’au token endpoint.',
-              },
-              {
-                text: 'Rien : PKCE chiffre l’authorization request',
-                explanation:
-                  'Non — PKCE ne chiffre rien. Les paramètres restent visibles ; ils sont simplement inexploitables.',
-              },
-            ],
-          },
-          {
-            id: 'q2',
-            question:
-              'Une app malveillante intercepte le code sur mobile (scheme custom). Avec PKCE, que se passe-t-il à l’échange ?',
-            options: [
-              {
-                text: 'L’AS détecte l’app malveillante par son empreinte binaire',
-                explanation:
-                  'Non — l’AS ne sait rien des binaires. Il ne vérifie qu’une chose : SHA-256(verifier présenté) == challenge enregistré.',
-              },
-              {
-                text: 'invalid_grant : l’app ne peut pas fournir le code_verifier correspondant au challenge',
-                correct: true,
-                explanation:
-                  'Oui (RFC 7636 §4.6) — le verifier n’a jamais quitté la vraie app. Le code volé est cryptographiquement orphelin.',
-              },
-              {
-                text: 'L’échange réussit mais avec un scope réduit',
-                explanation:
-                  'Non — PKCE est binaire : correspondance ou rejet. Aucun mode dégradé.',
-              },
-            ],
-          },
-          {
-            id: 'q3',
-            question:
-              'Pourquoi la validation de redirect_uri doit-elle être une correspondance EXACTE ?',
-            options: [
-              {
-                text: 'Pour simplifier le code de l’AS',
-                explanation:
-                  'Non — c’est une exigence de sécurité : toute flexibilité (préfixe, wildcard, path traversal) a historiquement été exploitée pour détourner des codes.',
-              },
-              {
-                text: 'Parce que toute correspondance approximative ouvre le détournement du code vers une URL contrôlée par l’attaquant',
-                correct: true,
-                explanation:
-                  'Oui (RFC 9700 §4.1) — les attaques réelles ont exploité des wildcards de sous-domaines, des paramètres ajoutés, des chemins relatifs. Exact match ferme la classe entière.',
-              },
-              {
-                text: 'Pour empêcher le CSRF du callback',
-                explanation:
-                  'Non — le CSRF passe par la VRAIE redirect_uri. C’est state/PKCE qui le traite (leçon précédente).',
-              },
-            ],
-          },
-          {
-            id: 'q4',
-            question: 'Contre quoi protège le paramètre iss de la RFC 9207 ?',
-            options: [
-              {
-                text: 'Le vol de bearer token',
-                explanation: 'Non — ça, c’est DPoP/mTLS (leçon suivante).',
-              },
-              {
-                text: 'Le mix-up : un Client multi-AS qui enverrait code ou credentials au mauvais AS',
-                correct: true,
-                explanation:
-                  'Oui — la réponse d’autorisation porte l’identité de l’AS émetteur, que le Client compare à l’AS qu’il croyait solliciter.',
-              },
-              {
-                text: 'La réutilisation d’un authorization code',
-                explanation:
-                  'Non — l’usage unique du code est une obligation de l’AS (RFC 6749 §4.1.2).',
-              },
-            ],
-          },
-        ]}
+        questions={quizBank['oauth2/attaques/interception-pkce']!}
       />
     </div>
   )

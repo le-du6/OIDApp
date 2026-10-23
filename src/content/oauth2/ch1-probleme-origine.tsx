@@ -1,3 +1,4 @@
+import { quizBank } from '../../data/quiz-bank'
 import { Term } from '../../components/content/Term'
 import { Callout } from '../../components/content/Callout'
 import { Quiz } from '../../components/content/Quiz'
@@ -12,9 +13,11 @@ export default function Ch1ProblemeOrigine() {
   return (
     <div className="lesson-prose">
       <p>
-        2008. Vous voulez qu'un service d'impression de photos accède à vos photos hébergées
-        ailleurs. La « solution » de l'époque tient en un formulaire : « entrez l'email et le mot de
-        passe de votre compte photos ». Et ça marchait. C'est précisément ça, le problème.
+        Prenons un anti-pattern historique de délégation : un service d'impression demande le mot de
+        passe de votre hébergeur de photos pour agir à votre place. Cela ne décrit pas toute
+        l'authentification avant OAuth : HTTP Digest (RFC 2617, 1999) et Kerberos existaient déjà,
+        ce dernier dans des réseaux distribués. Ils ne résolvent pas le même problème de délégation
+        web à un tiers.
       </p>
       <CodeBlock
         lang="http"
@@ -40,11 +43,10 @@ username=vous@example.com&password=VOTRE_VRAI_MOT_DE_PASSE
 
       <h2>L'étape intermédiaire : l'API key</h2>
       <p>
-        Les <Term id="api-key">API keys</Term> ont amélioré une chose : le secret n'est plus LE mot
-        de passe. Mais une clé statique reste un pouvoir large (rarement un périmètre fin), sans
-        expiration, sans identité d'utilisateur final, et sa révocation est une opération manuelle
-        qui casse tout ce qui l'utilise. Acceptable entre deux machines de confiance ; inadaptée au
-        problème « un utilisateur délègue une partie de ses droits à une app ».
+        Une <Term id="api-key" /> évite de partager le mot de passe principal. Sa portée, son
+        expiration, sa rotation et son association à une identité dépendent du service. OAuth
+        apporte un cadre interopérable d'autorisation et de gestion des tokens ; une API key n'est
+        pas par définition illimitée ou éternelle.
       </p>
 
       <h2>Ce que la délégation exige</h2>
@@ -68,7 +70,7 @@ username=vous@example.com&password=VOTRE_VRAI_MOT_DE_PASSE
             cells: [
               { content: 'Le mot de passe lui-même — pouvoir total', verdict: 'bad' },
               { content: 'Une clé dédiée, mais statique et large', verdict: 'mid' },
-              { content: 'Aucun : le tiers ne voit qu’un token limité', verdict: 'good' },
+              { content: 'Un access token sensible, avec une portée accordée', verdict: 'good' },
             ],
           },
           {
@@ -84,7 +86,10 @@ username=vous@example.com&password=VOTRE_VRAI_MOT_DE_PASSE
             cells: [
               { content: 'Jamais (jusqu’au changement de mot de passe)', verdict: 'bad' },
               { content: 'Rarement native', verdict: 'mid' },
-              { content: 'Access token à courte durée par conception', verdict: 'good' },
+              {
+                content: 'Durée décidée par le serveur, courte dans notre exemple',
+                verdict: 'good',
+              },
             ],
           },
           {
@@ -92,7 +97,10 @@ username=vous@example.com&password=VOTRE_VRAI_MOT_DE_PASSE
             cells: [
               { content: 'Impossible sans tout casser', verdict: 'bad' },
               { content: 'Rotation manuelle, casse les intégrations', verdict: 'mid' },
-              { content: 'Par token/Client (RFC 7009), sans effet de bord', verdict: 'good' },
+              {
+                content: 'Endpoint de révocation, effets selon la politique (RFC 7009)',
+                verdict: 'good',
+              },
             ],
           },
           {
@@ -119,80 +127,20 @@ username=vous@example.com&password=VOTRE_VRAI_MOT_DE_PASSE
       <Callout kind="note" title="Ce qu'OAuth2 n'est PAS">
         <p>
           OAuth 2.0 résout la <em>délégation d'autorisation</em>. Il ne dit rien de « qui est
-          l'utilisateur » côté Client — ce sera le travail d'OpenID Connect (Phase 2). Retenir dès
+          l'utilisateur » côté Client — ce sera le travail d'OpenID Connect (OIDC). Retenir dès
           maintenant : <strong>OAuth2 = autorisation, pas authentification</strong>. La confusion
           entre les deux a produit une décennie de « Login with… » cassés.
         </p>
       </Callout>
 
+      <p>
+        Le corps HTTP affiché est lisible pour l’explication. Cela ne signifie pas qu’il est
+        transmis sans TLS. Un bearer token reste une donnée sensible : sa possession permet l’accès
+        autorisé.
+      </p>
       <Quiz
         quizId="oauth2/probleme-origine/partage-mot-de-passe"
-        questions={[
-          {
-            id: 'q1',
-            question: 'Pourquoi le partage de mot de passe est-il pire qu’un accès trop large ?',
-            options: [
-              {
-                text: 'Parce que le mot de passe transite en HTTP non chiffré',
-                explanation:
-                  'Non — même sur TLS, le problème demeure : c’est le DESTINATAIRE (le tiers) qui est le problème, pas le transport.',
-              },
-              {
-                text: 'Parce qu’il donne un pouvoir total, non traçable et non révocable unitairement',
-                correct: true,
-                explanation:
-                  'Oui : pouvoir total (y compris changer le mot de passe), l’API ne voit que « vous », et le retirer à un tiers = le retirer à tous.',
-              },
-              {
-                text: 'Parce que les mots de passe sont trop courts',
-                explanation:
-                  'Non — un mot de passe de 40 caractères partagé avec un tiers pose exactement le même problème structurel.',
-              },
-            ],
-          },
-          {
-            id: 'q2',
-            question: 'Qu’apporte le scope OAuth2 par rapport à une API key ?',
-            options: [
-              {
-                text: 'Un chiffrement plus fort',
-                explanation: 'Non — le scope ne chiffre rien : il DÉLIMITE ce que le token permet.',
-              },
-              {
-                text: 'Un périmètre consenti explicitement, opposable au token',
-                correct: true,
-                explanation:
-                  'Oui (RFC 6749 §3.3) : l’utilisateur voit ce qu’il accorde, et le RS peut refuser tout ce qui dépasse.',
-              },
-              {
-                text: 'La possibilité d’identifier l’utilisateur final',
-                explanation:
-                  'C’est vrai qu’OAuth2 l’apporte (sub), mais ce n’est pas le rôle du scope — qui délimite le périmètre.',
-              },
-            ],
-          },
-          {
-            id: 'q3',
-            question: 'OAuth 2.0 est un protocole de…',
-            options: [
-              {
-                text: 'Délégation d’autorisation',
-                correct: true,
-                explanation:
-                  'Oui. L’authentification de l’utilisateur y est un moyen interne à l’AS, jamais un résultat livré au Client — c’est OIDC qui livrera ça.',
-              },
-              {
-                text: 'Authentification des utilisateurs',
-                explanation:
-                  'Non — c’est LE contresens historique. Un access token prouve un droit d’accès, pas une identité. OIDC (Phase 2) traite l’authentification.',
-              },
-              {
-                text: 'Chiffrement des échanges',
-                explanation: 'Non — OAuth2 s’appuie sur TLS mais ne chiffre rien lui-même.',
-              },
-            ],
-          },
-        ]}
+        questions={quizBank['oauth2/probleme-origine/partage-mot-de-passe']!}
       />
     </div>
   )

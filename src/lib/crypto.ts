@@ -108,11 +108,22 @@ export async function importEs256PublicJwk(jwk: JsonWebKey): Promise<CryptoKey> 
  * On vérifie sur les octets ASCII de « header.payload », tels quels.
  */
 export async function verifyCompactJwsES256(jws: string, jwk: JsonWebKey): Promise<boolean> {
-  const parts = jws.split('.')
-  if (parts.length !== 3) return false
-  const [header, payload, signature] = parts as [string, string, string]
-  const key = await importEs256PublicJwk(jwk)
-  return verifyES256(key, base64UrlToBytes(signature), `${header}.${payload}`)
+  try {
+    const parts = jws.split('.')
+    if (parts.length !== 3) return false
+    const [header, payload, signature] = parts as [string, string, string]
+    const protectedHeader = JSON.parse(new TextDecoder().decode(base64UrlToBytes(header)))
+    if (
+      protectedHeader.alg !== 'ES256' ||
+      protectedHeader.crit !== undefined ||
+      protectedHeader.b64 !== undefined
+    )
+      return false
+    const key = await importEs256PublicJwk(jwk)
+    return await verifyES256(key, base64UrlToBytes(signature), `${header}.${payload}`)
+  } catch {
+    return false
+  }
 }
 
 /* ------------------------------------------------- SD-JWT : disclosures */

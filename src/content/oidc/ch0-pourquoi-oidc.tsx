@@ -1,3 +1,4 @@
+import { quizBank } from '../../data/quiz-bank'
 import { Term } from '../../components/content/Term'
 import { Callout } from '../../components/content/Callout'
 import { Quiz } from '../../components/content/Quiz'
@@ -20,20 +21,19 @@ export default function OidcCh0() {
 
       <h2>L'anti-pattern : « login avec un access token »</h2>
       <p>
-        Un raccourci tentant : « l'utilisateur m'a donné un <Term id="access-token" /> valide, donc
-        il est authentifié ». C'est faux, pour une raison structurelle : un access token ne dit ni{' '}
-        <strong>pour qui</strong> il a été émis, ni <strong>pour quel destinataire</strong>. C'est
-        un <Term id="bearer-token" /> : quiconque le détient peut l'utiliser, et rien dedans ne le
-        lie à votre application. Jouez l'attaque — la{' '}
-        <Term id="userinfo">substitution de token</Term> — puis basculez sur la version corrigée :
+        Un access token peut comporter une audience, un sujet et un client_id, notamment avec RFC
+        9068. Il autorise néanmoins l'accès à une ressource : ce n'est pas le résultat
+        d'authentification destiné au RP avec les contrôles OIDC. Un token obtenu pour une autre
+        application peut tromper un login qui se contente d'appeler UserInfo sans valider cette
+        liaison. Jouez les deux versions de l'exemple.
       </p>
 
       <div className="not-prose my-6">
         <AttackScenario
           attackId="oidc/login-antipattern-broken"
           protectedId="oidc/login-antipattern-protected"
-          attackLabel="🧨 Login par access token"
-          protectedLabel="🛡 Login par ID Token"
+          attackLabel="Login par access token"
+          protectedLabel="Login par ID Token"
         />
       </div>
 
@@ -65,74 +65,7 @@ export default function OidcCh0() {
 
       <Quiz
         quizId="oidc/pourquoi-oidc/anti-pattern-login"
-        questions={[
-          {
-            id: 'q1',
-            question: 'Pourquoi un access token ne prouve-t-il pas l’identité de qui le présente ?',
-            options: [
-              {
-                text: 'Parce qu’il est chiffré et illisible par le RP',
-                explanation:
-                  'Non — un access token peut être opaque ou un JWT lisible ; ce n’est pas la question. Le problème est ce qu’il atteste, pas sa lisibilité.',
-              },
-              {
-                text: 'Parce que c’est un bearer token sans audience côté RP ni preuve de présence',
-                correct: true,
-                explanation:
-                  'Oui — il atteste un droit d’accès accordé à un Client, pas la présence d’un utilisateur devant CE RP. Quiconque le détient peut l’utiliser.',
-              },
-              {
-                text: 'Parce qu’il expire trop vite pour authentifier',
-                explanation:
-                  'Non — la durée de vie n’a rien à voir. Même frais, un access token n’atteste aucune identité auprès d’un tiers.',
-              },
-            ],
-          },
-          {
-            id: 'q2',
-            question: 'Qu’est-ce qui, dans l’ID Token, bloque la substitution de token ?',
-            options: [
-              {
-                text: 'Sa signature, à elle seule',
-                explanation:
-                  'Non — la signature prouve l’origine (l’OP l’a émis), pas le destinataire. Un ID Token signé mais émis pour un autre client reste dangereux si on ne vérifie que la signature.',
-              },
-              {
-                text: 'Son audience (aud = client_id) et le nonce, vérifiés par le RP',
-                correct: true,
-                explanation:
-                  'Oui — aud dit POUR QUI le jeton a été fabriqué ; nonce le lie à une requête précise. Un jeton d’un autre client, ou rejoué, échoue à ces contrôles.',
-              },
-              {
-                text: 'Le fait qu’il ne transite jamais par le navigateur',
-                explanation:
-                  'Non — en code flow l’ID Token vient du token endpoint, mais c’est vrai aussi de l’access token. Ce n’est pas là qu’est la différence.',
-              },
-            ],
-          },
-          {
-            id: 'q3',
-            question: 'Quelle formule résume le partage des rôles ?',
-            options: [
-              {
-                text: 'ID Token pour l’API, access token pour le login',
-                explanation:
-                  'Non, c’est l’inverse exact — et c’est précisément l’anti-pattern de ce chapitre.',
-              },
-              {
-                text: 'Access token pour accéder à une API, ID Token pour authentifier un utilisateur',
-                correct: true,
-                explanation:
-                  'Oui — deux jetons, deux audiences, deux usages. Les intervertir rouvre la substitution de token.',
-              },
-              {
-                text: 'Un seul jeton suffit si sa signature est valide',
-                explanation:
-                  'Non — la signature ne dit rien du destinataire ni de l’usage. C’est toute la leçon.',
-              },
-            ],
-          },
-        ]}
+        questions={quizBank['oidc/pourquoi-oidc/anti-pattern-login']!}
       />
     </div>
   )

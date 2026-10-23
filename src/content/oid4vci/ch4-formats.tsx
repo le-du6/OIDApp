@@ -1,3 +1,4 @@
+import { quizBank } from '../../data/quiz-bank'
 import { Term } from '../../components/content/Term'
 import { Callout } from '../../components/content/Callout'
 import { Quiz } from '../../components/content/Quiz'
@@ -39,7 +40,8 @@ export default function VciCh4() {
 
       <CompareTable
         caption="Les disclosures de la fixture — vérifiables contre _sd"
-        columns={['Claim', 'Valeur', 'Digest (dans _sd)']}
+        rowHeading="Claim"
+        columns={['Valeur', 'Disclosure (extrait décodé)', 'Digest (extrait de _sd)']}
         rows={VCI_DISCLOSURES.map((d) => ({
           label: d.name,
           cells: [
@@ -55,15 +57,15 @@ export default function VciCh4() {
         brute (« le digest correspond-il à birthdate=1990-01-01 ? »). Révéler une disclosure permet
         de vérifier le claim (recalculer le digest, le chercher dans <code>_sd</code>) ; la retenir
         le garde secret — <em>sans jamais toucher à la signature de l'Issuer</em>. La manipulation
-        complète (choisir ses claims, recalculer les hachages) arrive au Crypto Lab en Phase 4, avec
-        la présentation.
+        complète (choisir ses claims, recalculer les hachages) arrive au Crypto Lab dans le module
+        OID4VP, avec la présentation.
       </p>
       <Callout kind="spec" specRef="draft-ietf-oauth-sd-jwt-vc" title="Dans la spec — typ et vct">
         <p>
-          Le header <code>typ</code> vaut <code>dc+sd-jwt</code> — renommé depuis{' '}
-          <code>vc+sd-jwt</code> en novembre 2024, les implémentations acceptant les deux en
-          transition : un exemple concret de spec encore mouvante. <Term id="vct" /> est REQUIRED :
-          c'est l'identifiant du TYPE de credential, résistant aux collisions.
+          Le header typ actuel vaut dc+sd-jwt. vc+sd-jwt est l'ancienne valeur. Le draft 13
+          conseillait une double acceptation transitoire ; le draft 19 a retiré cette note. Ne pas
+          en déduire une obligation permanente. vct identifie le type de credential et doit être
+          résistant aux collisions.
         </p>
       </Callout>
 
@@ -79,7 +81,7 @@ export default function VciCh4() {
 
       <CompareTable
         caption="SD-JWT VC vs mdoc — deux cultures, une idée"
-        columns={['Axe', 'SD-JWT VC', 'mdoc (ISO 18013-5)']}
+        columns={['SD-JWT VC', 'mdoc (ISO 18013-5)']}
         rows={[
           {
             label: 'Encodage',
@@ -113,76 +115,17 @@ export default function VciCh4() {
         ]}
       />
 
+      <h2>Deux manières de lier la présentation à une clé</h2>
+      <p>
+        Pour notre SD-JWT VC, l’Issuer signe <code>cnf.jwk</code>, puis le wallet signe un KB-JWT.
+        Pour mdoc, la clé du device est liée dans le Mobile Security Object et la présentation
+        utilise les mécanismes DeviceAuthentication et le SessionTranscript du profil. Aucun KB-JWT
+        n’est ajouté à mdoc. Les annexes mdoc d’OpenID décrivent l’intégration ; ce cours
+        n’implémente pas un validateur ISO complet.
+      </p>
       <Quiz
         quizId="oid4vci/formats/sd-jwt-vc-mdoc"
-        questions={[
-          {
-            id: 'q1',
-            question: 'Où se trouvent given_name et birthdate dans un SD-JWT VC ?',
-            options: [
-              {
-                text: 'Dans le payload du JWT, comme des claims normaux',
-                explanation:
-                  'Non — c’est toute l’astuce : le payload signé ne contient que leurs digests salés, dans _sd.',
-              },
-              {
-                text: 'Dans les disclosures, hors du JWT signé — seuls leurs digests salés sont dans _sd',
-                correct: true,
-                explanation:
-                  'Oui — format compact <jwt>~<disclosure>~…~. Révéler ou retenir une disclosure ne touche pas la signature.',
-              },
-              {
-                text: 'Chiffrés dans la signature',
-                explanation:
-                  'Non — une signature ne contient pas de données ; elle atteste. Et rien n’est chiffré ici.',
-              },
-            ],
-          },
-          {
-            id: 'q2',
-            question: 'À quoi sert le salt dans une disclosure ?',
-            options: [
-              {
-                text: 'À empêcher la force brute sur les digests (deviner une valeur et tester son hash)',
-                correct: true,
-                explanation:
-                  'Oui — sans sel, « birthdate »=« 1990-01-01 » se testerait en une opération. Le sel rend chaque digest imprévisible.',
-              },
-              {
-                text: 'À chiffrer la valeur du claim',
-                explanation:
-                  'Non — rien n’est chiffré : la disclosure révélée est en clair. Le sel protège les claims NON révélés.',
-              },
-              {
-                text: 'À signer la disclosure',
-                explanation:
-                  'Non — la disclosure n’est pas signée individuellement ; c’est son digest, présent dans le JWT signé, qui l’authentifie.',
-              },
-            ],
-          },
-          {
-            id: 'q3',
-            question: 'Pourquoi le monde EUDI retient-il DEUX formats ?',
-            options: [
-              {
-                text: 'Par indécision du législateur',
-                explanation:
-                  'Non — les deux formats répondent à des terrains différents, et coexistent à dessein.',
-              },
-              {
-                text: 'SD-JWT VC pour l’écosystème web/OAuth, mdoc pour la proximité et l’héritage ISO (mDL)',
-                correct: true,
-                explanation:
-                  'Oui — même idée (divulgation sélective par digests salés), deux cultures techniques complémentaires.',
-              },
-              {
-                text: 'mdoc est destiné à remplacer SD-JWT VC à terme',
-                explanation:
-                  'Non — aucun des deux n’est annoncé comme transitoire ; l’ARF les référence tous les deux.',
-              },
-            ],
-          },
-        ]}
+        questions={quizBank['oid4vci/formats/sd-jwt-vc-mdoc']!}
       />
     </div>
   )

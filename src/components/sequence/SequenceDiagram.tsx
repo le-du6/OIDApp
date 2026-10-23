@@ -36,7 +36,7 @@ export function SequenceDiagram({ scenario }: { scenario: Scenario }) {
   const selectedStep: Step | null = scenario.steps[state.stepIndex] ?? null
 
   return (
-    <div className="grid gap-4 2xl:grid-cols-[minmax(0,1fr)_360px]">
+    <div className="grid grid-cols-1 gap-4 2xl:grid-cols-[minmax(0,1fr)_360px]">
       <div className="min-w-0 rounded-xl border border-line bg-surface">
         <DiagramControls state={state} dispatch={dispatch} />
         <div

@@ -1,6 +1,14 @@
 import { useState } from 'react'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { db } from '../../db/db'
+import {
+  faAward,
+  faCheck,
+  faCircleCheck,
+  faRotateRight,
+  faXmark,
+} from '@fortawesome/free-solid-svg-icons'
+import { AppIcon } from '../ui/AppIcon'
 
 /**
  * QCM de fin de leçon : chaque réponse (bonne ou mauvaise) a son explication.
@@ -71,7 +79,10 @@ export function Quiz({ quizId, questions }: { quizId: string; questions: QuizQue
       aria-label="Quiz de validation"
     >
       <div className="flex flex-wrap items-baseline justify-between gap-2">
-        <h2 className="text-lg font-bold">✅ Quiz de validation</h2>
+        <h2 className="flex items-center gap-2 text-lg font-bold">
+          <AppIcon icon={faCircleCheck} tone="ok" className="size-5" />
+          Quiz de validation
+        </h2>
         {previous && (
           <p className="text-xs text-muted">
             Meilleur essai : {previous.score}/{previous.total}
@@ -116,7 +127,12 @@ export function Quiz({ quizId, questions }: { quizId: string; questions: QuizQue
                         </label>
                         {submitted && (isPicked || opt.correct) && (
                           <p className="mt-1 pl-8 text-xs leading-relaxed text-muted">
-                            {opt.correct ? '✓' : '✗'} {opt.explanation}
+                            <AppIcon
+                              icon={opt.correct ? faCheck : faXmark}
+                              tone={opt.correct ? 'ok' : 'danger'}
+                              className="mr-1 inline size-3"
+                            />{' '}
+                            {opt.explanation}
                           </p>
                         )}
                       </div>
@@ -142,7 +158,8 @@ export function Quiz({ quizId, questions }: { quizId: string; questions: QuizQue
           <>
             <p className={`text-sm font-semibold ${passed ? 'text-ok' : 'text-warning'}`}>
               {score}/{questions.length} —{' '}
-              {passed ? 'leçon validée, badge gagné 🏅' : 'relisez et retentez !'}
+              {passed && <AppIcon icon={faAward} tone="ok" className="mr-1 inline size-3.5" />}
+              {passed ? 'leçon validée, badge gagné' : 'relisez et retentez !'}
             </p>
             <button
               type="button"
@@ -152,6 +169,7 @@ export function Quiz({ quizId, questions }: { quizId: string; questions: QuizQue
               }}
               className="rounded-md border border-line px-3 py-1.5 text-sm transition-colors hover:border-accent"
             >
+              <AppIcon icon={faRotateRight} className="mr-2 inline size-3" />
               Recommencer
             </button>
           </>

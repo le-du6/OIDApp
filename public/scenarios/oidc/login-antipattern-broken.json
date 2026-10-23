@@ -1,7 +1,7 @@
 {
   "id": "oidc/login-antipattern-broken",
   "title": "Anti-pattern « login avec un access token » (cassé)",
-  "description": "Un Relying Party naïf implémente « se connecter » ainsi : le client lui envoie un access token, le RP appelle UserInfo, récupère un sub, et ouvre une session pour cet utilisateur. Le piège : un access token ne dit pas POUR QUI ni POUR QUEL client il a été émis. C'est la substitution de token (OIDC Core §16.11).",
+  "description": "Un RP naïf utilise un access token présenté librement pour appeler UserInfo et ouvrir une session. Même si ce token possède des claims, il ne fournit pas à ce RP le contrat de validation d’un résultat d’authentification OIDC lié à sa demande.",
   "specRefs": ["OIDC Core §16.11", "OIDC Core §2", "RFC 6750 §1.2"],
   "actors": [
     {
@@ -10,8 +10,18 @@
       "role": "attacker",
       "alias": "= application malveillante"
     },
-    { "id": "victim", "name": "Victime", "role": "user", "alias": "= l'utilisateur ciblé" },
-    { "id": "rp", "name": "Relying Party", "role": "client", "alias": "= l'app « login » naïve" },
+    {
+      "id": "victim",
+      "name": "Victime",
+      "role": "user",
+      "alias": "= l'utilisateur ciblé"
+    },
+    {
+      "id": "rp",
+      "name": "Relying Party",
+      "role": "client",
+      "alias": "= l'app « login » naïve"
+    },
     {
       "id": "op",
       "name": "OpenID Provider",
@@ -41,15 +51,24 @@
       "summary": "L'OP émet un access token valide, au nom de la victime, à destination de l'app de l'attaquant. Ce token est un bearer token : quiconque le détient peut l'utiliser.",
       "request": {
         "channel": "back",
-        "request": { "method": "POST", "url": "https://op.example/token" },
+        "request": {
+          "method": "POST",
+          "url": "https://op.example/token"
+        },
         "response": {
           "status": 200,
           "statusText": "OK",
           "body": {
             "type": "json",
-            "content": "{ \"access_token\": \"AT-victime-xyz\", \"token_type\": \"Bearer\", \"expires_in\": 3600 }"
+            "content": "{ \"access_token\": \"AT-victime-xyz\", \"token_type\": \"Bearer\", \"expires_in\": 3600 }",
+            "representation": "wire"
+          },
+          "headers": {
+            "Content-Type": "application/json"
           }
-        }
+        },
+        "responseOnly": true,
+        "note": "Réponse du serveur à une requête précédente ; la flèche montre ici uniquement le retour."
       },
       "tokens": [
         {
@@ -73,7 +92,14 @@
         "request": {
           "method": "POST",
           "url": "https://photoprint.example/login",
-          "body": { "type": "json", "content": "{ \"access_token\": \"AT-victime-xyz\" }" }
+          "body": {
+            "type": "json",
+            "content": "{ \"access_token\": \"AT-victime-xyz\" }",
+            "representation": "wire"
+          },
+          "headers": {
+            "Content-Type": "application/json"
+          }
         }
       },
       "security": {
@@ -94,14 +120,20 @@
         "request": {
           "method": "GET",
           "url": "https://op.example/userinfo",
-          "headers": { "Authorization": "Bearer AT-victime-xyz" }
+          "headers": {
+            "Authorization": "Bearer AT-victime-xyz"
+          }
         },
         "response": {
           "status": 200,
           "statusText": "OK",
           "body": {
             "type": "json",
-            "content": "{ \"sub\": \"user-8b2c91\", \"email\": \"victime@mail.example\" }"
+            "content": "{ \"sub\": \"user-8b2c91\", \"email\": \"victime@mail.example\" }",
+            "representation": "wire"
+          },
+          "headers": {
+            "Content-Type": "application/json"
           }
         }
       },

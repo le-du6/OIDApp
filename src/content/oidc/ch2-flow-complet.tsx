@@ -1,3 +1,4 @@
+import { quizBank } from '../../data/quiz-bank'
 import { Term } from '../../components/content/Term'
 import { Callout } from '../../components/content/Callout'
 import { Quiz } from '../../components/content/Quiz'
@@ -76,74 +77,22 @@ export default function OidcCh2() {
         </p>
       </Callout>
 
+      <h2>Le trajet exact du code</h2>
+      <ol>
+        <li>L’OP renvoie une réponse 302 avec un en-tête Location.</li>
+        <li>Le navigateur suit cette URL et envoie une nouvelle requête au callback du RP.</li>
+        <li>
+          Le RP reçoit code et state, retrouve la transaction, puis contacte lui-même le token
+          endpoint.
+        </li>
+      </ol>
+      <p>
+        Le diagramme utilise un RP confidentiel avec authentification Basic. La requête du
+        navigateur et le POST du RP sont deux messages distincts, émis par deux acteurs différents.
+      </p>
       <Quiz
         quizId="oidc/flow-complet/flow-pas-a-pas"
-        questions={[
-          {
-            id: 'q1',
-            question: 'Qu’est-ce qui déclenche l’émission d’un ID Token ?',
-            options: [
-              {
-                text: 'response_type=code',
-                explanation:
-                  'Non — c’est le type de flow (code vs autres). On peut faire de l’OAuth2 pur en code flow, sans ID Token.',
-              },
-              {
-                text: 'La présence du scope openid dans la requête',
-                correct: true,
-                explanation:
-                  'Oui — openid est le déclencheur d’OIDC. Sans lui, pas d’ID Token, même en code flow.',
-              },
-              {
-                text: 'L’appel à UserInfo',
-                explanation:
-                  'Non — UserInfo renvoie des claims via l’access token ; il n’émet pas d’ID Token.',
-              },
-            ],
-          },
-          {
-            id: 'q2',
-            question: 'Avec quel jeton appelle-t-on l’endpoint UserInfo ?',
-            options: [
-              {
-                text: 'L’ID Token',
-                explanation:
-                  'Non — l’ID Token n’est pas un laissez-passer d’API ; son audience est le RP. UserInfo est une ressource OAuth2.',
-              },
-              {
-                text: 'L’access token (en Bearer)',
-                correct: true,
-                explanation:
-                  'Oui — UserInfo est une ressource protégée OAuth2 classique, appelée avec l’access token.',
-              },
-              {
-                text: 'Le code d’autorisation',
-                explanation: 'Non — le code est à usage unique et déjà consommé au token endpoint.',
-              },
-            ],
-          },
-          {
-            id: 'q3',
-            question: 'Que doit vérifier le RP sur la réponse UserInfo ?',
-            options: [
-              {
-                text: 'Que le sub renvoyé est identique à celui de l’ID Token',
-                correct: true,
-                explanation:
-                  'Oui — sinon (Core §5.3.4) la réponse DOIT être rejetée : un access token substitué apporterait les claims de quelqu’un d’autre.',
-              },
-              {
-                text: 'Que la réponse est signée en ES256',
-                explanation:
-                  'Non — la réponse UserInfo est un JSON par défaut (elle PEUT être signée/chiffrée, mais ce n’est pas le contrôle central ici).',
-              },
-              {
-                text: 'Que l’access token contient un nonce',
-                explanation: 'Non — le nonce est un claim de l’ID Token, pas de l’access token.',
-              },
-            ],
-          },
-        ]}
+        questions={quizBank['oidc/flow-complet/flow-pas-a-pas']!}
       />
     </div>
   )

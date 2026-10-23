@@ -1,6 +1,6 @@
 import { useState } from 'react'
 import { createFileRoute, Link } from '@tanstack/react-router'
-import { motion, AnimatePresence } from 'motion/react'
+import { motion, AnimatePresence, useReducedMotion } from 'motion/react'
 
 export const Route = createFileRoute('/comparateur')({
   component: ComparateurPage,
@@ -38,44 +38,44 @@ const DUELS: Duel[] = [
       {
         axe: 'Secrets échangés',
         left: {
-          text: 'Un secret statique, large, remis au tiers — parfois le mot de passe lui-même',
+          text: 'Une clé propre au service ; portée et durée dépendent de sa politique. Le partage de mot de passe est un cas distinct.',
           verdict: 'bad',
         },
         right: {
-          text: 'Aucun secret durable ne sort : tokens courts, à périmètre limité (scope)',
+          text: 'Le tiers reçoit des tokens sensibles ; leur portée, durée et renouvellement suivent la politique du serveur.',
           verdict: 'good',
         },
       },
       {
         axe: 'Surface d’attaque',
         left: {
-          text: 'La clé fuite → accès total, longtemps, souvent sans détection',
+          text: 'Une fuite expose les droits associés à cette clé jusqu’à expiration ou révocation effective.',
           verdict: 'bad',
         },
         right: {
-          text: 'Token fuité = fenêtre courte + périmètre borné ; PKCE/state ferment le front channel',
+          text: 'Bearer volé : droits exposés. PKCE protège le code ; DPoP ou mTLS peuvent lier l’usage du token à une clé.',
           verdict: 'good',
         },
       },
       {
         axe: 'Vie privée',
         left: {
-          text: 'L’API ne distingue pas l’app de l’utilisateur : tout se fait « en votre nom »',
+          text: 'Le service définit l’identité et les droits associés à la clé ; le partage de mot de passe peut masquer le tiers.',
           verdict: 'bad',
         },
         right: {
-          text: 'client_id + sub séparés : qui agit, pour qui — consentement par scope',
+          text: 'Client et sujet peuvent être distingués ; l’autorisation porte sur les scopes ou des détails structurés.',
           verdict: 'good',
         },
       },
       {
         axe: 'Traçabilité / révocation',
         left: {
-          text: 'Révoquer = changer la clé et casser toutes les intégrations',
+          text: 'Révocation ou rotation selon le service ; limiter le partage de la même clé entre intégrations.',
           verdict: 'bad',
         },
         right: {
-          text: 'Révocation par token/client (RFC 7009), audit par client_id',
+          text: 'RFC 7009 définit la révocation ; sa propagation dépend de la validation et des caches des ressources.',
           verdict: 'good',
         },
       },
@@ -95,7 +95,7 @@ const DUELS: Duel[] = [
           verdict: 'mid',
         },
         right: {
-          text: 'ID Token JWS + JWKS publié : rotation de clés sans friction',
+          text: 'ID Token signé ; clés publiées ou convenues, avec une politique de rotation et de cache.',
           verdict: 'good',
         },
       },
@@ -112,9 +112,12 @@ const DUELS: Duel[] = [
       },
       {
         axe: 'Vie privée',
-        left: { text: 'IdP central : voit chaque connexion (phone home)', verdict: 'mid' },
+        left: {
+          text: 'L’IdP observe les authentifications qu’il traite ; les sessions du service peuvent continuer localement.',
+          verdict: 'mid',
+        },
         right: {
-          text: 'OP central : voit chaque connexion (phone home) — identique',
+          text: 'L’OP observe ses authentifications ; chaque action de la session locale du RP ne le sollicite pas.',
           verdict: 'mid',
         },
       },
@@ -122,7 +125,7 @@ const DUELS: Duel[] = [
         axe: 'Traçabilité / révocation',
         left: { text: 'Sessions SSO centralisées, logout complexe mais central', verdict: 'mid' },
         right: {
-          text: 'Sessions centralisées aussi ; révocation immédiate côté OP',
+          text: 'Sessions du RP, tokens et session OP ont des cycles de vie distincts ; logout et révocation sont à coordonner.',
           verdict: 'mid',
         },
       },
@@ -141,11 +144,11 @@ const DUELS: Duel[] = [
       {
         axe: 'Secrets échangés',
         left: {
-          text: 'Identifiants saisis chez l’IdP à chaque session ; tokens de l’IdP',
+          text: 'Authentification chez l’OP, éventuellement via une session existante ; résultat destiné au RP.',
           verdict: 'mid',
         },
         right: {
-          text: 'Rien à saisir : credential signé + preuve de clé locale (KB-JWT)',
+          text: 'Credential et preuve de détenteur selon le profil ; déverrouillage ou consentement possibles.',
           verdict: 'good',
         },
       },
@@ -153,34 +156,44 @@ const DUELS: Duel[] = [
         axe: 'Surface d’attaque',
         left: { text: 'IdP = cible unique concentrée (mais très défendue)', verdict: 'mid' },
         right: {
-          text: 'Répartie sur les wallets/terminaux — WSCD et attestation requis',
+          text: 'Protection des wallets et terminaux ; stockage matériel et attestations selon le profil d’écosystème.',
           verdict: 'mid',
         },
       },
       {
         axe: 'Vie privée',
         left: {
-          text: 'L’IdP apprend chaque connexion ; claims par paquets (scopes)',
+          text: 'L’OP voit les authentifications ; scopes et paramètre claims permettent de demander des attributs.',
           verdict: 'bad',
         },
-        right: { text: 'Émetteur aveugle aux usages ; divulgation au claim près', verdict: 'good' },
+        right: {
+          text: 'Présentation sans appel imposé à l’Issuer ; statut, clés, données stables et collusion peuvent révéler des usages.',
+          verdict: 'good',
+        },
       },
       {
         axe: 'Traçabilité / révocation',
-        left: { text: 'Révocation immédiate — l’IdP est dans chaque boucle', verdict: 'good' },
-        right: { text: 'Listes de statut, durées courtes, batch : plus difficile', verdict: 'mid' },
+        left: {
+          text: 'Prise en compte du statut selon tokens, session du RP, introspection et caches.',
+          verdict: 'good',
+        },
+        right: {
+          text: 'Statut et durées de validité à gérer ; les lots visent d’autres propriétés, dont certaines corrélations.',
+          verdict: 'mid',
+        },
       },
     ],
   },
 ]
 
 const verdictCls: Record<Verdict, string> = {
-  bad: 'bg-danger-soft',
-  mid: 'bg-warning-soft',
-  good: 'bg-ok-soft',
+  bad: 'bg-surface',
+  mid: 'bg-surface',
+  good: 'bg-surface',
 }
 
 function ComparateurPage() {
+  const reduced = useReducedMotion()
   const [active, setActive] = useState(DUELS[0]!.id)
   const duel = DUELS.find((d) => d.id === active)!
 
@@ -190,8 +203,8 @@ function ComparateurPage() {
         <h1 className="text-2xl font-bold">Comparateur de protocoles</h1>
         <p className="mt-1 text-sm text-muted">
           Les trois grands duels du cours, sur quatre axes constants : secrets échangés, surface
-          d'attaque, vie privée, traçabilité. Vert = point fort, ambre = compromis, rouge = point
-          faible.
+          d'attaque, vie privée, traçabilité. Chaque cellule décrit des hypothèses et des compromis
+          à examiner dans votre contexte.
         </p>
       </div>
 
@@ -217,10 +230,10 @@ function ComparateurPage() {
       <AnimatePresence mode="wait">
         <motion.div
           key={duel.id}
-          initial={{ opacity: 0, y: 8 }}
+          initial={reduced ? false : { opacity: 0, y: 8 }}
           animate={{ opacity: 1, y: 0 }}
-          exit={{ opacity: 0, y: -8 }}
-          transition={{ duration: 0.2 }}
+          exit={reduced ? { opacity: 1 } : { opacity: 0, y: -8 }}
+          transition={{ duration: reduced ? 0 : 0.2 }}
         >
           <div className="overflow-x-auto rounded-xl border border-line">
             <table className="w-full border-collapse text-sm">
@@ -235,9 +248,9 @@ function ComparateurPage() {
                 {duel.axes.map((row, i) => (
                   <motion.tr
                     key={row.axe}
-                    initial={{ opacity: 0, x: -12 }}
+                    initial={reduced ? false : { opacity: 0, x: -12 }}
                     animate={{ opacity: 1, x: 0 }}
-                    transition={{ delay: 0.08 * i, duration: 0.25 }}
+                    transition={{ delay: reduced ? 0 : 0.08 * i, duration: reduced ? 0 : 0.25 }}
                     className="border-b border-line/60 align-top last:border-0"
                   >
                     <th scope="row" className="bg-surface px-3 py-2.5 text-left font-medium">

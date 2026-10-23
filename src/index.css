@@ -20,6 +20,7 @@
   --muted: #8fa1bd;
   --accent: #f97316;
   --accent-soft: #f9731626;
+  --on-accent: #0b1220;
   --ok: #2dd4bf;
   --ok-soft: #2dd4bf26;
   --danger: #ef4444;
@@ -38,8 +39,9 @@
   --menu-shadow: 0 12px 32px -8px #14213a33, 0 2px 6px #14213a0f;
   --ink: #14213a;
   --muted: #5b6b87;
-  --accent: #ea580c;
-  --accent-soft: #ea580c1f;
+  --accent: #c2410c;
+  --accent-soft: #c2410c1a;
+  --on-accent: #ffffff;
   --ok: #0d9488;
   --ok-soft: #0d94881f;
   --danger: #dc2626;
@@ -49,7 +51,7 @@
 }
 
 :root {
-  /* Acteurs — identiques dans les deux thèmes. */
+  /* Acteurs — une famille de couleur stable dans toute l'application. */
   --actor-user: #38bdf8;
   --actor-browser: #7dd3fc;
   --actor-client: #a78bfa;
@@ -59,6 +61,19 @@
   --actor-issuer: #818cf8;
   --actor-verifier: #f472b6;
   --actor-attacker: #ef4444;
+}
+
+/* En thème clair, les mêmes familles utilisent une nuance plus profonde. */
+[data-theme='light'] {
+  --actor-user: #0369a1;
+  --actor-browser: #075985;
+  --actor-client: #7e22ce;
+  --actor-authorization-server: #a16207;
+  --actor-resource-server: #047857;
+  --actor-wallet: #0f766e;
+  --actor-issuer: #4f46e5;
+  --actor-verifier: #be185d;
+  --actor-attacker: #b91c1c;
 }
 
 @theme inline {

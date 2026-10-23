@@ -1,3 +1,4 @@
+import { quizBank } from '../../data/quiz-bank'
 import { Term } from '../../components/content/Term'
 import { Callout } from '../../components/content/Callout'
 import { Quiz } from '../../components/content/Quiz'
@@ -95,71 +96,7 @@ export default function OidcCh5() {
 
       <Quiz
         quizId="oidc/nonce-at-hash/liaisons"
-        questions={[
-          {
-            id: 'q1',
-            question: 'Quelle est la différence entre state et nonce ?',
-            options: [
-              {
-                text: 'Aucune, ce sont deux noms pour la même valeur',
-                explanation:
-                  'Non — même besoin (imprévisibilité), mais cibles différentes : state protège le callback, nonce protège l’ID Token.',
-              },
-              {
-                text: 'state lie la réponse du callback à la session ; nonce lie l’ID Token à la requête',
-                correct: true,
-                explanation:
-                  'Oui — state est côté OAuth2 (le code), nonce est propre à OIDC (l’ID Token). Un flow sérieux utilise les deux.',
-              },
-              {
-                text: 'state est chiffré, nonce est signé',
-                explanation:
-                  'Non — ni l’un ni l’autre : ce sont des valeurs imprévisibles comparées, pas des jetons cryptographiques.',
-              },
-            ],
-          },
-          {
-            id: 'q2',
-            question: 'À quelle étape un ID Token injecté (rejoué) est-il rejeté ?',
-            options: [
-              {
-                text: 'À la vérification du nonce (§3.1.3.7)',
-                correct: true,
-                explanation:
-                  'Oui — le RP a mémorisé un nonce unique lié à sa requête ; un ID Token qui ne le porte pas est rejeté.',
-              },
-              {
-                text: 'À la vérification de la signature',
-                explanation:
-                  'Non — l’ID Token rejoué peut être parfaitement signé par l’OP. C’est le nonce qui détecte le rejeu.',
-              },
-              {
-                text: 'Il n’est jamais détecté',
-                explanation: 'Non — c’est précisément le rôle du nonce de le détecter.',
-              },
-            ],
-          },
-          {
-            id: 'q3',
-            question: 'Que lie c_hash ?',
-            options: [
-              {
-                text: 'L’ID Token à l’access token',
-                explanation: 'Non — ça, c’est at_hash. c_hash lie l’ID Token au CODE.',
-              },
-              {
-                text: 'L’ID Token au code d’autorisation (flow hybride)',
-                correct: true,
-                explanation:
-                  'Oui — même recette qu’at_hash, appliquée au code ; REQUIRED quand un ID Token est émis à l’authorization endpoint avec un code.',
-              },
-              {
-                text: 'Le code au nonce',
-                explanation: 'Non — c_hash porte sur le code et l’ID Token, pas sur le nonce.',
-              },
-            ],
-          },
-        ]}
+        questions={quizBank['oidc/nonce-at-hash/liaisons']!}
       />
     </div>
   )

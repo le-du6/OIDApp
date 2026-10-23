@@ -1,3 +1,4 @@
+import { quizBank } from '../../data/quiz-bank'
 import { Link } from '@tanstack/react-router'
 import { Term } from '../../components/content/Term'
 import { Callout } from '../../components/content/Callout'
@@ -12,10 +13,9 @@ export default function OidcCh3() {
   return (
     <div className="lesson-prose">
       <p>
-        Un <Term id="id-token" /> reçu du réseau ne vaut, a priori, <strong>rien</strong> :
-        n'importe qui peut fabriquer un JWT. Ce qui lui donne de la valeur, c'est la séquence de
-        contrôles que le <Term id="relying-party" /> exécute avant de faire confiance. La spec en
-        liste treize ; déroulons l'essentiel dans l'ordre — signature d'abord, puis les claims.
+        Le RP doit valider un ID Token avant de l'accepter. Core §3.1.3.7 liste treize points, dont
+        plusieurs sont conditionnels. Le diagramme regroupe les contrôles de notre exemple ES256 ;
+        la liste ci-dessous conserve leur ordre normatif.
       </p>
 
       <div className="not-prose my-6">
@@ -37,26 +37,25 @@ export default function OidcCh3() {
         title="Dans la spec — les contrôles clés"
       >
         <p>
-          Parmi les treize étapes : <code>iss</code> doit correspondre exactement à l'OP ;{' '}
-          <code>aud</code> doit contenir le <code>client_id</code> ; la signature doit être vérifiée
-          avec la clé du <Term id="jwks" /> désignée par le <Term id="kid" /> ; l'algorithme doit
-          être celui attendu ; <code>exp</code> ne doit pas être dépassé ; si un <code>nonce</code>{' '}
-          a été envoyé, il DOIT être présent et correspondre.
+          Dans notre exemple ES256, la clé vient du JWKS de l'OP attendu et kid la sélectionne. Le
+          RP contrôle également issuer, audience, expiration et nonce lorsqu'il a été envoyé. Core
+          décrit aussi les branches chiffrement, MAC et extensions dans la liste ci-dessous ; elles
+          ne sont pas toutes exécutées par cette démonstration.
         </p>
       </Callout>
 
       <h2>at_hash : le contrôle qu'on oublie</h2>
       <p>
-        Quand la réponse contient aussi un access token, l'ID Token porte un <Term id="at-hash" /> :
-        la moitié gauche de <code>SHA-256(access_token)</code>, en base64url. Le RP recalcule et
-        compare. Ce contrôle empêche d'associer cet ID Token à un access token d'une autre
-        provenance — une brique de plus contre la substitution.
+        En code flow, at_hash est optionnel au token endpoint, et son utilisation pour contrôler
+        l'access token est permise par §3.1.3.8. Notre exemple le calcule avec SHA-256 car il
+        utilise ES256. Les flows Implicit et Hybrid ont d'autres conditions de présence et de
+        contrôle ; le chapitre des liaisons les distingue.
       </p>
 
       <Callout kind="note" title="À manipuler dans le Crypto Lab">
         <p>
           La vérification de signature et le calcul d'at_hash ne sont pas des abstractions : la
-          section « Valider un ID Token » du{' '}
+          section de vérification ES256 d’un ID Token du{' '}
           <Link to="/labo-crypto" className="text-accent underline underline-offset-2">
             Crypto Lab
           </Link>{' '}
@@ -66,74 +65,53 @@ export default function OidcCh3() {
         </p>
       </Callout>
 
+      <details>
+        <summary>Les treize points de Core §3.1.3.7, avec leurs conditions</summary>
+        <ol>
+          <li>
+            Déchiffrer si le jeton est chiffré ; s’il ne l’est pas alors que le chiffrement était
+            négocié, rejet recommandé.
+          </li>
+          <li>Comparer exactement iss à l’OP attendu.</li>
+          <li>
+            Vérifier que aud contient le client_id et aucune audience additionnelle non approuvée.
+          </li>
+          <li>Si une extension utilise azp, vérifier sa valeur selon cette extension (SHOULD).</li>
+          <li>Ce contrôle peut inclure la comparaison azp/client_id (SHOULD dans ce cas).</li>
+          <li>
+            Vérifier la signature avec les clés de l’Issuer. Core permet de substituer la validation
+            TLS du serveur à ce contrôle pour la réception directe au token endpoint ; le cours
+            choisit la signature.
+          </li>
+          <li>
+            Contrôler l’algorithme attendu : RS256 par défaut ou valeur négociée ; notre fixture
+            utilise ES256.
+          </li>
+          <li>
+            Pour un MAC HS256/384/512, utiliser le client_secret en UTF-8 ; comportement non
+            spécifié si aud est multivalué.
+          </li>
+          <li>Contrôler que le temps courant précède exp.</li>
+          <li>Utiliser iat selon la fenêtre de fraîcheur choisie par le client.</li>
+          <li>
+            Si nonce a été envoyé, exiger la même valeur dans le jeton ; contrôler le rejeu selon la
+            politique du client.
+          </li>
+          <li>Si acr a été demandé, vérifier que sa valeur convient (SHOULD).</li>
+          <li>
+            Si auth_time a été demandé ou max_age utilisé, vérifier l’âge de l’authentification et
+            demander une réauthentification si nécessaire (SHOULD).
+          </li>
+        </ol>
+      </details>
+      <p>
+        Décoder, vérifier une signature, valider le profil et accepter une connexion sont quatre
+        opérations distinctes. Le laboratoire ES256 démontre une primitive et le calcul d’at_hash ;
+        il ne remplace pas un validateur OIDC général.
+      </p>
       <Quiz
         quizId="oidc/validation/jwks-kid-verify"
-        questions={[
-          {
-            id: 'q1',
-            question: 'La signature de l’ID Token est valide. Peut-on faire confiance ?',
-            options: [
-              {
-                text: 'Oui, une signature valide suffit',
-                explanation:
-                  'Non — c’est l’erreur centrale du chapitre. La signature prouve l’origine, pas le destinataire ni la fraîcheur.',
-              },
-              {
-                text: 'Non : il reste à vérifier iss, aud, exp, nonce, at_hash…',
-                correct: true,
-                explanation:
-                  'Oui — la signature n’est qu’un des treize contrôles. aud (destinataire), exp (fraîcheur), nonce (anti-rejeu) sont indispensables.',
-              },
-              {
-                text: 'Oui, si l’algorithme est ES256',
-                explanation:
-                  'Non — imposer l’algorithme est nécessaire mais ne remplace pas les contrôles de claims.',
-              },
-            ],
-          },
-          {
-            id: 'q2',
-            question: 'À quoi sert le kid lors de la validation ?',
-            options: [
-              {
-                text: 'Il prouve à lui seul l’authenticité du jeton',
-                explanation:
-                  'Non — le kid vient du header, fourni par l’émetteur du jeton. Il n’apporte aucune confiance en soi.',
-              },
-              {
-                text: 'Il indique quelle clé publique du JWKS utiliser pour vérifier',
-                correct: true,
-                explanation:
-                  'Oui — il sélectionne LA bonne clé (utile pendant une rotation où le JWKS contient plusieurs clés).',
-              },
-              {
-                text: 'Il chiffre l’ID Token',
-                explanation: 'Non — le kid n’a aucun rôle de chiffrement.',
-              },
-            ],
-          },
-          {
-            id: 'q3',
-            question: 'Comment se calcule at_hash ?',
-            options: [
-              {
-                text: 'SHA-256 complet de l’access token, en hexadécimal',
-                explanation:
-                  'Non — c’est la MOITIÉ GAUCHE du hash, encodée en base64url, pas le hash complet en hexa.',
-              },
-              {
-                text: 'base64url de la moitié gauche de SHA-256(access_token)',
-                correct: true,
-                explanation:
-                  'Oui — exactement la définition du Core §3.1.3.6 (SHA-256 car l’alg est ES256/RS256).',
-              },
-              {
-                text: 'Une signature ES256 de l’access token',
-                explanation: 'Non — at_hash est une empreinte (hash), pas une signature.',
-              },
-            ],
-          },
-        ]}
+        questions={quizBank['oidc/validation/jwks-kid-verify']!}
       />
     </div>
   )

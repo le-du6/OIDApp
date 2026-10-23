@@ -1,11 +1,21 @@
 {
   "id": "oid4vci/federation-phone-home",
   "title": "Fédération : le problème du « phone home »",
-  "description": "Le modèle OIDC que vous connaissez a un coût structurel pour la vie privée : à CHAQUE connexion, le navigateur retourne chez l'IdP — qui apprend donc où vous vous connectez, et quand. Ce n'est pas un bug, c'est l'architecture. Regardez ce que l'IdP accumule.",
+  "description": "Le modèle OIDC que vous connaissez a un coût structurel pour la vie privée : à CHAQUE connexion, le navigateur retourne chez l'IdP — qui apprend donc où vous vous connectez, et quand. Ce n'est pas un bug, c'est l'architecture. Regardez ce que l'IdP accumule. Démonstration datée du 1er janvier 2026 : données fictives, validation à l’horloge du scénario.",
   "specRefs": ["OIDC Core 1.0 §3.1.2.1 (architecture)", "eIDAS 2.0 — considérants vie privée"],
   "actors": [
-    { "id": "user", "name": "End-User", "role": "user", "alias": "= vous" },
-    { "id": "browser", "name": "User-Agent", "role": "browser", "alias": "= le navigateur" },
+    {
+      "id": "user",
+      "name": "End-User",
+      "role": "user",
+      "alias": "= vous"
+    },
+    {
+      "id": "browser",
+      "name": "User-Agent",
+      "role": "browser",
+      "alias": "= le navigateur"
+    },
     {
       "id": "rp",
       "name": "Relying Party",
@@ -26,7 +36,7 @@
       "to": "browser",
       "kind": "user-action",
       "label": "Lundi : « Se connecter » sur sante.example",
-      "summary": "Une connexion parfaitement légitime, sur un site sensible : un service de santé. L'utilisateur choisit « login avec son IdP » — le réflexe que toute la Phase 2 a construit."
+      "summary": "Une connexion parfaitement légitime, sur un site sensible : un service de santé. L'utilisateur choisit « login avec son IdP » — le réflexe que toute le module OIDC a construit."
     },
     {
       "id": "authz-site-a",
@@ -47,7 +57,11 @@
               "description": "Identifie le site demandeur — c'est nécessaire au protocole, et c'est précisément l'information que l'IdP accumule.",
               "specRef": "OIDC Core §3.1.2.1"
             },
-            { "name": "scope", "value": "openid", "description": "Requête OIDC standard." }
+            {
+              "name": "scope",
+              "value": "openid",
+              "description": "Requête OIDC standard."
+            }
           ]
         }
       },
@@ -94,7 +108,7 @@
       "from": "op",
       "to": "op",
       "kind": "internal",
-      "label": "Résultat : le graphe complet de vos usages",
+      "label": "Résultat : les authentifications fédérées observées",
       "summary": "santé lundi, syndicat mardi, banque mercredi… L'IdP détient de fait l'historique de votre vie numérique — un profil que personne n'a explicitement consenti à constituer.",
       "security": {
         "level": "danger",

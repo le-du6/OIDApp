@@ -1,3 +1,4 @@
+import { quizBank } from '../../data/quiz-bank'
 import { Term } from '../../components/content/Term'
 import { Callout } from '../../components/content/Callout'
 import { Quiz } from '../../components/content/Quiz'
@@ -22,12 +23,10 @@ export default function Ch4Tokens() {
 
       <h2>Opaque ou structuré (JWT)</h2>
       <p>
-        Un token <Term id="opaque-token">opaque</Term> est une référence aléatoire : le RS doit
-        interroger l'AS pour savoir ce qu'elle vaut — c'est l'
-        <Term id="introspection" /> (RFC 7662). Un token structuré, presque toujours un{' '}
-        <Term id="jwt" /> au profil <span className="font-mono text-xs">RFC 9068</span>, porte ses{' '}
-        <Term id="claim">claims</Term> signés : le RS vérifie la signature localement, sans appel
-        réseau.
+        Un token opaque pour le client peut être validé côté RS par un stockage partagé ou par
+        introspection. Un JWT signé permet une validation locale si les clés sont connues ; il peut
+        aussi être introspecté. Les caches, la distribution des clés et le suivi du statut
+        déterminent la fraîcheur effective.
       </p>
       <CompareTable
         caption="Opaque vs JWT — le vrai arbitrage"
@@ -37,18 +36,25 @@ export default function Ch4Tokens() {
             label: 'Validation par le RS',
             cells: [
               {
-                content: 'Introspection : un appel à l’AS par validation (RFC 7662)',
+                content: 'Introspection ou stockage partagé ; mise en cache possible',
                 verdict: 'mid',
               },
-              { content: 'Locale : signature + exp/aud, zéro appel réseau', verdict: 'good' },
+              {
+                content: 'Validation locale possible avec clés et politique connues',
+                verdict: 'good',
+              },
             ],
           },
           {
             label: 'Révocation effective',
             cells: [
-              { content: 'Immédiate — l’AS répond « inactif » dès la révocation', verdict: 'good' },
               {
-                content: 'Différée — le JWT reste valide jusqu’à exp (d’où des durées courtes)',
+                content: 'Dépend de la réponse d’introspection, des caches et du déploiement',
+                verdict: 'good',
+              },
+              {
+                content:
+                  'Locale sans statut : jusqu’à exp ; introspection ou liste de révocation possibles',
                 verdict: 'mid',
               },
             ],
@@ -56,7 +62,10 @@ export default function Ch4Tokens() {
           {
             label: 'Données exposées',
             cells: [
-              { content: 'Aucune : le token ne contient rien', verdict: 'good' },
+              {
+                content: 'Pas de claims lisibles par le porteur ; référence sensible',
+                verdict: 'good',
+              },
               {
                 content: 'Tous les claims sont LISIBLES par quiconque voit le token',
                 verdict: 'mid',
@@ -66,9 +75,12 @@ export default function Ch4Tokens() {
           {
             label: 'Couplage RS ↔ AS',
             cells: [
-              { content: 'Fort : l’AS doit être joignable et tenir la charge', verdict: 'mid' },
               {
-                content: 'Faible : il suffit de connaître les clés publiques (JWKS)',
+                content: 'Dépend du stockage, de l’introspection et de leurs caches',
+                verdict: 'mid',
+              },
+              {
+                content: 'Clés, politique et éventuels contrôles de statut nécessaires',
                 verdict: 'good',
               },
             ],
@@ -100,10 +112,11 @@ export default function Ch4Tokens() {
 
       <h2>Le cycle de vie : expiration, refresh, révocation</h2>
       <p>
-        L'access token vit court (minutes à heure) : c'est la borne du dégât en cas de vol. Le{' '}
-        <Term id="refresh-token" /> vit long et permet d'en obtenir d'autres — uniquement au{' '}
-        <Term id="token-endpoint" />, jamais présenté à l'API. La <Term id="revocation" /> (RFC
-        7009) coupe le refresh token — et avec lui, la délégation entière :
+        La durée de vie des tokens est une politique du serveur. Le refresh token permet de
+        renouveler l'accès sans nouvelle interaction, sous les contrôles du token endpoint. Selon
+        RFC 7009 §2.1, lors de la révocation d'un refresh token, révoquer les access tokens associés
+        est recommandé si le serveur prend en charge cette révocation. La prise en compte par le RS
+        dépend de sa validation et de ses caches.
       </p>
       <CodeBlock
         lang="http"
@@ -139,97 +152,7 @@ HTTP/1.1 200 OK
 
       <Quiz
         quizId="oauth2/tokens/anatomie-tokens"
-        questions={[
-          {
-            id: 'q1',
-            question: 'Que signifie « un JWT se lit sans clé » ?',
-            options: [
-              {
-                text: 'Le JWT n’est pas protégé, c’est une faille',
-                explanation:
-                  'Non — c’est un choix : signature ≠ chiffrement. L’intégrité est garantie ; la confidentialité, non. On ne met donc RIEN de sensible dans un access token.',
-              },
-              {
-                text: 'Header et payload sont du base64url, pas du chiffrement — seule la falsification est empêchée',
-                correct: true,
-                explanation:
-                  'Exactement : base64url est un ENCODAGE. La signature garantit l’intégrité et l’origine, pas le secret du contenu.',
-              },
-              {
-                text: 'Il faut la clé publique pour décoder le payload',
-                explanation:
-                  'Non — la clé publique sert à VÉRIFIER la signature. Le décodage du payload ne demande que atob().',
-              },
-            ],
-          },
-          {
-            id: 'q2',
-            question: 'Quel est le principal inconvénient d’un access token JWT face à un opaque ?',
-            options: [
-              {
-                text: 'Il est plus lent à valider',
-                explanation:
-                  'Au contraire : la validation locale (signature) évite l’aller-retour d’introspection.',
-              },
-              {
-                text: 'Révoqué, il reste techniquement valide jusqu’à son exp',
-                correct: true,
-                explanation:
-                  'Oui — le RS qui valide localement ne voit pas la révocation. Mitigation : durées courtes, et introspection pour les opérations critiques.',
-              },
-              {
-                text: 'Il ne peut pas porter de scope',
-                explanation:
-                  'Faux — le claim scope est normalisé pour les access tokens JWT (RFC 9068).',
-              },
-            ],
-          },
-          {
-            id: 'q3',
-            question: 'Où un refresh token a-t-il le droit d’être présenté ?',
-            options: [
-              {
-                text: 'Au Resource Server, si l’access token est expiré',
-                explanation:
-                  'Jamais — présenter un artefact longue durée à l’API multiplierait les points d’exposition. Le RS ne sait même pas quoi en faire.',
-              },
-              {
-                text: 'Au token endpoint de l’AS, exclusivement',
-                correct: true,
-                explanation:
-                  'Oui (RFC 6749 §6) : grant_type=refresh_token, en back channel, avec authentification du Client s’il est confidentiel.',
-              },
-              {
-                text: 'Aux deux, selon la configuration',
-                explanation:
-                  'Non — aucune configuration légitime n’envoie un refresh token à un RS.',
-              },
-            ],
-          },
-          {
-            id: 'q4',
-            question:
-              'Pourquoi l’endpoint de révocation répond-il 200 même pour un token inconnu ?',
-            options: [
-              {
-                text: 'Par simplicité d’implémentation',
-                explanation:
-                  'Non — c’est une décision de sécurité délibérée, documentée dans la RFC 7009 §2.2.',
-              },
-              {
-                text: 'Pour ne pas servir d’oracle : un attaquant ne doit pas pouvoir tester la validité de tokens volés',
-                correct: true,
-                explanation:
-                  'Oui — répondre différemment selon la validité transformerait /revoke en vérificateur de butin.',
-              },
-              {
-                text: 'Parce que la révocation est asynchrone',
-                explanation:
-                  'Non — elle peut l’être, mais la réponse uniforme vise l’absence d’oracle, pas l’asynchronisme.',
-              },
-            ],
-          },
-        ]}
+        questions={quizBank['oauth2/tokens/anatomie-tokens']!}
       />
     </div>
   )
