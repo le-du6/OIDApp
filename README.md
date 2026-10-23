@@ -11,6 +11,11 @@ persistée localement (IndexedDB) et exportable en JSON.
 ## Démarrage
 
 La migration du projet utilise **Vite+ et pnpm** (versions fixées dans `package.json` et `pnpm-workspace.yaml`).
+Installer au préalable le [CLI global Vite+](https://viteplus.dev/guide/).
+Vite+ gère Node **24.22.1 LTS** (`.node-version` et `devEngines.runtime`) et
+pnpm **12.15.0** (`devEngines.packageManager`) : inutile d'ajouter un second gestionnaire Node.
+Dans `pnpm-workspace.yaml`, `runtimeOnFail: error` et `pmOnFail: error` empêchent
+pnpm de gérer une seconde toolchain tout en refusant les versions incompatibles.
 
 ```bash
 vp install
@@ -22,6 +27,19 @@ vp preview
 ```
 
 Pour un sous-chemin : `VITE_BASE=/OIDApp/ vp run build`. `dist/` se sert statiquement ; le serveur doit renvoyer `index.html` pour les routes applicatives.
+
+### CI et GitHub Pages
+
+Les deux workflows utilisent l'action officielle [`setup-vp`](https://github.com/voidzero-dev/setup-vp)
+pour installer la version Vite+ du catalogue, le runtime Node de `.node-version` et pnpm.
+Le cache du store pnpm est indexé sur `pnpm-lock.yaml`, seul lockfile du projet ;
+`vp install --frozen-lockfile` interdit toute résolution implicite en CI.
+Les scripts sont exécutés avec `vp run`, notamment `build` qui inclut `tsc -b`.
+
+Pages conserve le sous-chemin fourni par `configure-pages` dans `VITE_BASE` et copie
+`dist/index.html` en `dist/404.html` pour les liens profonds de la SPA.
+La publication nécessite la source **GitHub Actions** dans Settings > Pages et
+une exécution réussie du workflow Deploy Pages sur `main` ; un build local ne vaut pas déploiement.
 
 ## Stack et limites
 

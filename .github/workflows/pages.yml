@@ -24,15 +24,17 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-      - uses: actions/setup-node@v4
+      - uses: voidzero-dev/setup-vp@v1.22.0
         with:
           node-version-file: .node-version
-          cache: npm
+          cache: true
+          cache-dependency-path: pnpm-lock.yaml
+          run-install: false
       - name: Configurer Pages
         id: pages
         uses: actions/configure-pages@v5
-      - run: npm ci
-      - run: npm run build
+      - run: vp install --frozen-lockfile
+      - run: vp run build
         env:
           # base_path vient de configure-pages : « /OIDApp/ » pour un site de
           # projet, « / » avec un domaine personnalisé. Plus fiable que de le

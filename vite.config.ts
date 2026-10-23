@@ -49,7 +49,7 @@ export default defineConfig({
     printWidth: 100,
     trailingComma: 'all',
     sortPackageJson: false,
-    ignorePatterns: ['dist', 'node_modules', 'src/routeTree.gen.ts', 'package-lock.json'],
+    ignorePatterns: ['dist', 'node_modules', 'src/routeTree.gen.ts'],
   },
   base,
   plugins: lazyPlugins(() => [
