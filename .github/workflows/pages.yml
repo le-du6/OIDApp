@@ -21,19 +21,19 @@ concurrency:
 
 jobs:
   build:
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
       - uses: voidzero-dev/setup-vp@v1.22.0
         with:
           node-version-file: .node-version
           cache: true
           cache-dependency-path: pnpm-lock.yaml
           run-install: false
+      - run: vp install --frozen-lockfile
       - name: Configurer Pages
         id: pages
-        uses: actions/configure-pages@v5
-      - run: vp install --frozen-lockfile
+        uses: actions/configure-pages@v6
       - run: vp run build
         env:
           # base_path vient de configure-pages : « /OIDApp/ » pour un site de
@@ -42,16 +42,16 @@ jobs:
           VITE_BASE: ${{ steps.pages.outputs.base_path }}
       # SPA : les deep links (/oauth2/…) doivent servir index.html.
       - run: cp dist/index.html dist/404.html
-      - uses: actions/upload-pages-artifact@v3
+      - uses: actions/upload-pages-artifact@v5
         with:
           path: dist/
 
   deploy:
     needs: build
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     environment:
       name: github-pages
       url: ${{ steps.deployment.outputs.page_url }}
     steps:
       - id: deployment
-        uses: actions/deploy-pages@v4
+        uses: actions/deploy-pages@v5

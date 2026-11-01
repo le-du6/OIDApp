@@ -5,11 +5,14 @@ on:
     branches: [main]
   pull_request:
 
+permissions:
+  contents: read
+
 jobs:
   build:
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
       - uses: voidzero-dev/setup-vp@v1.22.0
         with:
           node-version-file: .node-version
@@ -17,10 +20,10 @@ jobs:
           cache-dependency-path: pnpm-lock.yaml
           run-install: false
       - run: vp install --frozen-lockfile
-      - run: vp run lint
-      - run: vp run test
+      - run: vp check
+      - run: vp test run
       - run: vp run build
-      - uses: actions/upload-artifact@v4
+      - uses: actions/upload-artifact@v7
         with:
           name: dist
           path: dist/
